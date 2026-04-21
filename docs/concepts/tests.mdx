@@ -1,0 +1,62 @@
+---
+title: Tests & Tasks
+description: Test definitions and their executions
+section: Concepts
+sectionOrder: 2
+order: 2
+---
+
+## Tests
+
+A **test** is a reusable definition: which tool to use, the script content, and any configuration. Tests have statuses:
+
+| Status | Meaning |
+|--------|---------|
+| `draft` | Work in progress, not yet runnable |
+| `active` | Can be triggered |
+| `archived` | Disabled, kept for historical reference |
+
+### Supported tools
+
+| Type | Description |
+|------|-------------|
+| `k6` | Grafana k6 — JavaScript-based, low overhead |
+| `jmeter` | Apache JMeter — XML-based, feature-rich |
+| `locust` | Python-based, code-first |
+| `artillery` | YAML / JS, great for HTTP and WebSockets |
+| `gatling` | Scala / Java, enterprise-grade |
+| `custom` | Bring your own binary |
+
+## Tasks
+
+A **task** is a single execution of a test. When you trigger a test, a task record is created and dispatched to available machines.
+
+### Task lifecycle
+
+```
+pending → running → passed | failed | cancelled | timeout
+```
+
+### Result metrics
+
+After a task completes, the following metrics are recorded:
+
+| Metric | Description |
+|--------|-------------|
+| `p50` | Median response time in milliseconds |
+| `p95` | 95th percentile response time |
+| `p99` | 99th percentile response time |
+| `errorRate` | Fraction of failed requests (0.0–1.0) |
+| `requestsPerSec` | Throughput at peak load |
+| `totalRequests` | Total requests sent during the task |
+
+## Triggering a task via the API
+
+```bash
+curl -X POST http://localhost:8090/api/v1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"testId": "your-test-id"}'
+```
+
+The response returns `202 Accepted` with the task ID. Poll `GET /api/v1/tasks/{id}` to track progress.

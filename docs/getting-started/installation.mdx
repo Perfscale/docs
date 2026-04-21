@@ -1,0 +1,72 @@
+---
+title: Installation
+description: Set up perfscale locally for development
+section: Getting Started
+sectionOrder: 1
+order: 2
+---
+
+## Prerequisites
+
+| Tool | Minimum version |
+|------|----------------|
+| Node.js | 22 |
+| pnpm | 10 |
+| Docker | 24 |
+| Rust / cargo | 1.86 |
+
+## Clone and initialize
+
+```bash
+git clone https://github.com/your-org/perfscale.git
+cd perfscale
+
+# One-time setup: installs deps, starts Docker services, pushes DB schema
+pnpm dx:init
+```
+
+`dx:init` will:
+
+1. Copy `.env.example` → `.env`
+2. Install all JS dependencies
+3. Install `cargo-watch` (Rust hot-reload)
+4. Pull and start Docker images (PostgreSQL + Keycloak)
+5. Wait for both services to be healthy
+6. Push the database schema
+
+## Start development servers
+
+After initialization, start everything with a single command:
+
+```bash
+pnpm dev
+```
+
+This concurrently starts:
+
+- **Next.js** → `http://localhost:3000`
+- **Rust BFF** → `http://localhost:8090`
+- **Swagger UI** → `http://localhost:8090/swagger-ui/`
+
+PostgreSQL and Keycloak are managed by Docker Compose and start automatically.
+
+## Load demo data
+
+```bash
+pnpm --filter @perfscale/site db:seed
+```
+
+Creates the `demo@perfscale.ru` user with three machines and a sample test.
+
+## Environment variables
+
+All variables live in `.env` at the monorepo root. Apps read from it automatically via `dotenv-cli`.
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `KEYCLOAK_ISSUER` | Keycloak realm URL |
+| `KEYCLOAK_CLIENT_ID` | OIDC client ID |
+| `KEYCLOAK_CLIENT_SECRET` | OIDC client secret |
+| `NEXTAUTH_URL` | Public URL of the Next.js app |
+| `NEXTAUTH_SECRET` | Random secret for JWT signing |

@@ -1,0 +1,59 @@
+---
+title: Quick Start
+description: Run your first load test in under 5 minutes
+section: Getting Started
+sectionOrder: 1
+order: 3
+---
+
+## 1. Sign in
+
+Go to [http://localhost:3000/login](http://localhost:3000/login) and sign in with the demo credentials:
+
+```
+demo@perfscale.ru / demo1234
+```
+
+## 2. Check your machines
+
+The **Machines** tab shows all registered load generators. The demo workspace has two online nodes (`worker-node-01`, `worker-node-02`) and one offline Mac builder.
+
+A machine is ready when its status shows **Connected**.
+
+## 3. Explore the sample test
+
+Navigate to **Tests**. You will find an *API Smoke Test* configured for k6:
+
+```javascript
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  vus: 10,
+  duration: '30s',
+};
+
+export default function () {
+  const res = http.get('https://httpbin.org/get');
+  check(res, { 'status is 200': (r) => r.status === 200 });
+  sleep(1);
+}
+```
+
+## 4. Trigger a task
+
+Click **Run test** to create a new task. perfscale schedules it on the available machines and streams metrics back in real time:
+
+- Requests per second
+- p50 / p95 / p99 response times
+- Error rate
+
+## 5. View results
+
+When the task finishes, the **Runs & logs** tab shows the full result summary. The demo account has one completed task with pre-populated metrics you can inspect immediately.
+
+## Next steps
+
+- [Learn about machines](/docs/concepts/machines)
+- [Understand tests and tasks](/docs/concepts/tests)
+- [Browse the REST API](/docs/api-reference)

@@ -1,0 +1,257 @@
+---
+title: API Reference
+description: REST API for the perfscale BFF
+section: API Reference
+sectionOrder: 3
+order: 1
+---
+
+## Base URL
+
+All endpoints are served from the Rust BFF:
+
+```
+http://localhost:8090/api/v1
+```
+
+Interactive docs are available at [http://localhost:8090/swagger-ui/](http://localhost:8090/swagger-ui/).
+
+## Authentication
+
+Most endpoints require a Bearer token issued by Keycloak. Pass it in the `Authorization` header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+The Next.js app obtains this token automatically via next-auth. When calling the API directly, use the ROPC grant:
+
+```bash
+curl -X POST http://localhost:8080/realms/perfscale/protocol/openid-connect/token \
+  -d "grant_type=password" \
+  -d "client_id=perfscale-site" \
+  -d "client_secret=$CLIENT_SECRET" \
+  -d "username=demo@perfscale.ru" \
+  -d "password=demo1234"
+```
+
+---
+
+## Auth
+
+### GET /api/v1/auth/me
+
+Returns the identity of the currently authenticated user, decoded from the JWT.
+
+**Response `200 OK`**
+
+```json
+{
+  "sub": "a1b2c3d4-...",
+  "email": "demo@perfscale.ru",
+  "name": "Demo User",
+  "preferred_username": "demo",
+  "roles": ["member"]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sub` | string | Keycloak user UUID |
+| `email` | string? | Email address |
+| `name` | string? | Display name |
+| `preferred_username` | string? | Keycloak username |
+| `roles` | string[] | Realm roles assigned to the user |
+
+---
+
+## Machines
+
+### GET /api/v1/machines
+
+Returns all machines belonging to the authenticated user's tenant.
+
+**Response `200 OK`**
+
+```json
+[
+  {
+    "id": "m_01",
+    "name": "worker-node-01",
+    "hostname": "worker-01.internal",
+    "ip_address": "10.0.0.1",
+    "os": "linux",
+    "arch": "amd64",
+    "cpu_cores": 8,
+    "memory_gb": 16,
+    "status": "online"
+  }
+]
+```
+
+### POST /api/v1/machines
+
+Register a new machine in the tenant's workspace.
+
+**Request body**
+
+```json
+{
+  "name": "my-runner",
+  "hostname": "runner.example.com",
+  "ip_address": "203.0.113.5",
+  "os": "linux",
+  "arch": "arm64",
+  "cpu_cores": 4,
+  "memory_gb": 8
+}
+```
+
+**Response `201 Created`** — returns the created machine object.
+
+### DELETE /api/v1/machines/:id
+
+Remove a machine from the workspace.
+
+**Response `204 No Content`**
+
+---
+
+## Tests
+
+### GET /api/v1/tests
+
+List all test definitions for the tenant.
+
+**Response `200 OK`**
+
+```json
+[
+  {
+    "id": "t_01",
+    "name": "API Smoke Test",
+    "tool": "k6",
+    "status": "active",
+    "script": "import http from 'k6/http'; ...",
+    "created_at": "2025-01-15T10:00:00Z"
+  }
+]
+```
+
+### POST /api/v1/tests
+
+Create a new test definition.
+
+**Request body**
+
+```json
+{
+  "name": "Checkout flow",
+  "tool": "k6",
+  "script": "import http from 'k6/http'; ..."
+}
+```
+
+| Field | Type | Values |
+|-------|------|--------|
+| `tool` | enum | `k6` \| `jmeter` \| `locust` \| `artillery` \| `gatling` \| `custom` |
+| `status` | enum | `draft` \| `active` \| `archived` (default: `draft`) |
+
+**Response `201 Created`**
+
+### PATCH /api/v1/tests/:id
+
+Update a test's name, script, or status.
+
+**Response `200 OK`**
+
+### DELETE /api/v1/tests/:id
+
+Delete a test definition. Active tasks referencing this test are not affected.
+
+**Response `204 No Content`**
+
+---
+
+## Tasks
+
+### GET /api/v1/tasks
+
+List all task executions for the tenant, sorted by creation time descending.
+
+**Response `200 OK`**
+
+```json
+[
+  {
+    "id": "task_01",
+    "test_id": "t_01",
+    "status": "passed",
+    "p50": 142,
+    "p95": 310,
+    "p99": 490,
+    "error_rate": 0.002,
+    "requests_per_sec": 230.5,
+    "total_requests": 6900,
+    "started_at": "2025-01-15T10:05:00Z",
+    "finished_at": "2025-01-15T10:05:30Z"
+  }
+]
+```
+
+### POST /api/v1/tasks
+
+Trigger a test execution.
+
+**Request body**
+
+```json
+{
+  "testId": "t_01"
+}
+```
+
+**Response `202 Accepted`**
+
+```json
+{
+  "id": "task_02",
+  "status": "pending"
+}
+```
+
+Poll `GET /api/v1/tasks/:id` to follow progress.
+
+### GET /api/v1/tasks/:id
+
+Get a single task by ID.
+
+**Response `200 OK`** — same shape as a single element from the list.
+
+### DELETE /api/v1/tasks/:id
+
+Cancel a pending or running task.
+
+**Response `204 No Content`**
+
+---
+
+## Error responses
+
+All error responses follow a common envelope:
+
+```json
+{
+  "error": "not_found",
+  "message": "Task task_99 does not exist"
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request body |
+| `401` | Missing or expired token |
+| `403` | Token valid but insufficient permissions |
+| `404` | Resource not found |
+| `409` | Conflict (e.g. machine hostname already registered) |
+| `500` | Internal server error |

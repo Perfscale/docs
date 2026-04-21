@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: What is perfscale and why it exists
+section: Getting Started
+sectionOrder: 1
+order: 1
+---
+
+## What is perfscale?
+
+**perfscale** is a SaaS load testing platform that lets you run distributed performance tests without managing your own infrastructure. Write your test in k6, JMeter, Locust, or Artillery — perfscale schedules and runs it across your registered machines and collects the results.
+
+## Key concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Machine** | A physical or virtual node that runs test agents |
+| **Test** | A named test definition with its configuration and script |
+| **Task** | A single execution of a test on one or more machines |
+
+## How it works
+
+1. Register one or more **machines** (bare metal, VMs, Docker containers)
+2. Create a **test** — pick a tool (k6, JMeter, …) and upload your script
+3. Trigger a **task** — perfscale distributes the load across your machines and streams results back in real time
+
+## Demo account
+
+You can explore perfscale right now without signing up. Use the demo credentials on the [login page](/login):
+
+```
+Email:    demo@perfscale.ru
+Password: demo1234
+```
+
+The demo workspace contains three machines and a sample k6 smoke test.

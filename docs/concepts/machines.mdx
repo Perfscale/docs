@@ -1,0 +1,40 @@
+---
+title: Machines
+description: How load generator nodes work in perfscale
+section: Concepts
+sectionOrder: 2
+order: 1
+---
+
+## Overview
+
+A **machine** is any host — bare metal server, VM, or container — that runs the perfscale agent and executes test scripts. Machines belong to a **tenant** (workspace) and are scoped to it.
+
+## Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `online` | Agent connected, ready to accept tasks |
+| `offline` | Agent not reachable |
+| `busy` | Currently executing a task |
+| `maintenance` | Manually placed out of rotation |
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Human-readable display name |
+| `hostname` | string | DNS name or IP used by the agent |
+| `ipAddress` | string? | Public IP (optional) |
+| `os` | enum | `linux` \| `windows` \| `macos` |
+| `arch` | enum | `amd64` \| `arm64` |
+| `cpuCores` | int? | Number of CPU cores |
+| `memoryGb` | int? | RAM in gigabytes |
+
+## Registering a machine
+
+Machines are registered through the API or the admin console. Each machine is associated with a tenant and communicates back over a persistent WebSocket connection (coming in a future release — currently managed manually).
+
+## Machine selection
+
+When a task is triggered, perfscale selects online machines in the tenant's workspace. If multiple machines are available, load is distributed evenly.
