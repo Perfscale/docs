@@ -6,7 +6,7 @@ Documentation content for the PerfScale platform. MDX files rendered by the `sit
 
 ```
 docs/
-  docs/
+  en/                   # English
     getting-started/
       index.mdx         # overview
       installation.mdx  # installing perfscaled on a machine
@@ -16,6 +16,16 @@ docs/
       tests.mdx         # test definitions and configuration
     api-reference/
       index.mdx         # REST API overview
+  ru/                   # Russian / Русский
+    getting-started/
+      index.mdx         # обзор
+      installation.mdx  # установка агента на машину
+      quick-start.mdx   # первый тест
+    concepts/
+      machines.mdx      # что такое машины и как работает регистрация
+      tests.mdx         # определения тестов и конфигурация
+    api-reference/
+      index.mdx         # обзор REST API
   privacy.md            # privacy policy
   terms.md              # terms of service
 ```

@@ -1,0 +1,72 @@
+---
+title: Установка
+description: Локальная установка perfscale для разработки
+section: Начало работы
+sectionOrder: 1
+order: 2
+---
+
+## Требования
+
+| Инструмент | Минимальная версия |
+|------------|-------------------|
+| Node.js | 22 |
+| pnpm | 10 |
+| Docker | 24 |
+| Rust / cargo | 1.86 |
+
+## Клонирование и инициализация
+
+```bash
+git clone https://github.com/your-org/perfscale.git
+cd perfscale
+
+# Первоначальная настройка: устанавливает зависимости, запускает Docker-сервисы, применяет схему БД
+pnpm dx:init
+```
+
+`dx:init` выполняет следующее:
+
+1. Копирует `.env.example` → `.env`
+2. Устанавливает все JS-зависимости
+3. Устанавливает `cargo-watch` (горячая перезагрузка Rust)
+4. Скачивает и запускает Docker-образы (PostgreSQL + Keycloak)
+5. Ожидает готовности обоих сервисов
+6. Применяет схему базы данных
+
+## Запуск серверов разработки
+
+После инициализации запустите всё одной командой:
+
+```bash
+pnpm dev
+```
+
+Параллельно запускаются:
+
+- **Next.js** → `http://localhost:3000`
+- **Rust BFF** → `http://localhost:8090`
+- **Swagger UI** → `http://localhost:8090/swagger-ui/`
+
+PostgreSQL и Keycloak управляются через Docker Compose и стартуют автоматически.
+
+## Загрузка демо-данных
+
+```bash
+pnpm --filter @perfscale/site db:seed
+```
+
+Создаёт пользователя `demo@perfscale.ru` с тремя машинами и примером теста.
+
+## Переменные окружения
+
+Все переменные хранятся в `.env` в корне монорепозитория. Приложения читают их автоматически через `dotenv-cli`.
+
+| Переменная | Описание |
+|------------|----------|
+| `DATABASE_URL` | Строка подключения к PostgreSQL |
+| `KEYCLOAK_ISSUER` | URL realm Keycloak |
+| `KEYCLOAK_CLIENT_ID` | OIDC client ID |
+| `KEYCLOAK_CLIENT_SECRET` | OIDC client secret |
+| `NEXTAUTH_URL` | Публичный URL приложения Next.js |
+| `NEXTAUTH_SECRET` | Случайный секрет для подписи JWT |

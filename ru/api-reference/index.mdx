@@ -1,0 +1,257 @@
+---
+title: Справочник API
+description: REST API для BFF на Rust
+section: Справочник API
+sectionOrder: 3
+order: 1
+---
+
+## Базовый URL
+
+Все эндпоинты обслуживаются Rust BFF:
+
+```
+http://localhost:8090/api/v1
+```
+
+Интерактивная документация доступна по адресу [http://localhost:8090/swagger-ui/](http://localhost:8090/swagger-ui/).
+
+## Аутентификация
+
+Большинство эндпоинтов требуют Bearer-токен, выданный Keycloak. Передавайте его в заголовке `Authorization`:
+
+```
+Authorization: Bearer <access_token>
+```
+
+Приложение Next.js получает этот токен автоматически через next-auth. При прямых обращениях к API используйте ROPC grant:
+
+```bash
+curl -X POST http://localhost:8080/realms/perfscale/protocol/openid-connect/token \
+  -d "grant_type=password" \
+  -d "client_id=perfscale-site" \
+  -d "client_secret=$CLIENT_SECRET" \
+  -d "username=demo@perfscale.ru" \
+  -d "password=demo1234"
+```
+
+---
+
+## Auth
+
+### GET /api/v1/auth/me
+
+Возвращает идентификационные данные текущего аутентифицированного пользователя, декодированные из JWT.
+
+**Ответ `200 OK`**
+
+```json
+{
+  "sub": "a1b2c3d4-...",
+  "email": "demo@perfscale.ru",
+  "name": "Demo User",
+  "preferred_username": "demo",
+  "roles": ["member"]
+}
+```
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `sub` | string | UUID пользователя в Keycloak |
+| `email` | string? | Адрес электронной почты |
+| `name` | string? | Отображаемое имя |
+| `preferred_username` | string? | Имя пользователя в Keycloak |
+| `roles` | string[] | Realm-роли, назначенные пользователю |
+
+---
+
+## Machines
+
+### GET /api/v1/machines
+
+Возвращает все машины, принадлежащие тенанту аутентифицированного пользователя.
+
+**Ответ `200 OK`**
+
+```json
+[
+  {
+    "id": "m_01",
+    "name": "worker-node-01",
+    "hostname": "worker-01.internal",
+    "ip_address": "10.0.0.1",
+    "os": "linux",
+    "arch": "amd64",
+    "cpu_cores": 8,
+    "memory_gb": 16,
+    "status": "online"
+  }
+]
+```
+
+### POST /api/v1/machines
+
+Зарегистрировать новую машину в workspace тенанта.
+
+**Тело запроса**
+
+```json
+{
+  "name": "my-runner",
+  "hostname": "runner.example.com",
+  "ip_address": "203.0.113.5",
+  "os": "linux",
+  "arch": "arm64",
+  "cpu_cores": 4,
+  "memory_gb": 8
+}
+```
+
+**Ответ `201 Created`** — возвращает созданный объект машины.
+
+### DELETE /api/v1/machines/:id
+
+Удалить машину из workspace.
+
+**Ответ `204 No Content`**
+
+---
+
+## Tests
+
+### GET /api/v1/tests
+
+Список всех определений тестов тенанта.
+
+**Ответ `200 OK`**
+
+```json
+[
+  {
+    "id": "t_01",
+    "name": "API Smoke Test",
+    "tool": "k6",
+    "status": "active",
+    "script": "import http from 'k6/http'; ...",
+    "created_at": "2025-01-15T10:00:00Z"
+  }
+]
+```
+
+### POST /api/v1/tests
+
+Создать новое определение теста.
+
+**Тело запроса**
+
+```json
+{
+  "name": "Checkout flow",
+  "tool": "k6",
+  "script": "import http from 'k6/http'; ..."
+}
+```
+
+| Поле | Тип | Значения |
+|------|-----|----------|
+| `tool` | enum | `k6` \| `jmeter` \| `locust` \| `artillery` \| `gatling` \| `custom` |
+| `status` | enum | `draft` \| `active` \| `archived` (по умолчанию: `draft`) |
+
+**Ответ `201 Created`**
+
+### PATCH /api/v1/tests/:id
+
+Обновить название, скрипт или статус теста.
+
+**Ответ `200 OK`**
+
+### DELETE /api/v1/tests/:id
+
+Удалить определение теста. Активные задачи, ссылающиеся на этот тест, не затрагиваются.
+
+**Ответ `204 No Content`**
+
+---
+
+## Tasks
+
+### GET /api/v1/tasks
+
+Список всех запусков задач тенанта, отсортированных по времени создания (новые первыми).
+
+**Ответ `200 OK`**
+
+```json
+[
+  {
+    "id": "task_01",
+    "test_id": "t_01",
+    "status": "passed",
+    "p50": 142,
+    "p95": 310,
+    "p99": 490,
+    "error_rate": 0.002,
+    "requests_per_sec": 230.5,
+    "total_requests": 6900,
+    "started_at": "2025-01-15T10:05:00Z",
+    "finished_at": "2025-01-15T10:05:30Z"
+  }
+]
+```
+
+### POST /api/v1/tasks
+
+Запустить выполнение теста.
+
+**Тело запроса**
+
+```json
+{
+  "testId": "t_01"
+}
+```
+
+**Ответ `202 Accepted`**
+
+```json
+{
+  "id": "task_02",
+  "status": "pending"
+}
+```
+
+Отслеживайте прогресс через `GET /api/v1/tasks/:id`.
+
+### GET /api/v1/tasks/:id
+
+Получить одну задачу по ID.
+
+**Ответ `200 OK`** — та же структура, что и у элемента списка.
+
+### DELETE /api/v1/tasks/:id
+
+Отменить ожидающую или выполняющуюся задачу.
+
+**Ответ `204 No Content`**
+
+---
+
+## Ответы с ошибками
+
+Все ответы с ошибками следуют общему формату:
+
+```json
+{
+  "error": "not_found",
+  "message": "Task task_99 does not exist"
+}
+```
+
+| Статус | Значение |
+|--------|----------|
+| `400` | Некорректное тело запроса |
+| `401` | Отсутствующий или истёкший токен |
+| `403` | Токен действителен, но прав недостаточно |
+| `404` | Ресурс не найден |
+| `409` | Конфликт (например, hostname машины уже зарегистрирован) |
+| `500` | Внутренняя ошибка сервера |
