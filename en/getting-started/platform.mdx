@@ -1,0 +1,69 @@
+---
+title: Using the platform
+description: A tour of the perfscale admin console — machines, configurations, tests, and results
+section: Getting Started
+sectionOrder: 1
+order: 4
+---
+
+The **admin console** is where you drive perfscale from a browser: connect load
+generators, define load shapes, author and run tests, and read results. Sign in
+at `/admin` on your instance (e.g. [perfscale.su/admin](https://perfscale.su/admin)).
+Want to look around first? The sign-in page has a **Try the demo** button that
+prefills a read-only demo workspace.
+
+## 1. Machines — your load generators
+
+A **machine** is any host running the perfscale agent: a bare-metal box, a VM, a
+container, or a cloud instance. The **Machines** page lists them with region,
+capacity (how many virtual users each can drive), status, and live latency.
+
+![The Machines page listing connected load generators](/docs-assets/platform/machines.webp)
+
+Add capacity with **Add device** — the panel at the bottom has one-line install
+snippets for Linux, macOS, and Windows, and for AWS, Azure, GCP, Docker, and
+Kubernetes. The agent registers itself and appears here within seconds. See
+[Machines](/docs/concepts/machines) for the lifecycle and statuses.
+
+## 2. Configurations — load shapes and variables
+
+**Configurations** are reusable load profiles — how many virtual users, for how
+long, with what ramp. The built-in presets (`debug`, `smoke`, `load`, `stress`,
+`spike`, `soak`) match the CLI presets, and you can add custom profiles with
+ramp-up / steady-state / ramp-down phases.
+
+![The Configurations page with built-in presets and environment variables](/docs-assets/platform/configurations.webp)
+
+The same page holds **Environment Variables** injected into every run —
+`API_BASE_URL`, secrets, connection strings. Mark a value *masked* to keep it
+out of logs and the UI.
+
+## 3. Tests — author and run
+
+A **test** pairs a script (k6, JMeter, Locust, or a native perfscale YAML step
+definition) with a configuration. The editor has **Code**, **YAML**, and
+**Visual** views; the right panel shows the environment variables in scope.
+
+![The Tests page with the script editor and environment variables](/docs-assets/platform/tests.webp)
+
+Hit **Run** (or **Start Test** to pick a machine and configuration) and the run
+is dispatched to an available machine. You can also **Sync from Git** to keep
+tests in version control. See [Tests & Tasks](/docs/concepts/tests) for the test
+and task lifecycle.
+
+## 4. Runs & logs — watch it execute
+
+Every run streams its output to **Runs & logs**: dispatch, per-request lines,
+check results, and the final metric summary, all timestamped and filterable.
+
+![The Runs & logs page streaming execution output](/docs-assets/platform/runs-logs.webp)
+
+Aggregated latency percentiles and throughput land on the **Metrics** dashboard,
+and the whole flow can be automated from **Triggers** (schedules and webhooks)
+or the [REST API](/docs/api-reference).
+
+## Next steps
+
+- [Quick Start](/docs/getting-started/quick-start) — run your first test.
+- [Machines](/docs/concepts/machines) and [Tests & Tasks](/docs/concepts/tests) — the core concepts.
+- [FIX Protocol](/docs/pro-features/fix) — load-test trading venues (Scale & Enterprise).
