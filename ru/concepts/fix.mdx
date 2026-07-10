@@ -1,0 +1,169 @@
+---
+title: Протокол FIX
+description: Нагрузочное тестирование FIX-площадок — сессии, ордера, маркет-дата
+section: Concepts
+sectionOrder: 2
+order: 3
+---
+
+## Обзор
+
+perfscale умеет нагружать **FIX** (Financial Information eXchange) площадки:
+открывать initiator-сессии, логиниться, слать поток ордеров/запросов маркет-даты
+и замерять round-trip задержку вместе с метриками HTTP/TCP/UDP.
+
+FIX — **платная** возможность (планы Scale и Enterprise). Тесты с действиями
+`pro/fix*` отклоняются при создании для тенантов на плане Starter.
+
+## Действия
+
+### `pro/fix@v1` — запуск сессии
+
+Открывает TCP-соединение, логинится, отправляет заданные сообщения, делает
+logout и замеряет обмен. Шаг падает, если logon отклонён либо произошла
+ошибка транспорта/таймаут; задержка учитывается как у любого другого действия.
+
+```yaml
+steps:
+  - uses: pro/fix@v1
+    with:
+      host: fix.venue.com
+      port: 9823
+      begin_string: FIXT.1.1
+      default_appl_ver_id: "9"        # FIX 5.0 SP2
+      sender_comp_id: CLIENT
+      target_comp_id: VENUE
+      heart_bt_int: 30
+      messages:
+        - MsgType: NewOrderSingle
+          ClOrdID: order-1
+          Symbol: EURUSD
+          Side: 1
+          OrderQty: 100000
+          OrdType: 1
+```
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `host` + `port` / `address` | — | Цель (обязательно, если не через `connection`) |
+| `connection` | — | Профиль подключения (см. ниже), задаёт значения по умолчанию |
+| `sender_comp_id` / `target_comp_id` | — | SenderCompID (49) / TargetCompID (56), обязательны |
+| `begin_string` | `FIX.4.4` | BeginString (8), напр. `FIXT.1.1` |
+| `heart_bt_int` | `30` | HeartBtInt (108) |
+| `reset_seq_num` | `true` | ResetSeqNumFlag (141) |
+| `default_appl_ver_id` | — | DefaultApplVerID (1137), для FIXT.1.1 |
+| `username` / `password` | — | Username (553) / Password (554) |
+| `schema` | встроенный | Словарь FIX — см. ниже |
+| `messages` | `[]` | Прикладные сообщения после logon |
+| `read_replies` | `true` | Читать один ответный фрейм на сообщение |
+| `logout` | `true` | Отправлять Logout в конце |
+| `timeout` | `10000` | Миллисекунды на всю сессию |
+
+### `pro/fix-config@v1` — переиспользуемый профиль подключения
+
+Валидирует профиль (host/port/учётные данные/`skipTLSVerify`/`schema`) и выдаёт
+его как config-объект. Размещайте в блоке `before:` конфиг-файла, чтобы много
+шагов делили одно подключение:
+
+```yaml
+# config.yaml
+vus: 50
+duration: 5m
+before:
+  - uses: pro/fix-config@v1
+    with:
+      host: fix.venue.com
+      port: 9823
+      sender_comp_id: CLIENT
+      target_comp_id: VENUE
+      schema:
+        fields: { AlgoTag: 7001 }
+    outputs: venue
+```
+
+```yaml
+# test.yaml — host/port/schema наследуются через connection
+steps:
+  - uses: pro/fix@v1
+    with:
+      connection: "${{ config.venue }}"
+      messages:
+        - MsgType: NewOrderSingle
+          ClOrdID: "${uuid}"
+          Symbol: EURUSD
+          Side: 1
+          OrderQty: 100000
+          OrdType: 1
+```
+
+## Словарь FIX (data dictionary)
+
+`schema` позволяет писать сообщения **именами** полей вместо сырых тегов и
+падать сразу при отсутствии обязательного поля. Встроенный словарь FIX 4.4
+покрывает основные поля ордеров; расширяется через `fields`, `msgTypes`,
+`messages`:
+
+```yaml
+schema:
+  fields:                 # имя -> тег (расширяет встроенные)
+    AlgoTag: 7001
+  messages:               # обязательные поля по типу сообщения
+    NewOrderSingle:
+      required: [ClOrdID, Symbol, Side, OrderQty, OrdType]
+```
+
+Ключи сообщения — имена полей или числовые теги; значение `MsgType` — имя
+(`NewOrderSingle`) или код (`D`).
+
+## Динамические сообщения (генерация сделок)
+
+Значения полей могут содержать токены `${...}`, раскрываемые **на каждую
+отправку**, а сообщение несёт `_repeat` + `_interval_ms` — так один шаблон
+порождает серию разных сделок:
+
+```yaml
+messages:
+  - MsgType: NewOrderSingle
+    ClOrdID: "ord-${seq}"
+    Symbol: "${choice(EURUSD|GBPUSD|USDJPY)}"
+    Side: "${rand(1,2)}"
+    OrderQty: "${rand(1000,100000)}"
+    Price: "${randf(1.05,1.15,5)}"
+    TransactTime: "${now}"
+    _repeat: 100          # 100 ордеров…
+    _interval_ms: 50      # …по одному каждые 50 мс
+```
+
+### Токены переменных сообщения
+
+| Токен | Раскрывается в |
+|-------|----------------|
+| `${seq}` | Монотонный счётчик, уникален на отправку (общий для всех полей сообщения) |
+| `${uuid}` | Случайный id из 32 hex-символов |
+| `${now}` | Текущее UTC-время в формате FIX `YYYYMMDD-HH:MM:SS.sss` |
+| `${rand(a,b)}` | Случайное целое в `[a, b]` |
+| `${randf(a,b)}` / `${randf(a,b,dp)}` | Случайное дробное в `[a, b]`, `dp` знаков (по умолчанию 2) |
+| `${choice(x\|y\|z)}` | Случайный выбор из вариантов |
+
+Эти одинарные `${...}` отличаются от движковой интерполяции `${{ ... }}`
+(config/variables/выходы шагов), которая раскрывается до запуска шага.
+
+### Директивы сообщения
+
+| Директива | По умолчанию | Описание |
+|-----------|--------------|----------|
+| `_repeat` | `1` | Отправить сообщение N раз; токены раскрываются заново каждый раз |
+| `_interval_ms` (алиас `_interval`) | `0` | Задержка между повторами, мс |
+
+Для устойчивой нагрузки комбинируйте с конфигом: `vus` параллельных сессий ×
+цикл итераций × `_repeat` на итерацию.
+
+## Вывод и проверки
+
+Вывод шага содержит `logon`, `sent`, `received`, `duration_ms`, разобранные
+ответные `messages` и склеенный сырой `body`. Проверяйте через `check`:
+
+```yaml
+    check:
+      body_contains: "35=8"   # пришёл ExecutionReport
+```

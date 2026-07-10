@@ -1,0 +1,169 @@
+---
+title: FIX Protocol
+description: Load-test FIX venues — sessions, orders, and market data
+section: Concepts
+sectionOrder: 2
+order: 3
+---
+
+## Overview
+
+perfscale can drive **FIX** (Financial Information eXchange) venues under load:
+open initiator sessions, log on, stream orders/market-data requests, and
+measure round-trip latency alongside your HTTP/TCP/UDP metrics.
+
+FIX is a **paid** capability (Scale and Enterprise plans). Tests that use the
+`pro/fix*` actions are rejected at creation time for Starter tenants.
+
+## Actions
+
+### `pro/fix@v1` — run a session
+
+Opens a TCP connection, logs on, sends the configured messages, logs out, and
+times the exchange. The step fails if logon is rejected or a transport/timeout
+error occurs; latency is recorded like any other action.
+
+```yaml
+steps:
+  - uses: pro/fix@v1
+    with:
+      host: fix.venue.com
+      port: 9823
+      begin_string: FIXT.1.1
+      default_appl_ver_id: "9"        # FIX 5.0 SP2
+      sender_comp_id: CLIENT
+      target_comp_id: VENUE
+      heart_bt_int: 30
+      messages:
+        - MsgType: NewOrderSingle
+          ClOrdID: order-1
+          Symbol: EURUSD
+          Side: 1
+          OrderQty: 100000
+          OrdType: 1
+```
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `host` + `port` / `address` | — | Target (required, unless via `connection`) |
+| `connection` | — | A connection profile (see below) supplying defaults for any field |
+| `sender_comp_id` / `target_comp_id` | — | SenderCompID (49) / TargetCompID (56), required |
+| `begin_string` | `FIX.4.4` | BeginString (8), e.g. `FIXT.1.1` |
+| `heart_bt_int` | `30` | HeartBtInt (108) |
+| `reset_seq_num` | `true` | ResetSeqNumFlag (141) |
+| `default_appl_ver_id` | — | DefaultApplVerID (1137), for FIXT.1.1 |
+| `username` / `password` | — | Username (553) / Password (554) |
+| `schema` | built-in | FIX data dictionary — see below |
+| `messages` | `[]` | App messages to send after logon |
+| `read_replies` | `true` | Read one reply frame per app message |
+| `logout` | `true` | Send Logout at the end |
+| `timeout` | `10000` | Milliseconds for the whole session |
+
+### `pro/fix-config@v1` — reusable connection profile
+
+Validates a connection profile (host/port/credentials/`skipTLSVerify`/`schema`)
+and produces it as a config object. Put it in a config file's `before:` block
+so many steps share one connection:
+
+```yaml
+# config.yaml
+vus: 50
+duration: 5m
+before:
+  - uses: pro/fix-config@v1
+    with:
+      host: fix.venue.com
+      port: 9823
+      sender_comp_id: CLIENT
+      target_comp_id: VENUE
+      schema:
+        fields: { AlgoTag: 7001 }
+    outputs: venue
+```
+
+```yaml
+# test.yaml — inherits host/port/schema via connection
+steps:
+  - uses: pro/fix@v1
+    with:
+      connection: "${{ config.venue }}"
+      messages:
+        - MsgType: NewOrderSingle
+          ClOrdID: "${uuid}"
+          Symbol: EURUSD
+          Side: 1
+          OrderQty: 100000
+          OrdType: 1
+```
+
+## FIX schema (data dictionary)
+
+A `schema` lets messages use field **names** instead of raw tags and fails fast
+when a required field is missing. A built-in FIX 4.4 dictionary covers the
+common order-entry fields; extend it with `fields`, `msgTypes`, and `messages`:
+
+```yaml
+schema:
+  fields:                 # name -> tag (extends built-ins)
+    AlgoTag: 7001
+  messages:               # required fields per message type
+    NewOrderSingle:
+      required: [ClOrdID, Symbol, Side, OrderQty, OrdType]
+```
+
+Message keys may be field names or numeric tags; `MsgType` values may be a name
+(`NewOrderSingle`) or a wire code (`D`).
+
+## Dynamic messages (generating trades)
+
+Field values may embed `${...}` tokens expanded **per send**, and a message
+carries `_repeat` + `_interval_ms` — so one template streams a series of
+distinct trades:
+
+```yaml
+messages:
+  - MsgType: NewOrderSingle
+    ClOrdID: "ord-${seq}"
+    Symbol: "${choice(EURUSD|GBPUSD|USDJPY)}"
+    Side: "${rand(1,2)}"
+    OrderQty: "${rand(1000,100000)}"
+    Price: "${randf(1.05,1.15,5)}"
+    TransactTime: "${now}"
+    _repeat: 100          # 100 orders…
+    _interval_ms: 50      # …one every 50ms
+```
+
+### Message variable tokens
+
+| Token | Expands to |
+|-------|------------|
+| `${seq}` | Monotonic counter, unique per message send (shared by all fields in that message) |
+| `${uuid}` | Random 32-hex-character id |
+| `${now}` | Current UTC time, FIX format `YYYYMMDD-HH:MM:SS.sss` |
+| `${rand(a,b)}` | Random integer in `[a, b]` |
+| `${randf(a,b)}` / `${randf(a,b,dp)}` | Random float in `[a, b]`, `dp` decimals (default 2) |
+| `${choice(x\|y\|z)}` | Random pick among the options |
+
+These single-brace tokens are distinct from the engine's `${{ ... }}`
+interpolation (config/variables/step outputs), which is resolved before the
+step runs.
+
+### Message directives
+
+| Directive | Default | Description |
+|-----------|---------|-------------|
+| `_repeat` | `1` | Send the message N times; tokens re-expand each time |
+| `_interval_ms` (alias `_interval`) | `0` | Delay between repeats, in milliseconds |
+
+For sustained load, combine with the run config: `vus` concurrent sessions ×
+the iteration loop × `_repeat` per iteration.
+
+## Output & assertions
+
+The step output includes `logon`, `sent`, `received`, `duration_ms`, the parsed
+reply `messages`, and a joined raw `body`. Assert on it with a `check`:
+
+```yaml
+    check:
+      body_contains: "35=8"   # an ExecutionReport came back
+```
