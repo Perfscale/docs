@@ -53,7 +53,10 @@ steps:
 | `reset_seq_num` | `true` | ResetSeqNumFlag (141) |
 | `default_appl_ver_id` | — | DefaultApplVerID (1137), for FIXT.1.1 |
 | `username` / `password` | — | Username (553) / Password (554) |
-| `schema` | built-in | FIX data dictionary — see below |
+| `tls` | `false` | Connect over TLS (encrypted gateway port) |
+| `tls_server_name` | host | SNI / hostname validated against the certificate |
+| `skipTLSVerify` | `false` | Accept any server certificate (self-signed staging only) |
+| `schema` | session-only | FIX data dictionary — a `FIX44.xml` URL / content / inline JSON; see below |
 | `messages` | `[]` | App messages to send after logon |
 | `read_replies` | `true` | Read one reply frame per app message |
 | `logout` | `true` | Send Logout at the end |
@@ -99,20 +102,84 @@ steps:
 ## FIX schema (data dictionary)
 
 A `schema` lets messages use field **names** instead of raw tags and fails fast
-when a required field is missing. A built-in FIX 4.4 dictionary covers the
-common order-entry fields; extend it with `fields`, `msgTypes`, and `messages`:
+when a required field is missing. The dictionary is **loaded from the venue's
+own spec** — a QuickFIX `FIX44.xml`, exactly what CoinAPI ships as
+`DataDictionary=FIX44.xml` — not hardcoded. Only the FIX session layer (standard
+header/trailer + admin messages) is built in, so a bare logon works with no
+schema and numeric tags always resolve.
+
+Supply `schema` as a URL, as content fetched by the engine, or inline JSON:
+
+```yaml
+before:
+  # 1) a URL — fetched once at config-build time
+  - uses: pro/fix-config@v1
+    with:
+      schema: https://raw.githubusercontent.com/quickfix/quickfix/master/spec/FIX44.xml
+
+  # 2) fetch with the engine, then hand over the body
+  - uses: std/http@v1
+    with: { url: https://.../FIX44.xml }
+    outputs: dict
+  - uses: pro/fix-config@v1
+    with:
+      schema: "${{ dict.body }}"
+```
+
+Inline JSON also works, for a few custom fields layered on the session base:
 
 ```yaml
 schema:
-  fields:                 # name -> tag (extends built-ins)
-    AlgoTag: 7001
-  messages:               # required fields per message type
-    NewOrderSingle:
-      required: [ClOrdID, Symbol, Side, OrderQty, OrdType]
+  fields: { AlgoTag: 7001 }
+  messages:
+    NewOrderSingle: { required: [ClOrdID, Symbol, Side, OrderQty, OrdType] }
 ```
 
-Message keys may be field names or numeric tags; `MsgType` values may be a name
-(`NewOrderSingle`) or a wire code (`D`).
+Once a dictionary is loaded, message keys may be field names or numeric tags,
+and `MsgType` values may be a name (`NewOrderSingle`) or a wire code (`D`).
+
+## Connecting to a live venue (CoinAPI)
+
+[CoinAPI's Market Data FIX](https://www.coinapi.io/products/market-data-api/docs/fix)
+is a concrete FIX 4.4 target: TLS gateway `fix.coinapi.io:3303`, SenderCompID =
+your API key, TargetCompID `COINAPI_V2`. Subscribe to a live trade stream:
+
+```yaml
+# config.yaml — load CoinAPI's FIX44.xml, build the TLS connection profile
+before:
+  - uses: std/http@v1
+    with: { url: https://raw.githubusercontent.com/quickfix/quickfix/master/spec/FIX44.xml }
+    outputs: dict
+  - uses: pro/fix-config@v1
+    with:
+      host: fix.coinapi.io
+      port: 3303
+      tls: true
+      sender_comp_id: YOUR_COINAPI_KEY   # inject; do not commit
+      target_comp_id: COINAPI_V2
+      heart_bt_int: 10
+      schema: "${{ dict.body }}"
+    outputs: coinapi
+```
+
+```yaml
+# test.yaml — subscribe to trades
+steps:
+  - uses: pro/fix@v1
+    with:
+      connection: "${{ config.coinapi }}"
+      messages:
+        - MsgType: MarketDataRequest
+          MDReqID: "perfscale-${uuid}"
+          SubscriptionRequestType: 1     # subscribe
+          MarketDepth: 1
+          MDUpdateType: 1
+          NoMDEntryTypes: 1
+          MDEntryType: 2                 # trades
+          NoRelatedSym: 1
+          Symbol: COINBASE_SPOT_BTC_USD
+      timeout: 15000
+```
 
 ## Dynamic messages (generating trades)
 

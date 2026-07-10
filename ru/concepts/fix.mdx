@@ -53,7 +53,10 @@ steps:
 | `reset_seq_num` | `true` | ResetSeqNumFlag (141) |
 | `default_appl_ver_id` | — | DefaultApplVerID (1137), для FIXT.1.1 |
 | `username` / `password` | — | Username (553) / Password (554) |
-| `schema` | встроенный | Словарь FIX — см. ниже |
+| `tls` | `false` | Подключение по TLS (шифрованный порт гейта) |
+| `tls_server_name` | host | SNI / имя хоста для проверки сертификата |
+| `skipTLSVerify` | `false` | Принять любой сертификат (только self-signed staging) |
+| `schema` | только сессия | Словарь FIX — URL / контент `FIX44.xml` / inline JSON; см. ниже |
 | `messages` | `[]` | Прикладные сообщения после logon |
 | `read_replies` | `true` | Читать один ответный фрейм на сообщение |
 | `logout` | `true` | Отправлять Logout в конце |
@@ -99,21 +102,84 @@ steps:
 ## Словарь FIX (data dictionary)
 
 `schema` позволяет писать сообщения **именами** полей вместо сырых тегов и
-падать сразу при отсутствии обязательного поля. Встроенный словарь FIX 4.4
-покрывает основные поля ордеров; расширяется через `fields`, `msgTypes`,
-`messages`:
+падать сразу при отсутствии обязательного поля. Словарь **загружается из спеки
+венью** — QuickFIX `FIX44.xml`, ровно то, что CoinAPI поставляет как
+`DataDictionary=FIX44.xml` — а не хардкодится. Встроен только сессионный слой
+(стандартный заголовок/трейлер + admin-сообщения), поэтому голый logon работает
+без схемы, а числовые теги доступны всегда.
+
+`schema` можно задать как URL, как контент, полученный движком, или inline JSON:
+
+```yaml
+before:
+  # 1) URL — скачивается один раз при сборке конфига
+  - uses: pro/fix-config@v1
+    with:
+      schema: https://raw.githubusercontent.com/quickfix/quickfix/master/spec/FIX44.xml
+
+  # 2) скачать движком, передать тело
+  - uses: std/http@v1
+    with: { url: https://.../FIX44.xml }
+    outputs: dict
+  - uses: pro/fix-config@v1
+    with:
+      schema: "${{ dict.body }}"
+```
+
+Inline JSON тоже работает — для пары кастомных полей поверх сессионной базы:
 
 ```yaml
 schema:
-  fields:                 # имя -> тег (расширяет встроенные)
-    AlgoTag: 7001
-  messages:               # обязательные поля по типу сообщения
-    NewOrderSingle:
-      required: [ClOrdID, Symbol, Side, OrderQty, OrdType]
+  fields: { AlgoTag: 7001 }
+  messages:
+    NewOrderSingle: { required: [ClOrdID, Symbol, Side, OrderQty, OrdType] }
 ```
 
-Ключи сообщения — имена полей или числовые теги; значение `MsgType` — имя
-(`NewOrderSingle`) или код (`D`).
+После загрузки словаря ключи сообщения — имена полей или числовые теги, а
+значение `MsgType` — имя (`NewOrderSingle`) или код (`D`).
+
+## Подключение к боевой площадке (CoinAPI)
+
+[Market Data FIX от CoinAPI](https://www.coinapi.io/products/market-data-api/docs/fix)
+— конкретная FIX 4.4 цель: TLS-гейт `fix.coinapi.io:3303`, SenderCompID = ваш
+API-ключ, TargetCompID `COINAPI_V2`. Подписка на живой поток сделок:
+
+```yaml
+# config.yaml — грузим FIX44.xml CoinAPI, строим TLS-профиль
+before:
+  - uses: std/http@v1
+    with: { url: https://raw.githubusercontent.com/quickfix/quickfix/master/spec/FIX44.xml }
+    outputs: dict
+  - uses: pro/fix-config@v1
+    with:
+      host: fix.coinapi.io
+      port: 3303
+      tls: true
+      sender_comp_id: YOUR_COINAPI_KEY   # инжектить, не коммитить
+      target_comp_id: COINAPI_V2
+      heart_bt_int: 10
+      schema: "${{ dict.body }}"
+    outputs: coinapi
+```
+
+```yaml
+# test.yaml — подписка на сделки
+steps:
+  - uses: pro/fix@v1
+    with:
+      connection: "${{ config.coinapi }}"
+      messages:
+        - MsgType: MarketDataRequest
+          MDReqID: "perfscale-${uuid}"
+          SubscriptionRequestType: 1     # подписка
+          MarketDepth: 1
+          MDUpdateType: 1
+          NoMDEntryTypes: 1
+          MDEntryType: 2                 # сделки
+          NoRelatedSym: 1
+          Symbol: COINBASE_SPOT_BTC_USD
+      timeout: 15000
+```
 
 ## Динамические сообщения (генерация сделок)
 
