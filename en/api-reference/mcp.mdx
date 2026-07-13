@@ -1,0 +1,84 @@
+---
+title: MCP server & API tokens
+description: Connect AI agents to your perfscale workspace over the Model Context Protocol
+section: API Reference
+sectionOrder: 4
+order: 2
+---
+
+## Overview
+
+`@perfscale/controlplane-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
+server that gives AI agents (Claude Code, Claude Desktop, and other MCP
+clients) read access to your perfscale workspace — machines, tests, runs with
+full metrics and logs, OTEL time-series, dashboards, and the audit log — plus
+the ability to dispatch test runs.
+
+Source: [Perfscale/mcp](https://github.com/Perfscale/mcp). For running tests
+locally with the open-source CLI, see the
+[OSS MCP server](/docs/oss/mcp) instead.
+
+## API tokens
+
+The server authenticates with a **personal API token**. Create one in the
+dashboard under **Settings → API Tokens** (requires the `manage_api_tokens`
+permission — owners and admins by default, configurable in Access Controls).
+
+- The plaintext token (`psk_...`) is shown **once** at creation — store it
+  in a secret manager.
+- Token limits per user follow your plan: **Scale — 1**, **Enterprise — 5**.
+  The Starter plan does not include API access.
+- A token acts as you, with your role in the workspace it was created in,
+  and only while that workspace is your active one.
+- Revoke tokens any time from the same settings page; every use updates the
+  token's *last used* timestamp, and creation/revocation are recorded in the
+  audit log.
+
+Tokens work for the whole REST API too:
+
+```sh
+curl https://perfscale.su/api/v1/machines \
+  -H "Authorization: Bearer psk_..."
+```
+
+## Setup
+
+```json
+{
+  "mcpServers": {
+    "perfscale-cloud": {
+      "command": "npx",
+      "args": ["-y", "@perfscale/controlplane-mcp"],
+      "env": {
+        "PERFSCALE_API_URL": "https://perfscale.su",
+        "PERFSCALE_API_TOKEN": "psk_..."
+      }
+    }
+  }
+}
+```
+
+Use `https://perfscale.ru` as the base URL if your workspace lives there.
+
+## Tools
+
+| Tool | Access | What it returns |
+|---|---|---|
+| `whoami` | read | Current user, workspace, role, permissions |
+| `tenant_limits` | read | Plan, machine/test limits, retention, storage usage |
+| `list_machines` / `get_machine` | read | Machine fleet: status, hardware, agent version, benchmark capacity, region |
+| `list_tests` / `get_test` | read | Test definitions with config JSON |
+| `list_runs` / `get_run` | read | Runs with p50/p95/p99, error rate, RPS, total requests |
+| `get_run_logs` | read | Full log output of a run |
+| `runs_by_machine` | read | Run history for one machine |
+| `metrics_catalog` / `query_metrics` | read | Available metrics; time-series with label filters |
+| `get_otel_timeseries` | read | OTEL metrics collected during a run |
+| `list_dashboards` | read | Custom metric dashboards |
+| `list_git_repos` | read | Connected repositories and sync status |
+| `list_env_vars` | read | Environment variable keys — **values are always masked** |
+| `audit_log` | read | Workspace activity: action, actor, target, time |
+| `run_test` | **write** | Dispatch a test to machines; returns task IDs and log-stream URLs |
+| `sync_git_repo` | **write** | Trigger test discovery for a repository |
+
+Write tools respect your RBAC permissions — `run_test` requires `run_tests`,
+exactly as in the dashboard.
