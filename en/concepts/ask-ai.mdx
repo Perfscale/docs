@@ -1,0 +1,51 @@
+---
+title: ASK AI
+description: The built-in AI assistant — bring your own model, query your workspace in plain language
+section: Concepts
+sectionOrder: 2
+order: 3
+---
+
+**ASK AI** is a chat built into the dashboard (the **AI** tab) that answers questions about your workspace — runs, tests, machines and metrics — and renders answers as live dashboard components: tables, charts, stat cards and action buttons.
+
+## Architecture
+
+- **Bring your own model.** The workspace owner or an admin configures an LLM endpoint under **Settings → AI provider**. Both OpenAI-compatible (`/chat/completions`) and Anthropic-compatible (Messages API) wire formats are supported. perfscale does not operate or proxy an LLM of its own.
+- **Encrypted credentials.** The provider API key is encrypted at rest with AES-256-GCM and is never returned by any API — only its last 4 characters are shown.
+- **Your token, your data.** The assistant fetches workspace data through the same REST API the dashboard uses, authenticated with the asking user's access token. RBAC and tenant isolation apply unchanged.
+- **Read-only tools.** The model can list runs, tests and machines, browse the metric catalog and query metric time-series. It cannot mutate anything.
+
+## Generative UI
+
+Answers are composed from a fixed component vocabulary — tables, line charts, stat cards, callouts — plus **run actions**: buttons that open the run page, jump to the metrics dashboard, or download the run's log file. The model supplies only data and the run ID; all URLs are constructed by the dashboard.
+
+## Threads
+
+Conversations persist per user. Each thread has a stable URL:
+
+```
+/admin/ai/chat/<thread-id>
+```
+
+Stored chat history counts toward the workspace storage quota.
+
+## Plan limits
+
+ASK AI is available on every plan. Monthly workspace data-tool calls are metered:
+
+| Plan | Tool calls / month |
+| --- | --- |
+| Starter | 100 |
+| Growing | 1,000 |
+| Enterprise | unlimited |
+
+When the budget is exhausted the chat returns a clear error; the counter resets each calendar month.
+
+## API
+
+| Endpoint | Auth | Purpose |
+| --- | --- | --- |
+| `GET /api/v1/ai/status` | user | Whether a provider is configured (drives nav visibility) |
+| `GET/PUT/DELETE /api/v1/ai/settings` | admin+ | Provider configuration (key write-only) |
+| `GET /api/v1/ai/usage` | user | Current month tool-call usage and limit |
+| `GET/POST/PUT/DELETE /api/v1/ai/threads*` | user | Thread and message CRUD (per-user) |
