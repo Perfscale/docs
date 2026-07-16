@@ -1,0 +1,146 @@
+---
+title: WebSocket
+description: Нагрузочное тестирование WebSocket — сессии, стримы и ассерты сообщений
+section: Концепции
+sectionOrder: 2
+order: 4
+---
+
+## Обзор
+
+perfscale нагружает **WebSocket**-endpoint'ы: открывает соединения, генерирует
+потоки сообщений из шаблонов, ждёт подходящие ответы и измеряет как handshake,
+так и прикладной round-trip сообщения — рядом с вашими HTTP/TCP/UDP-метриками.
+
+WebSocket — часть **open-source-движка**: actions `std/ws*` доступны на любом
+плане.
+
+Два стиля, свободно совместимых:
+
+- **One-shot-сессия** (`std/ws@v1`) — connect, обмен, close в одном шаге. Вся
+  сессия — один сэмпл латенси, как FIX-сессия.
+- **Живое соединение** (`std/ws-connect@v1` и компания) — соединение живёт
+  между шагами внутри итерации и адресуется по id, который вернул connect.
+  Позволяет чередовать WS с HTTP: подписка по WS, триггер по REST, ассерт
+  push-сообщения.
+
+## One-shot-сессия
+
+```yaml
+steps:
+  - name: подписка и ожидание первого трейда
+    uses: std/ws@v1
+    with:
+      url: wss://stream.example.com/feed
+      messages:
+        - send: '{"op":"subscribe","channel":"trades","id":"sub-${seq}"}'
+          until_json: { type: trade }
+    check:
+      message_matches: { type: trade }
+```
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `url` | — | Цель `ws://` или `wss://` (обязателен) |
+| `headers` | — | Дополнительные заголовки handshake (auth-токены и т.п.) |
+| `subprotocols` | — | Предлагаемые `Sec-WebSocket-Protocol` (например `graphql-ws`) |
+| `skipTLSVerify` | `false` | Принять любой сертификат — только self-signed staging |
+| `connection` | — | Объект-профиль, задающий значения по умолчанию для любого поля |
+| `messages` | `[]` | Что отправлять: строка-шаблон или `{ send, repeat, interval_ms, until_contains, until_json }` |
+| `timeout` | `10000` | Миллисекунды на всю сессию |
+
+Запись с правилом `until_*` дожидается подходящего ответа перед следующей — и
+даёт один сэмпл **message RTT** (см. Метрики).
+
+## Живое соединение
+
+```yaml
+steps:
+  - name: открыть фид
+    uses: std/ws-connect@v1
+    with: { url: "wss://stream.example.com/feed" }
+    outputs: feed
+
+  - name: подписаться
+    uses: std/ws-send@v1
+    with:
+      id: "${{ feed.id }}"
+      send: '{"op":"subscribe","id":"sub-${seq}"}'
+
+  - name: дождаться подтверждения
+    uses: std/ws-recv@v1
+    with:
+      id: "${{ feed.id }}"
+      until_json: { type: subscribed }
+    outputs: got
+
+  - name: закрыть
+    uses: std/ws-close@v1
+    with: { id: "${{ feed.id }}" }
+```
+
+- `std/ws-connect@v1` — открывает соединение, возвращает `{ id, subprotocol, … }`.
+- `std/ws-send@v1` — шлёт `send` (текст, токены `${…}` раскрываются на каждую
+  отправку) или `send_base64` (бинарный); `repeat` + `interval_ms` дают поток
+  из N сообщений по одному шаблону.
+- `std/ws-recv@v1` — читает до **условия остановки**: `until_contains`
+  (подстрока), `until_json` (JSON-subset-совпадение) или просто `count`. Не
+  дождались за `timeout` — шаг падает.
+- `std/ws-ping@v1` — транспортный ping→pong; RTT в `duration_ms` шага.
+- `std/ws-close@v1` — корректное закрытие с Close-handshake.
+
+Соединение не переживает свою итерацию: всё, что сценарий оставил открытым,
+сбрасывается в конце итерации (жёстко — для аккуратного закрытия используйте
+`ws-close`).
+
+## Динамические сообщения
+
+В текстовых payload'ах работают одинарные токены `${…}`, раскрываемые на
+каждую отправку — в отличие от `${{ … }}`, который резолвится один раз до
+запуска action:
+
+| Токен | Раскрывается в |
+|-------|----------------|
+| `${seq}` | Монотонный счётчик, уникален на сообщение |
+| `${uuid}` | Случайный 32-hex id |
+| `${now}` / `${now_ms}` / `${now_iso}` | UTC-время (FIX-формат / unix ms / RFC 3339) |
+| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Случайное целое / дробное |
+| `${choice(x\|y\|z)}` | Случайный выбор |
+
+```yaml
+- uses: std/ws-send@v1
+  with:
+    id: "${{ feed.id }}"
+    send: '{"op":"order","id":"ord-${seq}","px":${randf(1.05,1.15,5)}}'
+    repeat: 100
+    interval_ms: 50
+```
+
+## Ассерты сообщений
+
+Шаги приёма отдают список `messages`; `std/check@v1` проверяет его с
+квантором **any** (достаточно одного совпавшего сообщения — в стримах есть
+heartbeat'ы и посторонние события):
+
+```yaml
+check:
+  message_contains: "trade"              # какое-то сообщение содержит подстроку
+  message_matches: { type: trade }       # какое-то сообщение совпадает по JSON-subset
+  messages_count_gte: 5                  # пришло не меньше 5 сообщений
+```
+
+Для детерминированных обменов адресуйте сообщение по индексу:
+`check: { on: got.messages.0, message_matches: { type: welcome } }`.
+
+## Метрики
+
+- **Handshake** и **one-shot-сессии** попадают в общую гистограмму латенси
+  (`http_req_duration`) — перцентили сравнимы с HTTP/TCP/UDP.
+- **`ws_msg_rtt`** — прикладной RTT сообщения: от отправки до первого ответа,
+  совпавшего с вашим until-правилом. На дашборде теста — p50 / p95 / max.
+- **`ws_msgs_sent` / `ws_msgs_received`** — скорость обмена сообщениями.
+- Ожидание server-push-потока намеренно **не** считается латенси — оно
+  испортило бы общие перцентили.
+
+Страница метрик распознаёт WebSocket-прогон автоматически и переключается на
+WS-набор плиток (throughput, message RTT, перцентили handshake).

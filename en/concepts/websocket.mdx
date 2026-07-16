@@ -1,0 +1,146 @@
+---
+title: WebSocket
+description: Load-test WebSocket endpoints — sessions, streams, and message assertions
+section: Concepts
+sectionOrder: 2
+order: 4
+---
+
+## Overview
+
+perfscale drives **WebSocket** endpoints under load: open connections, stream
+messages from templates, wait for matching replies, and measure both the
+handshake and the application-level message round trip alongside your
+HTTP/TCP/UDP metrics.
+
+WebSocket is part of the **open-source engine** — the `std/ws*` actions are
+available on every plan.
+
+Two styles, freely mixable:
+
+- **One-shot session** (`std/ws@v1`) — connect, exchange, close in one step.
+  The whole session is timed as one latency sample, like a FIX session.
+- **Live connection** (`std/ws-connect@v1` + friends) — a connection held
+  across steps within an iteration, addressed by the id the connect step
+  returns. Interleave WS traffic with HTTP steps: subscribe over WS, trigger
+  via REST, assert the push arrives.
+
+## One-shot session
+
+```yaml
+steps:
+  - name: subscribe and await first trade
+    uses: std/ws@v1
+    with:
+      url: wss://stream.example.com/feed
+      messages:
+        - send: '{"op":"subscribe","channel":"trades","id":"sub-${seq}"}'
+          until_json: { type: trade }
+    check:
+      message_matches: { type: trade }
+```
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `url` | — | `ws://` or `wss://` target (required) |
+| `headers` | — | Extra handshake headers (auth tokens etc.) |
+| `subprotocols` | — | Offered `Sec-WebSocket-Protocol` values (e.g. `graphql-ws`) |
+| `skipTLSVerify` | `false` | Accept any certificate — self-signed staging only |
+| `connection` | — | A profile object supplying defaults for any field |
+| `messages` | `[]` | Entries to send: a string template, or `{ send, repeat, interval_ms, until_contains, until_json }` |
+| `timeout` | `10000` | Milliseconds for the whole session |
+
+An entry with an `until_*` rule waits for its matching reply before the next
+entry — and yields one **message RTT** sample (see Metrics).
+
+## Live connection
+
+```yaml
+steps:
+  - name: open feed
+    uses: std/ws-connect@v1
+    with: { url: "wss://stream.example.com/feed" }
+    outputs: feed
+
+  - name: subscribe
+    uses: std/ws-send@v1
+    with:
+      id: "${{ feed.id }}"
+      send: '{"op":"subscribe","id":"sub-${seq}"}'
+
+  - name: await confirmation
+    uses: std/ws-recv@v1
+    with:
+      id: "${{ feed.id }}"
+      until_json: { type: subscribed }
+    outputs: got
+
+  - name: hang up
+    uses: std/ws-close@v1
+    with: { id: "${{ feed.id }}" }
+```
+
+- `std/ws-connect@v1` — opens the connection, returns `{ id, subprotocol, … }`.
+- `std/ws-send@v1` — sends `send` (text, `${…}` tokens expand per send) or
+  `send_base64` (binary); `repeat` + `interval_ms` stream N messages from one
+  template.
+- `std/ws-recv@v1` — reads until a **stopping rule**: `until_contains`
+  (substring), `until_json` (JSON-subset match), or plain `count`. Not
+  reaching it within `timeout` fails the step.
+- `std/ws-ping@v1` — transport ping→pong; RTT in the step's `duration_ms`.
+- `std/ws-close@v1` — graceful close handshake.
+
+A connection never outlives its iteration: whatever a scenario leaves open is
+dropped at iteration end (abruptly — use `ws-close` for a clean shutdown).
+
+## Dynamic messages
+
+Text payloads may embed single-brace `${…}` tokens, expanded per send —
+distinct from `${{ … }}`, which resolves once before the action runs:
+
+| Token | Expands to |
+|-------|------------|
+| `${seq}` | Monotonic counter, unique per message |
+| `${uuid}` | Random 32-hex id |
+| `${now}` / `${now_ms}` / `${now_iso}` | UTC timestamp (FIX shape / unix ms / RFC 3339) |
+| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Random integer / float |
+| `${choice(x\|y\|z)}` | Random pick |
+
+```yaml
+- uses: std/ws-send@v1
+  with:
+    id: "${{ feed.id }}"
+    send: '{"op":"order","id":"ord-${seq}","px":${randf(1.05,1.15,5)}}'
+    repeat: 100
+    interval_ms: 50
+```
+
+## Asserting messages
+
+Receive steps expose a `messages` list; `std/check@v1` asserts over it with
+the **any** quantifier (at least one message matches — streams carry
+heartbeats and unrelated events):
+
+```yaml
+check:
+  message_contains: "trade"              # some message contains the substring
+  message_matches: { type: trade }       # some message JSON-subset-matches
+  messages_count_gte: 5                  # at least 5 messages arrived
+```
+
+For deterministic exchanges, address one message by index:
+`check: { on: got.messages.0, message_matches: { type: welcome } }`.
+
+## Metrics
+
+- **Handshake** and **one-shot sessions** feed the shared latency histogram
+  (`http_req_duration`) — comparable with HTTP/TCP/UDP percentiles.
+- **`ws_msg_rtt`** — application-level message RTT: time from a send to the
+  first reply matching your until-rule. Shown on the test dashboard with p50 /
+  p95 / max.
+- **`ws_msgs_sent` / `ws_msgs_received`** — message throughput rates.
+- Waiting on a server-push stream is deliberately *not* counted as latency —
+  it would poison the shared percentiles.
+
+The metrics page detects a WebSocket run automatically and switches to the WS
+tile set (throughput, message RTT, handshake percentiles).
