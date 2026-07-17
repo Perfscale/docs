@@ -65,9 +65,11 @@ Use `https://perfscale.ru` as the base URL if your workspace lives there.
 | Tool | Access | What it returns |
 |---|---|---|
 | `whoami` | read | Current user, workspace, role, permissions |
-| `tenant_limits` | read | Plan, machine/test limits, retention, storage usage |
+| `limits` | read | Plan, machine/test limits, retention, storage usage |
+| `usage` | read | This month's AI tool-call usage against the plan budget |
 | `list_machines` / `get_machine` | read | Machine fleet: status, hardware, agent version, benchmark capacity, region |
 | `list_tests` / `get_test` | read | Test definitions with config JSON |
+| `list_configs` | read | Workspace run configurations (vus/duration or stages presets) |
 | `list_runs` / `get_run` | read | Runs with p50/p95/p99, error rate, RPS, total requests |
 | `get_run_logs` | read | Full log output of a run |
 | `runs_by_machine` | read | Run history for one machine |
@@ -77,8 +79,37 @@ Use `https://perfscale.ru` as the base URL if your workspace lives there.
 | `list_git_repos` | read | Connected repositories and sync status |
 | `list_env_vars` | read | Environment variable keys — **values are always masked** |
 | `audit_log` | read | Workspace activity: action, actor, target, time |
+| `write_test` | **write** | Create or update a test definition (native steps or k6 script) |
+| `write_config` | **write** | Create or update a named run configuration |
 | `run_test` | **write** | Dispatch a test to machines; returns task IDs and log-stream URLs |
 | `sync_git_repo` | **write** | Trigger test discovery for a repository |
 
 Write tools respect your RBAC permissions — `run_test` requires `run_tests`,
-exactly as in the dashboard.
+exactly as in the dashboard. Every tool call counts against the workspace's
+monthly **AI tool-call budget** (set by the plan; check it with `usage`).
+
+## Composite mode: your own MCP servers
+
+Attach remote MCP servers to the workspace under **Settings → AI → MCP
+Servers** (admins only): a name, a streamable-HTTP URL, and optional headers
+(encrypted at rest, never displayed again). Their tools then appear —
+prefixed with the server's name, e.g. `grafana_search_dashboards` — in ASK AI
+for every workspace member, and in `perfscale-controlplane-mcp` when it runs
+with an admin token. A server that is down is skipped; the core tools always
+work.
+
+## HTTP endpoint
+
+Prefer a URL over the npm package? The same composite server is served at
+`/api/mcp` (streamable HTTP, stateless):
+
+```json
+{
+  "mcpServers": {
+    "perfscale": {
+      "url": "https://perfscale.su/api/mcp",
+      "headers": { "Authorization": "Bearer psk_..." }
+    }
+  }
+}
+```
