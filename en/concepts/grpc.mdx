@@ -1,0 +1,393 @@
+---
+title: gRPC
+description: Load-test gRPC endpoints — unary calls, client/server/bidi streaming, and dynamic schemas
+section: Concepts
+sectionOrder: 2
+order: 5
+---
+
+## Overview
+
+perfscale drives **gRPC** endpoints under load: open HTTP/2 channels, make
+unary calls from JSON templates, run client/server/bidi streams, and measure
+both the request round trip and the application-level message RTT alongside
+your HTTP/TCP/UDP/WebSocket metrics.
+
+gRPC is part of the **open-source engine** — the `std/grpc*` actions are
+available on every plan. A Pro dashboard editor with schema-aware autocomplete
+is planned; the YAML below works everywhere today.
+
+Calls are **dynamic**: no protobuf codegen. The schema arrives at run time
+(from a descriptor set or server reflection), requests and responses are JSON,
+and perfscale maps between the two using protobuf-JSON rules.
+
+Two styles, freely mixable:
+
+- **One-shot call** (`std/grpc@v1`) — connect, load the schema, make one unary
+  call, close in one step. Simplest for occasional probes.
+- **Live channel** (`std/grpc-connect@v1` + friends) — a channel held across
+  steps within an iteration, addressed by the id the connect step returns.
+  Unary calls and streams ride the same HTTP/2 connection: the connect and the
+  schema load are paid once per iteration, not per call.
+
+Seven steps, each with a short alias:
+
+| Step | Alias | What it does |
+|------|-------|--------------|
+| `std/grpc@v1` | `grpc` | One-shot unary call (connect → schema → call → close) |
+| `std/grpc-connect@v1` | `grpc-connect` | Open a live channel + load schema, return its id |
+| `std/grpc-call@v1` | `grpc-call` | Unary call on a live channel |
+| `std/grpc-stream-open@v1` | `grpc-stream-open` | Start a streaming call on a live channel |
+| `std/grpc-stream-send@v1` | `grpc-stream-send` | Send message(s) on an open stream |
+| `std/grpc-stream-recv@v1` | `grpc-stream-recv` | Read from an open stream until a stopping rule |
+| `std/grpc-stream-close@v1` | `grpc-stream-close` | Half-close + drain an open stream |
+
+## Schema sources
+
+Dynamic calls need the protobuf schema at run time. Both connect-capable
+steps (`std/grpc@v1`, `std/grpc-connect@v1`) take exactly one source —
+the two are mutually exclusive:
+
+- **`descriptor_set`** — base64 of a serialized `FileDescriptorSet`. Produce
+  one from your protos:
+
+  ```bash
+  protoc --descriptor_set_out=echo.pb --include_imports echo.proto
+  base64 -i echo.pb   # macOS; on Linux: base64 -w0 echo.pb
+  ```
+
+  Or fetch it over HTTP in an earlier step and pipe the binary body straight
+  in — a `std/http@v1` step returns binary payloads as `body_base64`:
+
+  ```yaml
+  steps:
+    - name: fetch schema
+      uses: std/http@v1
+      with: { url: "https://schema.example.com/echo.pb" }
+      outputs: fetch
+
+    - name: unary probe
+      uses: std/grpc@v1
+      with:
+        url: grpcs://api.example.com:443
+        descriptor_set: "${{ fetch.body_base64 }}"
+        method: "echo.v1.Echo/Unary"
+        payload: { message: "ping ${seq}" }
+      check:
+        duration_ms_lt: 500
+  ```
+
+- **`reflection: true`** — fetch the schema from the server's reflection
+  service (v1 protocol); the server must have reflection enabled. The fetched
+  pool is cached per URL for the rest of the run, so repeated connects to one
+  server pay one reflection round trip.
+
+A bad `descriptor_set` fails fast, before any network I/O. Methods are named
+`"package.Service/Method"`; a typo fails with a did-you-mean suggestion when a
+known method is close enough.
+
+## One-shot call
+
+`std/grpc@v1` bundles the channel profile and the call parameters in one
+step; it connects, loads the schema, calls, and closes.
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `url` | — | `grpc://` (plaintext) or `grpcs://` (TLS) target; a scheme-less host means `grpcs://` (required) |
+| `metadata` | — | Default call metadata (auth tokens etc.); per-call `metadata` overrides per key |
+| `skipTLSVerify` | `false` | Accept any server certificate — self-signed staging only |
+| `descriptor_set` | one schema source | Base64 of a serialized `FileDescriptorSet` (mutually exclusive with `reflection`) |
+| `reflection` | one schema source | `true`: fetch the schema via the server reflection service |
+| `max_recv_size` | `16777216` | Inbound message cap, bytes (16 MiB) |
+| `connection` | — | A profile object supplying defaults for any field above (inline fields win) |
+| `method` | — | `"package.Service/Method"` (unary methods only; required) |
+| `payload` | one of payload/payload_base64 | JSON request message; `${…}` tokens expand per call |
+| `payload_base64` | one of payload/payload_base64 | Serialized protobuf bytes (mutually exclusive with `payload`) |
+| `expect_status` | `0` | Expected gRPC status code — the step fails on any other |
+| `timeout` | `10000` | Milliseconds for the whole step (connect → schema → call); the call's `grpc-timeout` header is the remaining budget |
+
+Output:
+
+```json
+{ "status": 0, "body": { "message": "hello" }, "duration_ms": 2.4,
+  "metrics": { "grpc_req_duration": [2.4], "grpc_msgs_sent": 1,
+               "grpc_msgs_received": 1, "grpc_msg_rtt": [2.3], "grpc_req_failed": 0 } }
+```
+
+On a non-zero status the output carries `error` (the status message) instead
+of `body`. `expect_status` makes error-path tests read naturally:
+`expect_status: 5` passes when the server returns NOT_FOUND and fails on OK.
+
+`timeout` is an inline, per-step parameter: a `timeout` placed *inside* a
+`connection` profile is ignored. A profile defined in a config's `before:`
+step travels as `connection: "${{ config.<name> }}"`.
+
+## Live channel
+
+```yaml
+# config.yaml — 25 concurrent VUs, each holding its own channel per iteration
+vus: 25
+duration: 5m
+```
+
+```yaml
+# test.yaml
+steps:
+  - name: open channel
+    uses: std/grpc-connect@v1
+    with:
+      url: grpcs://api.example.com:443
+      reflection: true
+      metadata: { authorization: "Bearer ${{ vars.token }}" }
+    outputs: conn
+
+  - name: unary echo
+    uses: std/grpc-call@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "echo.v1.Echo/Unary"
+      payload: { message: "ping-${seq}" }
+    check:
+      duration_ms_lt: 250
+    outputs: call
+
+  - name: open bidi stream
+    uses: std/grpc-stream-open@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "echo.v1.Echo/Bidi"
+    outputs: stream
+
+  - name: send events
+    uses: std/grpc-stream-send@v1
+    with:
+      id: "${{ stream.id }}"
+      payload: { message: "evt-${seq}" }
+      repeat: 5
+      interval_ms: 20
+
+  - name: await echoes
+    uses: std/grpc-stream-recv@v1
+    with:
+      id: "${{ stream.id }}"
+      until_contains: "evt-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: close stream
+    uses: std/grpc-stream-close@v1
+    with: { id: "${{ stream.id }}" }
+```
+
+A runnable version of this scenario ships as
+[`examples/grpc.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/grpc.test.yaml)
+in the OSS repo, together with a local echo server you can run it against.
+
+- `std/grpc-connect@v1` — opens the channel and loads the schema, returns
+  `{ id, connected, duration_ms }`.
+- `std/grpc-call@v1` — one unary call on the channel.
+- `std/grpc-stream-open@v1` — starts a client-streaming, bidi, or
+  server-streaming call, returns a stream id.
+- `std/grpc-stream-send@v1` — sends `payload` (JSON, `${…}` tokens expand per
+  send) or `payload_base64`; `repeat` + `interval_ms` stream N messages from
+  one template.
+- `std/grpc-stream-recv@v1` — reads until a **stopping rule**: `until_contains`
+  (substring), `until_json` (JSON-subset match), or plain `count`.
+- `std/grpc-stream-close@v1` — half-closes the request side and drains the
+  server side to the final status.
+
+A channel never outlives its iteration: whatever a scenario leaves open is
+dropped at iteration end (channels close with their last handle, streams are
+cancelled — use `grpc-stream-close` for a clean, status-checked shutdown).
+
+### Channel and stream ids
+
+- Channel ids are minted per VU (`grpc-1`, `grpc-2`, …), stream ids likewise
+  (`grpcs-1`, …); both are valid only inside that VU's current iteration — an
+  id never crosses into the next iteration or another VU.
+- `std/grpc-connect@v1` inside a config's `before:` setup is not useful: the
+  setup context (and its channels) is gone before VUs start.
+- Referencing a closed or unknown id fails the step with an
+  "unknown connection id" (or "unknown stream id") error.
+
+### `std/grpc-connect@v1`
+
+Takes the same channel profile as the one-shot call (`url`, `metadata`,
+`skipTLSVerify`, `descriptor_set`, `reflection`, `max_recv_size`,
+`connection`); `timeout` here bounds just the connect + schema load (default
+`10000` ms). Output:
+
+```json
+{ "id": "grpc-1", "connected": true, "duration_ms": 4.8 }
+```
+
+Store the output (`outputs: conn`) and pass `id: "${{ conn.id }}"` to the
+other `grpc-*` steps. A failed connect or schema load yields
+`{ "connected": false, "error": "…", "duration_ms": … }` — no RPC was made,
+so no gRPC metrics are emitted.
+
+### `std/grpc-call@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Channel id from `std/grpc-connect@v1` (required) |
+| `method` | — | `"package.Service/Method"` (unary methods only; required) |
+| `payload` | one of payload/payload_base64 | JSON request message; `${…}` tokens expand per call |
+| `payload_base64` | one of payload/payload_base64 | Serialized protobuf bytes (mutually exclusive with `payload`) |
+| `metadata` | — | Per-call metadata (overrides channel defaults per key) |
+| `expect_status` | `0` | Expected gRPC status code — the step fails on any other |
+| `timeout` | `10000` | Sent as `grpc-timeout` and enforced locally, ms |
+
+Output — same shape as the one-shot call above. A failed RPC fails the step
+but the channel stays usable: HTTP/2 channels recover, unlike a dead
+WebSocket.
+
+### `std/grpc-stream-open@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Channel id (required) |
+| `method` | — | `"package.Service/Method"` (streaming methods only; required) |
+| `payload` | server-streaming: required | The single request message for server-streaming methods |
+| `payload_base64` | — | Serialized form of the above |
+| `metadata` | — | Per-call metadata |
+
+Output: `{ "id": "grpcs-1", "kind": "server"|"client"|"bidi", "open": true,
+"duration_ms": … }`.
+
+For server-streaming, the one request goes out at open; for
+client-streaming/bidi, messages go out via `std/grpc-stream-send@v1` (passing
+`payload` at open is an error). Open returns immediately — the call runs in a
+relay task, because a client-streaming server sends its initial metadata only
+after the client half-closes. A server-side failure (UNIMPLEMENTED, auth, …)
+therefore surfaces at the first recv/close, not at open.
+
+### `std/grpc-stream-send@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Stream id (required) |
+| `payload` | one of payload/payload_base64 | JSON message; `${…}` tokens expand per send |
+| `payload_base64` | one of payload/payload_base64 | Serialized protobuf bytes (mutually exclusive with `payload`) |
+| `repeat` | `1` | Emit N messages from the one template |
+| `interval_ms` | `0` | Gap between repeated sends, ms |
+| `timeout` | `10000` | For the whole send loop, ms |
+
+Output: `{ "sent": N, "duration_ms": …, "metrics": { "grpc_msgs_sent": N } }`.
+Sending on a server-streaming stream is a parameter error (the stream stays
+usable); a send that fails because the peer ended the call fails the step and
+drops the stream id.
+
+### `std/grpc-stream-recv@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Stream id (required) |
+| `until_contains` | — | Stop when a message contains this substring (objects: compact-JSON form; mutually exclusive with `until_json`) |
+| `until_json` | — | Stop when a message JSON-subset-matches this object — pattern fields must equal, extra fields ignored |
+| `count` | `1` | Without an `until_*` rule: stop after N messages |
+| `timeout` | `10000` | Deadline for the stopping rule, ms |
+
+Output:
+
+```json
+{ "messages": [ { "message": "hello" } ], "count": 1, "matched": true,
+  "duration_ms": 3.1,
+  "metrics": { "grpc_msgs_received": 1, "grpc_msg_rtt": [2.9] } }
+```
+
+Messages arrive as JSON values under the same protobuf-JSON mapping as unary
+bodies; `matched` reports whether the stopping rule was reached, and every
+message read along the way stays in `messages`, whatever the outcome. A plain
+timeout fails the step but leaves the stream usable; the stream ending
+(cleanly or with a status) before the rule is reached fails the step and
+drops the stream.
+
+### `std/grpc-stream-close@v1`
+
+Half-closes the request side (client-streaming/bidi: the server sees
+end-of-input) and drains remaining server messages until the final status,
+bounded by `timeout`.
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Stream id (required) |
+| `expect_status` | `0` | Expected final gRPC status code |
+| `timeout` | `10000` | Drain deadline, ms |
+
+Output: `{ "closed": true, "status": 0, "received": N, "messages": […],
+"duration_ms": …, "metrics": { "grpc_msgs_received": N, "grpc_req_failed": 0 } }`.
+For a client-streaming method the drained single message is the call's
+response. The stream id is released either way.
+
+## Dynamic payloads
+
+Requests take `payload` (JSON → dynamic protobuf message) or `payload_base64`
+(base64 of the serialized protobuf bytes) — mutually exclusive. The JSON
+mapping follows protobuf-JSON rules: field names accept both the proto name
+and its camelCase `json_name`, 64-bit ints are strings, enums are names.
+Responses appear in `body` (unary) and `messages` (streams) under the same
+rules.
+
+String leaves of `payload` may embed single-brace `${…}` tokens, expanded per
+call/send — distinct from `${{ … }}`, which resolves once before the action
+runs. The token set is the same as for [WebSocket sends](/docs/concepts/websocket):
+
+| Token | Expands to |
+|-------|------------|
+| `${seq}` | Monotonic counter, unique per message (keeps counting per channel on unary calls, per stream on stream sends) |
+| `${uuid}` | Random 32-hex id |
+| `${now}` / `${now_ms}` / `${now_iso}` | UTC timestamp (FIX shape / unix ms / RFC 3339) |
+| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Random integer / float in `[a, b]` |
+| `${choice(x\|y\|z)}` | Random pick |
+
+Unknown tokens are left verbatim. `payload_base64` payloads are decoded once
+and sent as-is — no token expansion. Metadata values support `${{ … }}`
+interpolation only — `${…}` tokens are not expanded there.
+
+## Asserting responses
+
+Stream receive/close steps expose a `messages` list; `std/check@v1` asserts
+over it with the **any** quantifier (at least one message matches — streams
+carry heartbeats and unrelated events):
+
+```yaml
+check:
+  message_contains: "trade"              # some message contains the substring
+  message_matches: { type: trade }       # some message JSON-subset-matches
+  messages_count_gte: 5                  # at least 5 messages arrived
+```
+
+For deterministic exchanges, address one message by index:
+`check: { on: got.messages.0, message_matches: { type: welcome } }`.
+
+Unary calls assert on the status code with `expect_status` and on latency
+with `check: { duration_ms_lt: … }`; the JSON `body` can be addressed field
+by field via `outputs` and `on:`.
+
+## Metrics
+
+- **`grpc_req_duration`** — unary call latency histogram (`std/grpc@v1` and
+  `std/grpc-call@v1` only). Streams deliberately do not feed it: their
+  lifetimes span user steps.
+- **`grpc_msg_rtt`** — application-level message RTT. On a successful unary
+  call it equals the request duration; on a stream recv it is the send→match
+  time, reported only when an `until_*` rule matched and a
+  `grpc-stream-send` preceded it on the same stream.
+- **`grpc_msgs_sent` / `grpc_msgs_received`** — message throughput counters,
+  per call and per stream step.
+- **`grpc_req_failed`** — RPCs that did not meet `expect_status`. For streams,
+  `grpc-stream-close` is what turns the final status into this counter.
+
+Unlike the WebSocket handshake, gRPC steps never feed `http_req_duration` /
+`http_req_failed` — the `grpc_*` series are the whole story, and a failed
+connect emits no metrics at all (no RPC was made).
+
+## Limits
+
+Inbound messages are capped by `max_recv_size` (default 16 MiB); an oversized
+message fails the call with RESOURCE_EXCEEDED. Binary (`-bin`) metadata keys
+are not supported — metadata values are strings. Server reflection must be
+explicitly enabled on the server for `reflection: true` to work. Timeout
+values, `repeat` counts, and drain lengths have no built-in caps.

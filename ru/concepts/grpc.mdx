@@ -1,0 +1,397 @@
+---
+title: gRPC
+description: Нагрузочное тестирование gRPC — unary-вызовы, client/server/bidi-стримы и динамические схемы
+section: Концепции
+sectionOrder: 2
+order: 5
+---
+
+## Обзор
+
+perfscale нагружает **gRPC**-endpoint'ы: открывает HTTP/2-каналы, выполняет
+unary-вызовы из JSON-шаблонов, гоняет client/server/bidi-стримы и измеряет
+как round-trip запроса, так и прикладной RTT сообщения — рядом с вашими
+HTTP/TCP/UDP/WebSocket-метриками.
+
+gRPC — часть **open-source-движка**: actions `std/grpc*` доступны на любом
+плане. Pro-редактор в дашборде с автодополнением по схеме запланирован;
+YAML ниже уже работает везде.
+
+Вызовы **динамические**: без protobuf-кодгена. Схема приходит в рантайме (из
+descriptor set или через server reflection), запросы и ответы — JSON, а
+perfscale отображает одно в другое по правилам protobuf-JSON.
+
+Два стиля, свободно совместимых:
+
+- **One-shot-вызов** (`std/grpc@v1`) — connect, загрузка схемы, один
+  unary-вызов, close в одном шаге. Проще всего для разовых проб.
+- **Живой канал** (`std/grpc-connect@v1` и компания) — канал живёт между
+  шагами внутри итерации и адресуется по id, который вернул connect.
+  Unary-вызовы и стримы едут по одному HTTP/2-соединению: connect и загрузка
+  схемы оплачиваются раз на итерацию, а не на вызов.
+
+Семь шагов, у каждого короткий алиас:
+
+| Шаг | Алиас | Что делает |
+|-----|-------|------------|
+| `std/grpc@v1` | `grpc` | One-shot unary-вызов (connect → схема → вызов → close) |
+| `std/grpc-connect@v1` | `grpc-connect` | Открыть живой канал + загрузить схему, вернуть id |
+| `std/grpc-call@v1` | `grpc-call` | Unary-вызов на живом канале |
+| `std/grpc-stream-open@v1` | `grpc-stream-open` | Начать стриминговый вызов на живом канале |
+| `std/grpc-stream-send@v1` | `grpc-stream-send` | Отправить сообщение(я) в открытый стрим |
+| `std/grpc-stream-recv@v1` | `grpc-stream-recv` | Читать из открытого стрима до условия остановки |
+| `std/grpc-stream-close@v1` | `grpc-stream-close` | Half-close + дочитать открытый стрим |
+
+## Источники схемы
+
+Динамическим вызовам нужна protobuf-схема в рантайме. Оба шага, умеющих
+connect (`std/grpc@v1`, `std/grpc-connect@v1`), принимают ровно один
+источник — они взаимно исключают друг друга:
+
+- **`descriptor_set`** — base64 сериализованного `FileDescriptorSet`.
+  Получается из ваших proto-файлов:
+
+  ```bash
+  protoc --descriptor_set_out=echo.pb --include_imports echo.proto
+  base64 -i echo.pb   # macOS; в Linux: base64 -w0 echo.pb
+  ```
+
+  Либо скачайте его по HTTP предыдущим шагом и передайте бинарное тело
+  напрямую — шаг `std/http@v1` возвращает бинарные ответы как `body_base64`:
+
+  ```yaml
+  steps:
+    - name: скачать схему
+      uses: std/http@v1
+      with: { url: "https://schema.example.com/echo.pb" }
+      outputs: fetch
+
+    - name: unary-проба
+      uses: std/grpc@v1
+      with:
+        url: grpcs://api.example.com:443
+        descriptor_set: "${{ fetch.body_base64 }}"
+        method: "echo.v1.Echo/Unary"
+        payload: { message: "ping ${seq}" }
+      check:
+        duration_ms_lt: 500
+  ```
+
+- **`reflection: true`** — получить схему через reflection-сервис сервера
+  (протокол v1); на сервере reflection должен быть включён. Полученный пул
+  кешируется per URL до конца прогона, так что повторные connect'ы к одному
+  серверу стоят один reflection-round-trip.
+
+Битый `descriptor_set` падает сразу, до любой сетевой активности. Методы
+называются `"package.Service/Method"`; опечатка падает с подсказкой
+«did you mean», если рядом есть известный метод.
+
+## One-shot-вызов
+
+`std/grpc@v1` объединяет профиль канала и параметры вызова в одном шаге:
+connect, загрузка схемы, вызов, close.
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `url` | — | Цель `grpc://` (plaintext) или `grpcs://` (TLS); хост без схемы означает `grpcs://` (обязателен) |
+| `metadata` | — | Метаданные вызовов по умолчанию (auth-токены и т.п.); per-call `metadata` переопределяет по ключу |
+| `skipTLSVerify` | `false` | Принять любой сертификат сервера — только self-signed staging |
+| `descriptor_set` | один источник схемы | Base64 сериализованного `FileDescriptorSet` (несовместим с `reflection`) |
+| `reflection` | один источник схемы | `true`: получить схему через reflection-сервис сервера |
+| `max_recv_size` | `16777216` | Лимит входящего сообщения, байт (16 МиБ) |
+| `connection` | — | Объект-профиль, задающий значения по умолчанию для любого поля выше (инлайн-поля побеждают) |
+| `method` | — | `"package.Service/Method"` (только unary-методы; обязателен) |
+| `payload` | одно из payload/payload_base64 | JSON-сообщение запроса; токены `${…}` раскрываются на каждый вызов |
+| `payload_base64` | одно из payload/payload_base64 | Сериализованные protobuf-байты (несовместим с `payload`) |
+| `expect_status` | `0` | Ожидаемый gRPC status code — на любом другом шаг падает |
+| `timeout` | `10000` | Миллисекунды на весь шаг (connect → схема → вызов); заголовок `grpc-timeout` вызова — оставшийся бюджет |
+
+Вывод:
+
+```json
+{ "status": 0, "body": { "message": "hello" }, "duration_ms": 2.4,
+  "metrics": { "grpc_req_duration": [2.4], "grpc_msgs_sent": 1,
+               "grpc_msgs_received": 1, "grpc_msg_rtt": [2.3], "grpc_req_failed": 0 } }
+```
+
+На ненулевом статусе в выводе вместо `body` появляется `error` (сообщение
+статуса). `expect_status` делает тесты ошибочных веток естественными:
+`expect_status: 5` проходит, когда сервер возвращает NOT_FOUND, и падает на
+OK.
+
+`timeout` — инлайн-параметр конкретного шага: `timeout`, записанный *внутри*
+профиля `connection`, игнорируется. Профиль, определённый в `before:`-шаге
+конфига, приезжает как `connection: "${{ config.<name> }}"`.
+
+## Живой канал
+
+```yaml
+# config.yaml — 25 конкурентных VU, у каждого свой канал на итерацию
+vus: 25
+duration: 5m
+```
+
+```yaml
+# test.yaml
+steps:
+  - name: открыть канал
+    uses: std/grpc-connect@v1
+    with:
+      url: grpcs://api.example.com:443
+      reflection: true
+      metadata: { authorization: "Bearer ${{ vars.token }}" }
+    outputs: conn
+
+  - name: unary echo
+    uses: std/grpc-call@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "echo.v1.Echo/Unary"
+      payload: { message: "ping-${seq}" }
+    check:
+      duration_ms_lt: 250
+    outputs: call
+
+  - name: открыть bidi-стрим
+    uses: std/grpc-stream-open@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "echo.v1.Echo/Bidi"
+    outputs: stream
+
+  - name: отправить события
+    uses: std/grpc-stream-send@v1
+    with:
+      id: "${{ stream.id }}"
+      payload: { message: "evt-${seq}" }
+      repeat: 5
+      interval_ms: 20
+
+  - name: дождаться эха
+    uses: std/grpc-stream-recv@v1
+    with:
+      id: "${{ stream.id }}"
+      until_contains: "evt-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: закрыть стрим
+    uses: std/grpc-stream-close@v1
+    with: { id: "${{ stream.id }}" }
+```
+
+Рабочая версия этого сценария лежит в OSS-репозитории:
+[`examples/grpc.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/grpc.test.yaml) —
+вместе с локальным echo-сервером, на котором её можно запустить.
+
+- `std/grpc-connect@v1` — открывает канал и загружает схему, возвращает
+  `{ id, connected, duration_ms }`.
+- `std/grpc-call@v1` — один unary-вызов на канале.
+- `std/grpc-stream-open@v1` — начинает client-streaming-, bidi- или
+  server-streaming-вызов, возвращает id стрима.
+- `std/grpc-stream-send@v1` — шлёт `payload` (JSON, токены `${…}`
+  раскрываются на каждую отправку) или `payload_base64`; `repeat` +
+  `interval_ms` дают поток из N сообщений по одному шаблону.
+- `std/grpc-stream-recv@v1` — читает до **условия остановки**:
+  `until_contains` (подстрока), `until_json` (JSON-subset-совпадение) или
+  просто `count`.
+- `std/grpc-stream-close@v1` — делает half-close стороны запроса и дочитывает
+  сторону сервера до финального статуса.
+
+Канал не переживает свою итерацию: всё, что сценарий оставил открытым,
+сбрасывается в конце итерации (каналы закрываются с последним хендлом, стримы
+отменяются — для чистого закрытия с проверкой статуса используйте
+`grpc-stream-close`).
+
+### Идентификаторы каналов и стримов
+
+- Id каналов выдаются per-VU (`grpc-1`, `grpc-2`, …), id стримов — аналогично
+  (`grpcs-1`, …); оба действительны только внутри текущей итерации этого VU —
+  id не переходит ни в следующую итерацию, ни в другой VU.
+- `std/grpc-connect@v1` в блоке `before:` конфига бесполезен: контекст
+  инициализации (и его каналы) исчезает до старта VU.
+- Обращение к закрытому или неизвестному id роняет шаг с ошибкой
+  "unknown connection id" (или "unknown stream id").
+
+### `std/grpc-connect@v1`
+
+Принимает тот же профиль канала, что и one-shot-вызов (`url`, `metadata`,
+`skipTLSVerify`, `descriptor_set`, `reflection`, `max_recv_size`,
+`connection`); `timeout` здесь ограничивает только connect + загрузку схемы
+(по умолчанию `10000` мс). Вывод:
+
+```json
+{ "id": "grpc-1", "connected": true, "duration_ms": 4.8 }
+```
+
+Сохраните вывод (`outputs: conn`) и передавайте `id: "${{ conn.id }}"`
+остальным `grpc-*`-шагам. Неудачный connect или загрузка схемы дают
+`{ "connected": false, "error": "…", "duration_ms": … }` — RPC не было,
+поэтому и gRPC-метрики не эмитятся.
+
+### `std/grpc-call@v1`
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `id` | — | Id канала от `std/grpc-connect@v1` (обязателен) |
+| `method` | — | `"package.Service/Method"` (только unary-методы; обязателен) |
+| `payload` | одно из payload/payload_base64 | JSON-сообщение запроса; токены `${…}` раскрываются на каждый вызов |
+| `payload_base64` | одно из payload/payload_base64 | Сериализованные protobuf-байты (несовместим с `payload`) |
+| `metadata` | — | Метаданные конкретного вызова (переопределяют дефолты канала по ключу) |
+| `expect_status` | `0` | Ожидаемый gRPC status code — на любом другом шаг падает |
+| `timeout` | `10000` | Уходит как `grpc-timeout` и дополнительно enforced локально, мс |
+
+Вывод — той же формы, что у one-shot-вызова выше. Упавший RPC роняет шаг, но
+канал остаётся рабочим: HTTP/2-каналы восстанавливаются, в отличие от мёртвого
+WebSocket.
+
+### `std/grpc-stream-open@v1`
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `id` | — | Id канала (обязателен) |
+| `method` | — | `"package.Service/Method"` (только стриминговые методы; обязателен) |
+| `payload` | server-streaming: обязателен | Единственное сообщение запроса для server-streaming-методов |
+| `payload_base64` | — | Сериализованная форма того же |
+| `metadata` | — | Метаданные конкретного вызова |
+
+Вывод: `{ "id": "grpcs-1", "kind": "server"|"client"|"bidi", "open": true,
+"duration_ms": … }`.
+
+Для server-streaming единственный запрос уходит при open; для
+client-streaming/bidi сообщения уходят через `std/grpc-stream-send@v1`
+(передать `payload` при open — ошибка). Open возвращается сразу — вызов
+работает в relay-задаче, потому что client-streaming-сервер шлёт свои
+начальные метаданные только после half-close клиента. Поэтому серверная
+ошибка (UNIMPLEMENTED, auth, …) всплывает на первом recv/close, а не на open.
+
+### `std/grpc-stream-send@v1`
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `id` | — | Id стрима (обязателен) |
+| `payload` | одно из payload/payload_base64 | JSON-сообщение; токены `${…}` раскрываются на каждую отправку |
+| `payload_base64` | одно из payload/payload_base64 | Сериализованные protobuf-байты (несовместим с `payload`) |
+| `repeat` | `1` | Сколько сообщений выпустить из одного шаблона |
+| `interval_ms` | `0` | Пауза между повторными отправками, мс |
+| `timeout` | `10000` | На весь цикл отправки, мс |
+
+Вывод: `{ "sent": N, "duration_ms": …, "metrics": { "grpc_msgs_sent": N } }`.
+Отправка в server-streaming-стрим — ошибка параметров (стрим остаётся
+рабочим); отправка, упавшая из-за того, что пир завершил вызов, роняет шаг и
+сбрасывает id стрима.
+
+### `std/grpc-stream-recv@v1`
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `id` | — | Id стрима (обязателен) |
+| `until_contains` | — | Стоп, когда сообщение содержит подстроку (объекты: compact-JSON-форма; несовместимо с `until_json`) |
+| `until_json` | — | Стоп, когда сообщение совпадает с объектом по JSON-subset — поля шаблона должны быть равны, лишние поля игнорируются |
+| `count` | `1` | Без правила `until_*`: стоп после N сообщений |
+| `timeout` | `10000` | Дедлайн условия остановки, мс |
+
+Вывод:
+
+```json
+{ "messages": [ { "message": "hello" } ], "count": 1, "matched": true,
+  "duration_ms": 3.1,
+  "metrics": { "grpc_msgs_received": 1, "grpc_msg_rtt": [2.9] } }
+```
+
+Сообщения приходят JSON-значениями по тем же правилам protobuf-JSON, что и
+unary-`body`; `matched` показывает, достигнуто ли условие остановки, а все
+прочитанные по пути сообщения остаются в `messages` при любом исходе.
+Обычный таймаут роняет шаг, но стрим остаётся рабочим; стрим, завершившийся
+(чисто или со статусом) до достижения правила, роняет шаг и сбрасывается.
+
+### `std/grpc-stream-close@v1`
+
+Делает half-close стороны запроса (client-streaming/bidi: сервер видит конец
+ввода) и дочитывает оставшиеся сообщения сервера до финального статуса в
+пределах `timeout`.
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `id` | — | Id стрима (обязателен) |
+| `expect_status` | `0` | Ожидаемый финальный gRPC status code |
+| `timeout` | `10000` | Дедлайн дочитки, мс |
+
+Вывод: `{ "closed": true, "status": 0, "received": N, "messages": […],
+"duration_ms": …, "metrics": { "grpc_msgs_received": N, "grpc_req_failed": 0 } }`.
+Для client-streaming-метода дочитанное единственное сообщение — это ответ
+вызова. Id стрима освобождается в любом случае.
+
+## Динамические payload'ы
+
+Запросы принимают `payload` (JSON → динамическое protobuf-сообщение) или
+`payload_base64` (base64 сериализованных protobuf-байт) — взаимно
+исключающие. JSON-отображение следует правилам protobuf-JSON: имена полей
+принимают и proto-имя, и его camelCase `json_name`; 64-битные int — строки;
+enum'ы — имена. Ответы появляются в `body` (unary) и `messages` (стримы) по
+тем же правилам.
+
+Строковые листья `payload` могут содержать одинарные токены `${…}`,
+раскрываемые на каждый вызов/отправку, — в отличие от `${{ … }}`, который
+резолвится один раз до запуска action. Набор токенов тот же, что у
+[WebSocket-отправок](/docs/concepts/websocket):
+
+| Токен | Раскрывается в |
+|-------|----------------|
+| `${seq}` | Монотонный счётчик, уникален на сообщение (продолжает считать per-канал на unary-вызовах, per-стрим на отправках в стрим) |
+| `${uuid}` | Случайный 32-hex id |
+| `${now}` / `${now_ms}` / `${now_iso}` | UTC-время (FIX-формат / unix ms / RFC 3339) |
+| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Случайное целое / дробное в `[a, b]` |
+| `${choice(x\|y\|z)}` | Случайный выбор |
+
+Неизвестные токены остаются как есть. Payload'ы `payload_base64` декодируются
+один раз и уходят без изменений — раскрытия токенов нет. В значениях
+metadata работает только интерполяция `${{ … }}` — токены `${…}` там не
+раскрываются.
+
+## Ассерты ответов
+
+Шаги приёма/закрытия стрима отдают список `messages`; `std/check@v1`
+проверяет его с квантором **any** (достаточно одного совпавшего сообщения —
+в стримах есть heartbeat'ы и посторонние события):
+
+```yaml
+check:
+  message_contains: "trade"              # какое-то сообщение содержит подстроку
+  message_matches: { type: trade }       # какое-то сообщение совпадает по JSON-subset
+  messages_count_gte: 5                  # пришло не меньше 5 сообщений
+```
+
+Для детерминированных обменов адресуйте сообщение по индексу:
+`check: { on: got.messages.0, message_matches: { type: welcome } }`.
+
+Unary-вызовы ассертят статус через `expect_status` и латенси через
+`check: { duration_ms_lt: … }`; к полям JSON-`body` можно обращаться через
+`outputs` и `on:`.
+
+## Метрики
+
+- **`grpc_req_duration`** — гистограмма латенси unary-вызовов (только
+  `std/grpc@v1` и `std/grpc-call@v1`). Стримы её намеренно не кормят: их
+  жизнь растянута по пользовательским шагам.
+- **`grpc_msg_rtt`** — прикладной RTT сообщения. На успешном unary-вызове
+  равен длительности запроса; на стрим-recv — время от отправки до
+  совпадения, отчитывается только когда правило `until_*` совпало и перед ним
+  на этом же стриме был `grpc-stream-send`.
+- **`grpc_msgs_sent` / `grpc_msgs_received`** — счётчики обмена сообщениями,
+  на вызов и на шаг стрима.
+- **`grpc_req_failed`** — RPC, не удовлетворившие `expect_status`. Для стримов
+  именно `grpc-stream-close` превращает финальный статус в этот счётчик.
+
+В отличие от WebSocket-handshake, gRPC-шаги никогда не попадают в
+`http_req_duration` / `http_req_failed` — серии `grpc_*` здесь полная
+картина, а неудачный connect не эмитит метрик вовсе (RPC не было).
+
+## Ограничения
+
+Входящие сообщения ограничены `max_recv_size` (по умолчанию 16 МиБ); большее
+сообщение роняет вызов с RESOURCE_EXCEEDED. Бинарные (`-bin`) ключи metadata
+не поддерживаются — значения metadata строковые. Для `reflection: true`
+server reflection должен быть явно включён на сервере. Значения таймаутов,
+счётчики `repeat` и длины дочитки встроенных ограничений не имеют.
