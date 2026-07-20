@@ -44,7 +44,7 @@ steps:
 |-------|---------|-------------|
 | `url` | — | `ws://` or `wss://` target (required) |
 | `headers` | — | Extra handshake headers (auth tokens etc.) |
-| `subprotocols` | — | Offered `Sec-WebSocket-Protocol` values (e.g. `graphql-ws`) |
+| `subprotocols` | — | Offered `Sec-WebSocket-Protocol` values — a list or a single string (e.g. `graphql-ws`) |
 | `skipTLSVerify` | `false` | Accept any certificate — self-signed staging only |
 | `connection` | — | A profile object supplying defaults for any field |
 | `messages` | `[]` | Entries to send: a string template, or `{ send, repeat, interval_ms, until_contains, until_json }` |
@@ -53,9 +53,34 @@ steps:
 An entry with an `until_*` rule waits for its matching reply before the next
 entry — and yields one **message RTT** sample (see Metrics).
 
+Output:
+
+```json
+{ "connected": true, "sent": 1, "received": 2, "messages": ["…"], "body": "…",
+  "subprotocol": "graphql-ws", "duration_ms": 41.5,
+  "metrics": { "ws_msgs_sent": 1, "ws_msgs_received": 2, "ws_msg_rtt": [8.1] } }
+```
+
+The step fails on handshake/transport errors or on any entry whose `until_*`
+rule did not match in time — and still reports everything exchanged up to
+that point, plus an `error` field naming the failing entry (`message[i]: …`).
+A handshake failure yields
+`{ "connected": false, "error": "…", "duration_ms": … }` and counts in
+`http_req_failed`.
+
+`timeout` is an inline, per-step parameter: a `timeout` placed *inside* a
+`connection` profile is ignored.
+
 ## Live connection
 
 ```yaml
+# config.yaml — 25 concurrent VUs, each holding its own connection per iteration
+vus: 25
+duration: 5m
+```
+
+```yaml
+# test.yaml
 steps:
   - name: open feed
     uses: std/ws-connect@v1
@@ -93,6 +118,89 @@ steps:
 A connection never outlives its iteration: whatever a scenario leaves open is
 dropped at iteration end (abruptly — use `ws-close` for a clean shutdown).
 
+### Connection ids
+
+- Ids are minted per VU (`ws-1`, `ws-2`, …) and are valid only inside that
+  VU's current iteration — an id never crosses into the next iteration or
+  another VU.
+- `std/ws-connect@v1` inside a config's `before:` setup is not useful: the
+  setup context (and its sockets) is gone before VUs start.
+- Referencing a closed or unknown id fails the step with an
+  "unknown connection id" error.
+
+### `std/ws-connect@v1`
+
+Takes the same target parameters as the one-shot session (`url`, `headers`,
+`subprotocols`, `skipTLSVerify`, `connection`); `timeout` here bounds just
+the handshake (default `10000` ms). Output:
+
+```json
+{ "id": "ws-1", "connected": true, "subprotocol": "graphql-ws", "duration_ms": 3.1 }
+```
+
+`subprotocol` is the server-negotiated protocol, or `null` when the server
+picked none. The handshake feeds `http_req_duration`; a failed handshake
+counts in `http_req_failed` and the output is
+`{ "connected": false, "error": "…", "duration_ms": … }`.
+
+### `std/ws-send@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Connection id from `std/ws-connect@v1` (required) |
+| `send` | one of send/send_base64 | Text payload; `${…}` tokens expand per send |
+| `send_base64` | one of send/send_base64 | Binary payload (mutually exclusive with `send`) |
+| `repeat` | `1` | Emit N messages from the one template |
+| `interval_ms` | `0` | Gap between repeated sends, ms |
+| `timeout` | `10000` | For the whole send loop, ms |
+
+Output: `{ "sent": N, "bytes": B, "duration_ms": …, "metrics": { "ws_msgs_sent": N } }`.
+A transport error fails the step and drops the connection; a parameter error
+(both `send` and `send_base64`) leaves it usable.
+
+### `std/ws-recv@v1`
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `id` | — | Connection id (required) |
+| `until_contains` | — | Stop when a message contains this substring (mutually exclusive with `until_json`) |
+| `until_json` | — | Stop when a message JSON-subset-matches this object — pattern fields must equal, extra fields ignored |
+| `count` | `1` | Without an `until_*` rule: stop after N data messages |
+| `timeout` | `10000` | Deadline for the stopping rule, ms |
+
+Output:
+
+```json
+{ "messages": ["…"], "body": "…", "count": 2, "matched": true, "duration_ms": 8.4,
+  "metrics": { "ws_msgs_received": 2, "ws_msg_rtt": [7.9] } }
+```
+
+Text frames arrive as strings, binary frames as base64 strings; `body` is the
+newline-joined text form, so `check: { body_contains: … }` works. `matched`
+reports whether the stopping rule was reached, and every message read along
+the way stays in `messages`, whatever the outcome. If the peer closes or the
+transport dies first, the step fails, the output gains an `error` field, and
+the connection is dropped; a plain timeout fails the step too but leaves the
+connection usable. Ping/pong frames arriving during the read are ignored as
+transport noise.
+
+### `std/ws-ping@v1`
+
+Output: `{ "pong": true, "duration_ms": 0.4 }`. Takes `id` and `timeout`
+(default `10000` ms). The RTT is not aggregated into any histogram — bound it
+with `check: { duration_ms_lt: … }` when needed. Data messages arriving while
+waiting for the pong are buffered for the next `std/ws-recv@v1`. No pong
+within `timeout` (or a closed connection) fails the step and drops the
+connection.
+
+### `std/ws-close@v1`
+
+Sends a Close frame and waits for the peer's acknowledgement. Takes `id`,
+`code` (default `1000`, normal closure), `reason` (default empty) — both sent
+in the Close frame — and `timeout`. Output: `{ "closed": true, "duration_ms": … }`,
+reported even when the peer does not acknowledge within `timeout`; the socket
+is gone either way and the id is released.
+
 ## Dynamic messages
 
 Text payloads may embed single-brace `${…}` tokens, expanded per send —
@@ -100,11 +208,14 @@ distinct from `${{ … }}`, which resolves once before the action runs:
 
 | Token | Expands to |
 |-------|------------|
-| `${seq}` | Monotonic counter, unique per message |
+| `${seq}` | Monotonic counter, unique per message (keeps counting across sends on the same connection) |
 | `${uuid}` | Random 32-hex id |
 | `${now}` / `${now_ms}` / `${now_iso}` | UTC timestamp (FIX shape / unix ms / RFC 3339) |
-| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Random integer / float |
+| `${rand(a,b)}` / `${randf(a,b[,dp])}` | Random integer / float in `[a, b]` |
 | `${choice(x\|y\|z)}` | Random pick |
+
+Unknown tokens are left verbatim. `send_base64` payloads are decoded once and
+sent as-is — no token expansion.
 
 ```yaml
 - uses: std/ws-send@v1
@@ -144,3 +255,10 @@ For deterministic exchanges, address one message by index:
 
 The metrics page detects a WebSocket run automatically and switches to the WS
 tile set (throughput, message RTT, handshake percentiles).
+
+## Limits
+
+Inbound protocol limits come from the WebSocket library defaults: messages up
+to 64 MiB, single frames up to 16 MiB — a larger inbound message errors the
+connection (and therefore the step reading it). Timeout values, `repeat`
+counts, and the `messages` list have no built-in caps.
