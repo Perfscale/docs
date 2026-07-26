@@ -1,0 +1,136 @@
+---
+title: WebSocket из CLI
+description: Пишем и запускаем WebSocket нагрузочный тест через perfscale CLI — YAML-шаги, perfscale run и сводка WS-метрик
+section: Начало работы
+sectionOrder: 1
+order: 5
+---
+
+## Обзор
+
+Open-source-движок perfscale запускает WebSocket нагрузочные тесты прямо из
+терминала — аккаунт на платформе не нужен. Эта страница проведёт тест от YAML
+до сводки метрик; [страница концепций WebSocket](/docs/concepts/websocket) —
+полный справочник по actions и параметрам.
+
+## 1. Установите CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Или скачайте бинарник под свою платформу со страницы
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). У
+бинарника нет runtime-зависимостей — нативный движок встроен.
+
+## 2. Напишите тест
+
+`ws.test.yaml` — оба WebSocket-стиля в одном сценарии. Стиль 1 держит живое
+соединение между шагами; стиль 2 — one-shot-сессия (connect, обмен, close в
+одном шаге):
+
+```yaml
+steps:
+  # --- Стиль 1: живое соединение (connect → send → recv → close) ----------
+  - name: открыть фид
+    uses: std/ws-connect@v1
+    with:
+      url: ws://127.0.0.1:9222
+    outputs: feed
+
+  - name: подписка
+    uses: std/ws-send@v1
+    with:
+      id: "${{ feed.id }}"
+      # Токены ${…} в одинарных скобках раскрываются на каждую отправку —
+      # 5 уникальных сообщений.
+      send: '{"op":"subscribe","id":"sub-${seq}"}'
+      repeat: 5
+      interval_ms: 20
+
+  - name: ждём эхо
+    uses: std/ws-recv@v1
+    with:
+      id: "${{ feed.id }}"
+      until_contains: "sub-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: повесить трубку
+    uses: std/ws-close@v1
+    with: { id: "${{ feed.id }}" }
+
+  # --- Стиль 2: one-shot-сессия --------------------------------------------
+  - name: эхо-сессия
+    uses: std/ws@v1
+    with:
+      url: ws://127.0.0.1:9222
+      messages:
+        - send: '{"type":"hello","id":"${uuid}"}'
+          until_json: { type: hello }
+    check:
+      message_matches: { type: hello }
+```
+
+`ws.config.yaml` — профиль нагрузки:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+Для локальной проверки подойдёт любой эхо-сервер — например,
+`npx wscat --listen 9222` в соседнем терминале.
+
+## 3. Запустите
+
+```sh
+perfscale run -f ws.test.yaml -c ws.config.yaml
+```
+
+`-f` выбирает встроенный нативный движок и требует `-c`. Проверить файлы без
+запуска:
+
+```sh
+perfscale lint ws.test.yaml ws.config.yaml
+```
+
+## 4. Читаем вывод
+
+Построчный вывод по запросам стримится в stdout, затем печатается
+k6-совместимая сводка. WebSocket-прогон добавляет свои строки рядом с общими
+HTTP-строками:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 142 4.73/s
+ws_msgs_received: 852 28.38/s
+ws_msgs_sent: 852 28.38/s
+ws_msg_rtt: avg=8.12ms p(50)=7.90ms p(90)=11.20ms p(95)=12.50ms p(99)=15.30ms min=5.10ms max=22.40ms count=284
+http_req_duration......: avg=3.21ms p(50)=3.00ms p(90)=4.10ms p(95)=4.60ms p(99)=6.20ms min=1.80ms max=9.40ms
+http_req_failed........: 0.00%
+http_reqs..............: 284 9.46/s
+```
+
+- `ws_msgs_sent` / `ws_msgs_received` — throughput сообщений (итог и rate).
+- `ws_msg_rtt` — прикладной RTT сообщения: время от отправки до первого
+  ответа, совпавшего с вашим until-правилом, с перцентилями и числом сэмплов.
+- `http_req_duration` покрывает handshake'и и one-shot-сессии — сравнимо с
+  обычными HTTP-перцентилями; неудачный handshake идёт в `http_req_failed`.
+
+Прогон завершается с кодом `0`, даже если проверки падали, — упавшие проверки
+это обратная связь нагрузочного теста, видимая в сводке, а не ошибка CLI.
+Чтобы гейтить CI по числам, экспортируйте их и проверяйте файл:
+
+```sh
+perfscale run -f ws.test.yaml -c ws.config.yaml --summary-export result.json
+jq -e '.summary.error_rate < 0.01' result.json
+```
+
+## Дальше
+
+- [Концепции WebSocket](/docs/concepts/websocket) — все параметры actions
+  `std/ws*`, токены динамических сообщений и ассерты.
+- [`examples/websocket.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/websocket.test.yaml)
+  — runnable-версия этого сценария в OSS-репозитории.

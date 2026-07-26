@@ -1,0 +1,159 @@
+---
+title: gRPC из CLI
+description: Пишем и запускаем gRPC нагрузочный тест через perfscale CLI — descriptor set или reflection, YAML-шаги, perfscale run и сводка gRPC-метрик
+section: Начало работы
+sectionOrder: 1
+order: 6
+---
+
+## Обзор
+
+Open-source-движок perfscale нагружает gRPC-endpoint'ы из терминала — без
+protobuf-кодгена и без аккаунта на платформе. Схема подтягивается во время
+прогона, а payload'ы — обычный JSON по правилам protobuf-JSON-маппинга. Эта
+страница проведёт тест от YAML до сводки метрик;
+[страница концепций gRPC](/docs/concepts/grpc) — полный справочник по actions
+и параметрам.
+
+## 1. Установите CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Или скачайте бинарник под свою платформу со страницы
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). У
+бинарника нет runtime-зависимостей — нативный движок встроен.
+
+## 2. Дайте perfscale схему
+
+Динамическим вызовам нужна protobuf-схема во время прогона. Выберите ровно
+один источник:
+
+- **Descriptor set** — соберите его из своих proto-файлов и закодируйте в
+  base64:
+
+  ```bash
+  protoc --descriptor_set_out=echo.pb --include_imports echo.proto
+  base64 -i echo.pb   # macOS; на Linux: base64 -w0 echo.pb
+  ```
+
+  Вставьте результат как `descriptor_set:` в шаге подключения.
+- **Server reflection** — укажите `reflection: true`, и perfscale заберёт
+  схему у reflection-сервиса сервера (на сервере reflection должен быть
+  включён). Полученная схема кэшируется по URL до конца прогона.
+
+## 3. Напишите тест
+
+`grpc.test.yaml` — унарные вызовы и bidi-стрим по одному живому каналу.
+Канал и его схема оплачиваются один раз на итерацию; вызовы и сообщения
+стрима едут по тому же HTTP/2-соединению:
+
+```yaml
+steps:
+  - name: открыть канал
+    uses: std/grpc-connect@v1
+    with:
+      url: grpc://127.0.0.1:50051
+      reflection: true          # или: descriptor_set: "<base64 FileDescriptorSet>"
+    outputs: conn
+
+  - name: унарное эхо
+    uses: std/grpc-call@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "perfscale.test.v1.Echo/Unary"
+      payload: { message: "ping-${seq}" }
+    check:
+      duration_ms_lt: 250
+
+  - name: открыть bidi-стрим
+    uses: std/grpc-stream-open@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "perfscale.test.v1.Echo/Bidi"
+    outputs: stream
+
+  - name: отправить события
+    uses: std/grpc-stream-send@v1
+    with:
+      id: "${{ stream.id }}"
+      payload: { message: "evt-${seq}" }
+      repeat: 5
+      interval_ms: 20
+
+  - name: дождаться эха
+    uses: std/grpc-stream-recv@v1
+    with:
+      id: "${{ stream.id }}"
+      until_contains: "evt-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: закрыть стрим
+    uses: std/grpc-stream-close@v1
+    with: { id: "${{ stream.id }}" }
+```
+
+`grpc.config.yaml` — профиль нагрузки:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+В OSS-репозитории есть подходящий локальный эхо-сервер:
+
+```sh
+cargo run -p perfscale-core --example grpc_echo_server   # слушает на 50051
+```
+
+## 4. Запустите
+
+```sh
+perfscale run -f grpc.test.yaml -c grpc.config.yaml
+```
+
+`-f` выбирает встроенный нативный движок и требует `-c`. Проверить файлы без
+запуска:
+
+```sh
+perfscale lint grpc.test.yaml grpc.config.yaml
+```
+
+## 5. Читаем вывод
+
+Построчный вывод по запросам стримится в stdout, затем печатается
+k6-совместимая сводка. gRPC-шаги никогда не попадают в серию `http_req_*`,
+поэтому сводка чистого gRPC-прогона состоит только из строк `grpc_*`:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 140 4.67/s
+grpc_msgs_received: 840 28.02/s
+grpc_msgs_sent: 840 28.02/s
+grpc_req_failed: 0 0.00/s
+grpc_msg_rtt: avg=2.90ms p(50)=2.80ms p(90)=3.60ms p(95)=4.10ms p(99)=5.30ms min=1.90ms max=7.20ms count=280
+grpc_req_duration: avg=2.95ms p(50)=2.85ms p(90)=3.70ms p(95)=4.20ms p(99)=5.40ms min=1.95ms max=7.40ms count=140
+```
+
+- `grpc_req_duration` — латенси унарных вызовов (только `std/grpc@v1` и
+  `std/grpc-call@v1`; стримы её сознательно не наполняют).
+- `grpc_msg_rtt` — прикладной RTT сообщения: на унарном вызове равен
+  длительности запроса; на стриме — время от отправки до совпавшего ответа.
+- `grpc_msgs_sent` / `grpc_msgs_received` — throughput сообщений.
+- `grpc_req_failed` — RPC, не удовлетворившие `expect_status` (по умолчанию `0`).
+
+Прогон завершается с кодом `0`, даже если проверки падали, — упавшие проверки
+это обратная связь нагрузочного теста, видимая в сводке, а не ошибка CLI.
+Учтите, что `--summary-export` парсит только семейство `http_req_*`, поэтому
+чистый gRPC-прогон экспортирует `summary: null` — для CI-гейта проверяйте
+строки `grpc_*` в stdout (или добавьте в сценарий HTTP-шаг).
+
+## Дальше
+
+- [Концепции gRPC](/docs/concepts/grpc) — источники схемы, все семь actions
+  `std/grpc*`, токены динамических payload'ов и ассерты.
+- [`examples/grpc.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/grpc.test.yaml)
+  — runnable-версия этого сценария в OSS-репозитории.

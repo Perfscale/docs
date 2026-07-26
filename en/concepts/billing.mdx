@@ -1,0 +1,66 @@
+---
+title: Billing
+description: Self-serve billing on perfscale.ru — plan picker, YooKassa checkout, subscriptions, refunds, and payment history
+section: Concepts
+sectionOrder: 2
+order: 9
+---
+
+## Overview
+
+On the RU deployment (perfscale.ru), upgrading a workspace is self-serve:
+pick a plan, pay by bank card or SBP via **YooKassa**, and the plan activates
+automatically within a minute — no invoices or sales calls. Your current
+plan, paid-until date, and renewal state are shown in **Settings → General**;
+payments and the subscription controls live in **Settings → Billing**.
+
+## Plans
+
+| Plan | Price | What you get |
+|------|-------|--------------|
+| **Starter** | 5 000 ₽/mo | Up to 10 machines · 30-day result retention · 10 GB data |
+| **Growing** | 25 000 ₽/mo | Up to 100 machines · 90-day retention · 100 GB data · API + CI/CD integrations |
+| **Enterprise** | on request | Unlimited machines · up to 1-year retention · 1 TB+ data · on-premise, SSO/SAML |
+
+![The checkout plan picker — Starter, Growing, and Enterprise with payment via YooKassa](/docs-assets/platform/checkout-picker.webp)
+
+Starter and Growing are paid right from the picker. Enterprise is provisioned
+manually — use **Contact us** on the same screen.
+
+## Subscription
+
+A successful payment starts or extends a subscription, tracked as two values:
+
+- **Paid until** — the end of the current paid period. The workspace keeps
+  full access until that moment.
+- **Auto-renew** — whether the subscription renews automatically at the end
+  of the paid period.
+
+Cancelling auto-renew refunds nothing: access simply continues until the
+paid-until date. On the paid-only RU contour the workspace then loses access
+(the API answers `402 Payment Required`) until the next payment — billing and
+settings stay reachable so you can pay. You can resume auto-renew at any time
+before the period ends.
+
+## Refunds
+
+Refunds are deliberately narrow: only the workspace's **first succeeded
+payment**, and only **within 3 days** of it. The money goes back through
+YooKassa in full and the paid period ends. After that window the only lever
+is cancelling auto-renew.
+
+One refund happens automatically: **upgrading your plan mid-period**. Paying
+a higher tier while a lower-tier period is still active activates the higher
+tier immediately on a fresh period — and the superseded lower-tier payment is
+refunded in full, no request needed.
+
+## Payment history
+
+**Settings → Billing** lists your recent payments (up to 50) with amount,
+payment method, status, and refund details where applicable — every charge
+and every refund is auditable from the same place.
+
+## Next steps
+
+- [Quick Start](/docs/getting-started/quick-start) — try the demo workspace
+  first; it never goes through checkout.

@@ -1,0 +1,54 @@
+---
+title: Protocol metrics
+description: The metrics dashboard detects the run's protocol — FIX, gRPC, WebSocket, HTTP, or generic — and adapts its tile set
+section: Concepts
+sectionOrder: 2
+order: 8
+---
+
+## Overview
+
+The **Metrics** dashboard does not ask what kind of test you ran — it detects
+the protocol from the metric families the run streamed back and swaps in the
+matching tile set. A badge next to the run selector shows what was detected:
+**FIX protocol**, **gRPC**, **WebSocket**, **HTTP**, or **Generic**.
+
+## How detection works
+
+The engine's summary lines carry protocol-specific metric families
+(`grpc_msgs_sent`, `ws_msg_rtt`, `fix_sessions`, …). The dashboard picks the
+first matching family, in this order:
+
+1. **FIX** — `fix_sessions` / `fix_messages_sent` present
+2. **gRPC** — `grpc_msgs_sent` / `grpc_msg_rtt` / `grpc_req_duration` present
+3. **WebSocket** — `ws_msgs_sent` / `ws_msg_rtt` present
+4. **HTTP** — `http_req_duration` present
+5. **Generic** — none of the above (e.g. a sleep-only or custom-script run)
+
+Detection is per run, so one test can show HTTP percentiles today and gRPC
+tiles tomorrow if you change its script.
+
+## The gRPC tile set
+
+A gRPC run gets throughput, message counts, and two latency histograms:
+
+| Tile | Meaning |
+|------|---------|
+| **Send rate** | Messages sent per second, `grpc_msgs_sent` |
+| **Receive rate** | Messages received per second, `grpc_msgs_received` |
+| **Messages sent / received** | Totals for the run |
+| **Message RTT p50 / p95 / max** | `grpc_msg_rtt` — send to matching reply |
+| **Call duration p95** | `grpc_req_duration` — unary call time |
+
+The WebSocket set mirrors it (send/receive rates, message counts, message RTT
+percentiles) plus a **Handshake p95** tile fed by `http_req_duration`. The FIX
+set adds session health: sessions, logon success rate, session errors, and
+session latency. Plain HTTP runs show the classic set — success rate, total
+requests, throughput, and p50/p90/p95/p99/max latency.
+
+## Next steps
+
+- [gRPC](/docs/concepts/grpc) and [WebSocket](/docs/concepts/websocket) — the
+  engine actions that emit these metric families.
+- [gRPC from the CLI](/docs/getting-started/grpc-cli) — produce a run with
+  `grpc_*` metrics in five minutes.

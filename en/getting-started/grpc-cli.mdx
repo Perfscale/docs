@@ -1,0 +1,156 @@
+---
+title: gRPC from the CLI
+description: Write and run a gRPC load test with the perfscale CLI — descriptor sets or reflection, YAML steps, perfscale run, and the gRPC metric summary
+section: Getting Started
+sectionOrder: 1
+order: 6
+---
+
+## Overview
+
+The open-source perfscale engine drives gRPC endpoints from the terminal —
+no protobuf codegen, no platform account. The schema arrives at run time and
+payloads are plain JSON mapped by protobuf-JSON rules. This page walks a test
+from YAML to metric summary; the [gRPC concepts page](/docs/concepts/grpc) is
+the full action and parameter reference.
+
+## 1. Install the CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Or download a binary for your platform from
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). The
+binary has no runtime dependencies — the native engine is built in.
+
+## 2. Give perfscale your schema
+
+Dynamic calls need the protobuf schema at run time. Pick exactly one source:
+
+- **A descriptor set** — build one from your protos and base64-encode it:
+
+  ```bash
+  protoc --descriptor_set_out=echo.pb --include_imports echo.proto
+  base64 -i echo.pb   # macOS; on Linux: base64 -w0 echo.pb
+  ```
+
+  Paste the output as `descriptor_set:` on the connect step.
+- **Server reflection** — set `reflection: true` and perfscale fetches the
+  schema from the server's reflection service (the server must have it
+  enabled). The fetched schema is cached per URL for the rest of the run.
+
+## 3. Write the test
+
+`grpc.test.yaml` — unary calls and a bidi stream over one live channel. The
+channel and its schema are paid once per iteration; calls and stream messages
+ride the same HTTP/2 connection:
+
+```yaml
+steps:
+  - name: open channel
+    uses: std/grpc-connect@v1
+    with:
+      url: grpc://127.0.0.1:50051
+      reflection: true          # or: descriptor_set: "<base64 FileDescriptorSet>"
+    outputs: conn
+
+  - name: unary echo
+    uses: std/grpc-call@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "perfscale.test.v1.Echo/Unary"
+      payload: { message: "ping-${seq}" }
+    check:
+      duration_ms_lt: 250
+
+  - name: open bidi stream
+    uses: std/grpc-stream-open@v1
+    with:
+      id: "${{ conn.id }}"
+      method: "perfscale.test.v1.Echo/Bidi"
+    outputs: stream
+
+  - name: send events
+    uses: std/grpc-stream-send@v1
+    with:
+      id: "${{ stream.id }}"
+      payload: { message: "evt-${seq}" }
+      repeat: 5
+      interval_ms: 20
+
+  - name: await echoes
+    uses: std/grpc-stream-recv@v1
+    with:
+      id: "${{ stream.id }}"
+      until_contains: "evt-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: close stream
+    uses: std/grpc-stream-close@v1
+    with: { id: "${{ stream.id }}" }
+```
+
+`grpc.config.yaml` — the load shape:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+The OSS repo ships a matching local echo server:
+
+```sh
+cargo run -p perfscale-core --example grpc_echo_server   # listens on 50051
+```
+
+## 4. Run it
+
+```sh
+perfscale run -f grpc.test.yaml -c grpc.config.yaml
+```
+
+`-f` selects the built-in native engine and requires `-c`. Validate the files
+without executing anything:
+
+```sh
+perfscale lint grpc.test.yaml grpc.config.yaml
+```
+
+## 5. Read the output
+
+Per-request lines stream live to stdout, then a k6-compatible summary prints.
+gRPC steps never feed the `http_req_*` series, so a pure gRPC run's summary
+is all `grpc_*` lines:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 140 4.67/s
+grpc_msgs_received: 840 28.02/s
+grpc_msgs_sent: 840 28.02/s
+grpc_req_failed: 0 0.00/s
+grpc_msg_rtt: avg=2.90ms p(50)=2.80ms p(90)=3.60ms p(95)=4.10ms p(99)=5.30ms min=1.90ms max=7.20ms count=280
+grpc_req_duration: avg=2.95ms p(50)=2.85ms p(90)=3.70ms p(95)=4.20ms p(99)=5.40ms min=1.95ms max=7.40ms count=140
+```
+
+- `grpc_req_duration` — unary call latency (`std/grpc@v1` and
+  `std/grpc-call@v1` only; streams deliberately do not feed it).
+- `grpc_msg_rtt` — application-level message RTT: equals the request duration
+  on a unary call; on a stream it is the send-to-matching-reply time.
+- `grpc_msgs_sent` / `grpc_msgs_received` — message throughput.
+- `grpc_req_failed` — RPCs that did not meet `expect_status` (default `0`).
+
+The run exits `0` even when checks fail — failed checks are load-test
+feedback, visible in the summary, not a CLI error. Note that
+`--summary-export` parses only the `http_req_*` family, so a pure gRPC run
+exports `summary: null` — assert on the `grpc_*` stdout lines (or a companion
+HTTP step) when you need a CI gate.
+
+## Next steps
+
+- [gRPC concepts](/docs/concepts/grpc) — schema sources, all seven `std/grpc*`
+  actions, dynamic payload tokens, and assertions.
+- [`examples/grpc.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/grpc.test.yaml)
+  — the runnable version of this scenario in the OSS repo.

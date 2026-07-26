@@ -1,0 +1,134 @@
+---
+title: WebSocket from the CLI
+description: Write and run a WebSocket load test with the perfscale CLI — YAML steps, perfscale run, and the WS metric summary
+section: Getting Started
+sectionOrder: 1
+order: 5
+---
+
+## Overview
+
+The open-source perfscale engine runs WebSocket load tests straight from the
+terminal — no platform account required. This page walks a test from YAML to
+metric summary; the [WebSocket concepts page](/docs/concepts/websocket) is the
+full action and parameter reference.
+
+## 1. Install the CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Or download a binary for your platform from
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). The
+binary has no runtime dependencies — the native engine is built in.
+
+## 2. Write the test
+
+`ws.test.yaml` — both WebSocket styles in one scenario. Style 1 holds a live
+connection across steps; style 2 is a one-shot session (connect, exchange,
+close in a single step):
+
+```yaml
+steps:
+  # --- Style 1: live connection (connect → send → recv → close) -----------
+  - name: open feed
+    uses: std/ws-connect@v1
+    with:
+      url: ws://127.0.0.1:9222
+    outputs: feed
+
+  - name: subscribe
+    uses: std/ws-send@v1
+    with:
+      id: "${{ feed.id }}"
+      # Single-brace ${…} tokens expand per send — 5 unique messages.
+      send: '{"op":"subscribe","id":"sub-${seq}"}'
+      repeat: 5
+      interval_ms: 20
+
+  - name: await echo
+    uses: std/ws-recv@v1
+    with:
+      id: "${{ feed.id }}"
+      until_contains: "sub-5"
+      timeout: 5000
+    check:
+      messages_count_gte: 5
+
+  - name: hang up
+    uses: std/ws-close@v1
+    with: { id: "${{ feed.id }}" }
+
+  # --- Style 2: one-shot session -------------------------------------------
+  - name: echo session
+    uses: std/ws@v1
+    with:
+      url: ws://127.0.0.1:9222
+      messages:
+        - send: '{"type":"hello","id":"${uuid}"}'
+          until_json: { type: hello }
+    check:
+      message_matches: { type: hello }
+```
+
+`ws.config.yaml` — the load shape:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+To try it locally, any echo server will do — for example
+`npx wscat --listen 9222` in another terminal.
+
+## 3. Run it
+
+```sh
+perfscale run -f ws.test.yaml -c ws.config.yaml
+```
+
+`-f` selects the built-in native engine and requires `-c`. Validate the files
+without executing anything:
+
+```sh
+perfscale lint ws.test.yaml ws.config.yaml
+```
+
+## 4. Read the output
+
+Per-request lines stream live to stdout, then a k6-compatible summary prints.
+A WebSocket run adds its own lines next to the shared HTTP ones:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 142 4.73/s
+ws_msgs_received: 852 28.38/s
+ws_msgs_sent: 852 28.38/s
+ws_msg_rtt: avg=8.12ms p(50)=7.90ms p(90)=11.20ms p(95)=12.50ms p(99)=15.30ms min=5.10ms max=22.40ms count=284
+http_req_duration......: avg=3.21ms p(50)=3.00ms p(90)=4.10ms p(95)=4.60ms p(99)=6.20ms min=1.80ms max=9.40ms
+http_req_failed........: 0.00%
+http_reqs..............: 284 9.46/s
+```
+
+- `ws_msgs_sent` / `ws_msgs_received` — message throughput (total and rate).
+- `ws_msg_rtt` — application-level message RTT: time from a send to the first
+  reply matching your until-rule, with percentiles and a sample count.
+- `http_req_duration` covers handshakes and one-shot sessions — comparable
+  with plain HTTP percentiles; a failed handshake counts in `http_req_failed`.
+
+The run exits `0` even when checks fail — failed checks are load-test
+feedback, visible in the summary, not a CLI error. To gate CI on the numbers,
+export them and assert on the file:
+
+```sh
+perfscale run -f ws.test.yaml -c ws.config.yaml --summary-export result.json
+jq -e '.summary.error_rate < 0.01' result.json
+```
+
+## Next steps
+
+- [WebSocket concepts](/docs/concepts/websocket) — every parameter of the
+  `std/ws*` actions, dynamic message tokens, and message assertions.
+- [`examples/websocket.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/websocket.test.yaml)
+  — the runnable version of this scenario in the OSS repo.

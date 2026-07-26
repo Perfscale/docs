@@ -1,0 +1,104 @@
+---
+title: Webhooks
+description: Outbound webhooks — test lifecycle events, HMAC-signed deliveries, retries with backoff, and delivery history
+section: Concepts
+sectionOrder: 2
+order: 7
+---
+
+## Overview
+
+perfscale can POST an event to your HTTP endpoint whenever a run changes
+state — notify Slack, update a status dashboard, or file a ticket when a
+scheduled regression fails. Webhooks are managed per workspace in
+**Settings → Webhooks**.
+
+## Events
+
+| Event | Fires when |
+|-------|------------|
+| `test.started` | A task is dispatched to a machine |
+| `test.completed` | A task finishes successfully |
+| `test.failed` | A task finishes with a failure |
+| `test.ping` | You click **Send test** — a synthetic event for verifying a new endpoint |
+
+Each webhook subscribes to any subset of `test.started`, `test.completed`,
+and `test.failed`.
+
+When you create a webhook, perfscale generates its **signing secret** and
+shows it exactly once — copy it right away; it cannot be retrieved later.
+
+## What a delivery looks like
+
+Every event is delivered as a JSON POST:
+
+```text
+POST /your/endpoint HTTP/1.1
+X-Perfscale-Event:     test.completed
+X-Perfscale-Delivery:  d1f2a4…
+X-Perfscale-Signature: t=1700000000,v1=cecf521c…
+```
+
+```json
+{
+  "id": "8f3db2…",
+  "event": "test.completed",
+  "created_at": "2026-07-26T12:00:00Z",
+  "tenant_id": "…",
+  "data": {
+    "task_id": "…",
+    "test_id": "…",
+    "machine_id": "…",
+    "status": "completed",
+    "duration_ms": 30120,
+    "log_url": "…"
+  }
+}
+```
+
+`data` for `test.started` carries `task_id`, `test_id`, and `machine_id`;
+`test.completed` / `test.failed` add `status`, `duration_ms`, and `log_url`.
+The envelope `id` is the same for every webhook receiving one event — use it
+to deduplicate — while `X-Perfscale-Delivery` is unique per endpoint.
+
+## Verifying signatures
+
+`X-Perfscale-Signature` has the form `t=<unix timestamp>,v1=<hex>`, where
+`v1` is the HMAC-SHA256 of `"<t>.<raw request body>"` keyed with your webhook
+secret. Verify before trusting the payload:
+
+```js
+const crypto = require("crypto");
+
+function verifyPerfscaleSignature(header, rawBody, secret) {
+  const { t, v1 } = Object.fromEntries(
+    header.split(",").map((kv) => kv.split("="))
+  );
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${t}.${rawBody}`)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(v1, "hex"), Buffer.from(expected, "hex"));
+}
+```
+
+Use the raw, unparsed request body — re-serialized JSON may not match
+byte-for-byte.
+
+## Retries and history
+
+Deliveries go through a durable outbox: a background worker picks up pending
+deliveries every 20 seconds. A delivery that fails (non-2xx response or a
+connection error) is retried with backoff — after 1 minute, 5 minutes,
+30 minutes, then 2 hours — and goes terminally `failed` after 5 attempts.
+
+Each webhook keeps its **deliveries history** (newest first) with the outcome
+of every attempt, so you can see exactly what was sent, what your endpoint
+answered, and when the next retry is due. The **Send test** button enqueues a
+`test.ping` whose result lands in the same history — the quickest way to
+debug a new endpoint.
+
+## Next steps
+
+- [Triggers](/docs/concepts/triggers) — schedule the runs these events come from.
+- [REST API](/docs/api-reference) — manage webhooks and deliveries programmatically.

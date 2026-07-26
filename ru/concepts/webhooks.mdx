@@ -1,0 +1,105 @@
+---
+title: Вебхуки
+description: Исходящие вебхуки — события жизненного цикла тестов, подпись HMAC, ретраи с backoff'ом и история доставок
+section: Концепции
+sectionOrder: 2
+order: 7
+---
+
+## Обзор
+
+perfscale может POST'ить событие на ваш HTTP-endpoint при каждой смене
+состояния прогона — уведомление в Slack, обновление статус-дашборда или
+тикет при падении регрессии по расписанию. Вебхуки управляются на уровне
+рабочего пространства в **Settings → Webhooks**.
+
+## События
+
+| Событие | Когда срабатывает |
+|---------|-------------------|
+| `test.started` | Задача отправлена на машину |
+| `test.completed` | Задача успешно завершилась |
+| `test.failed` | Задача завершилась с ошибкой |
+| `test.ping` | Вы нажали **Send test** — синтетическое событие для проверки нового endpoint'а |
+
+Каждый вебхук подписывается на любое подмножество событий `test.started`,
+`test.completed` и `test.failed`.
+
+При создании вебхука perfscale генерирует **секрет подписи** и показывает его
+ровно один раз — скопируйте сразу; позже его не восстановить.
+
+## Как выглядит доставка
+
+Каждое событие доставляется JSON POST'ом:
+
+```text
+POST /your/endpoint HTTP/1.1
+X-Perfscale-Event:     test.completed
+X-Perfscale-Delivery:  d1f2a4…
+X-Perfscale-Signature: t=1700000000,v1=cecf521c…
+```
+
+```json
+{
+  "id": "8f3db2…",
+  "event": "test.completed",
+  "created_at": "2026-07-26T12:00:00Z",
+  "tenant_id": "…",
+  "data": {
+    "task_id": "…",
+    "test_id": "…",
+    "machine_id": "…",
+    "status": "completed",
+    "duration_ms": 30120,
+    "log_url": "…"
+  }
+}
+```
+
+`data` у `test.started` несёт `task_id`, `test_id` и `machine_id`;
+`test.completed` / `test.failed` добавляют `status`, `duration_ms` и
+`log_url`. `id` конверта одинаков для всех вебхуков, получивших одно событие,
+— используйте его для дедупликации, — а `X-Perfscale-Delivery` уникален для
+каждого endpoint'а.
+
+## Проверка подписи
+
+`X-Perfscale-Signature` имеет вид `t=<unix timestamp>,v1=<hex>`, где `v1` —
+HMAC-SHA256 от строки `"<t>.<сырое тело запроса>"` с ключом — секретом
+вашего вебхука. Проверяйте подпись до того, как доверять payload'у:
+
+```js
+const crypto = require("crypto");
+
+function verifyPerfscaleSignature(header, rawBody, secret) {
+  const { t, v1 } = Object.fromEntries(
+    header.split(",").map((kv) => kv.split("="))
+  );
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${t}.${rawBody}`)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(v1, "hex"), Buffer.from(expected, "hex"));
+}
+```
+
+Используйте сырое, нераспарсенное тело запроса — пересериализованный JSON
+может не совпасть побайтово.
+
+## Ретраи и история
+
+Доставки проходят через durable outbox: фоновый воркер забирает ожидающие
+доставки каждые 20 секунд. Неудачная доставка (ответ не 2xx или ошибка
+соединения) ретраится с backoff'ом — через 1 минуту, 5 минут, 30 минут, затем
+2 часа — и окончательно помечается `failed` после 5 попыток.
+
+Каждый вебхук хранит **историю доставок** (сначала новые) с исходом каждой
+попытки: видно, что именно отправлялось, что ответил ваш endpoint и когда
+следующий ретрай. Кнопка **Send test** ставит в очередь `test.ping`, чей
+результат попадает в ту же историю, — самый быстрый способ отладить новый
+endpoint.
+
+## Дальше
+
+- [Триггеры](/docs/concepts/triggers) — расписания, порождающие эти события.
+- [REST API](/docs/api-reference) — программное управление вебхуками и доставками.
