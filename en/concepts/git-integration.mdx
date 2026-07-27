@@ -1,0 +1,81 @@
+---
+title: Git integration
+description: Connect a repository, sync tests into the workspace, and get commit statuses and PR/MR comments on every run
+section: Concepts
+sectionOrder: 2
+order: 12
+---
+
+## Overview
+
+Keep your test scripts where they live — in Git — and let perfscale pull
+them into the workspace. Connect a repository in **Settings → Git
+Repositories**, hit **Sync**, and the discovered files become tests: `.js`
+scripts sync as k6 tests, native `.yaml` definitions as native step-engine
+tests.
+
+A sync is a **snapshot**: the files are copied into tests at that moment, and
+every run executes the snapshot — so a passing run is reproducible even if
+the branch moved on. Syncing is deliberately manual: the **Sync** button in
+the console or the MCP server's `sync_git_repo` tool. There is no automatic
+sync on push, so a force-push never silently changes what tonight's
+scheduled run executes.
+
+Repositories connect over a personal access token (PAT) or SSH. There is no
+edit form for a connected repository — to change its flags, delete it and
+add it again.
+
+## Self-managed and enterprise instances
+
+By default a connection is fail-closed against anything non-public: an SSRF
+guard refuses private and loopback addresses, plain `http://` is rejected,
+and TLS certificates are verified. For instances that legitimately need one
+of those — say, a managed GitLab on a VDS in a private network — the
+connect form has three explicit flags, each off by default and each shown
+with a warning in the UI:
+
+| Flag | What it allows | Default |
+|------|----------------|---------|
+| `allow_private_net` | Private / loopback repository addresses. The cloud metadata address `169.254.169.254` is blocked **always**, flag or not | off |
+| `allow_http` | Plaintext `http://` clone URLs | off |
+| `tls_skip_verify` | Skip TLS certificate verification (self-signed) | off |
+
+Enable only the ones your network actually requires — each flag widens what
+the control plane is allowed to reach.
+
+## Run notifications
+
+Two opt-in toggles at connect time report run results back into your
+repository — they apply only to tests synced from Git:
+
+- **Commit status** (`notify_commit_status`) — posts a commit status on the
+  last synced sha via the GitHub Statuses API or GitLab commit status, with
+  the context/name `perfscale/load-test`: `passed` maps to success,
+  everything else to failure.
+- **PR/MR comments** (`notify_pr_comments`) — comments on the branch's open
+  pull/merge request with the run's p95/p99, error rate, and RPS, plus a
+  link to the run. The comment is updated in place — one slot per
+  repository and branch, so the latest run overwrites the previous comment
+  instead of piling up.
+
+Notifications are deduplicated by the synced sha (`last_notified_sha`): one
+notification cycle per sha, no spam when several tests from one sync finish.
+
+Requirements and details:
+
+- **A PAT is required** — the same token used for cloning (token auth).
+  GitHub tokens need the `repo` scope (statuses + comments); GitLab tokens
+  need the `api` scope. Repositories connected over SSH or anonymously send
+  no notifications.
+- **API base is derived** from the clone URL: `github.com` →
+  `api.github.com`; any other GitHub host → `https://<host>/api/v3`
+  (GitHub Enterprise Server); GitLab → `https://<host>/api/v4`. The
+  `api_base_url` field overrides the derived value when your setup differs.
+
+## Next steps
+
+- [CI/CD integration](/docs/getting-started/ci-cd) — GitHub Action, GitLab CI
+  templates, and API-triggered runs.
+- [Tests & Tasks](/docs/concepts/tests) — what a synced file becomes.
+- [MCP server & API tokens](/docs/api-reference/mcp) — `sync_git_repo` and
+  the rest of the toolset.

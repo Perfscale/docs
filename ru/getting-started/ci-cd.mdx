@@ -8,10 +8,12 @@ order: 7
 
 ## Обзор
 
-perfscale встраивается в пайплайн тремя способами, и они комбинируются:
+perfscale встраивается в пайплайн четырьмя способами, и они комбинируются:
 
 - **GitHub Action** — запускает нагрузочный тест шагом workflow и гейтит
   сборку по метрикам, всё на раннере GitHub.
+- **Шаблоны GitLab CI** — та же пара «прогон + гейт» для пайплайнов GitLab,
+  в одном `include:` от вашего `.gitlab-ci.yml`.
 - **REST API** — запуск задачи на машинах вашего рабочего пространства из
   любой CI-системы с опросом результата.
 - **Вебхуки** — события о завершении прогона, отправленные обратно в ваш CI,
@@ -75,6 +77,75 @@ jobs:
 выполниться, `2` — неверные аргументы, — поэтому зелёный шаг *не* означает
 выполненный SLA; гейтить нужно по `summary-json`, как показано выше.
 
+На раннерах GitHub Enterprise Server action работает, если у раннера есть
+доступ к github.com, — бинарь perfscale скачивается с публичных релизов.
+Отдельного GHES-зеркала нет.
+
+## GitLab CI
+
+Для пайплайнов GitLab есть готовые CI-шаблоны в репозитории
+[`Perfscale/gitlab-ci`](https://github.com/Perfscale/gitlab-ci): скрытая
+джоба `.perfscale:run` (скачивает закреплённый, проверенный по sha256 бинарь
+perfscale, запускает ваш тест и сохраняет JSON-сводку как артефакт) и джоба
+`.perfscale:gate`, которая валит пайплайн, когда метрика превышает бюджет.
+Подключите их и расширьте:
+
+```yaml
+include:
+  - remote: https://raw.githubusercontent.com/Perfscale/gitlab-ci/main/templates/perfscale.gitlab-ci.yml
+  - remote: https://raw.githubusercontent.com/Perfscale/gitlab-ci/main/templates/gate.gitlab-ci.yml
+
+load-test:
+  extends: .perfscale:run
+  variables:
+    PERFSCALE_FILE: examples/hello.test.yaml     # нативный step-движок
+    PERFSCALE_CONFIG: examples/hello.config.yaml # обязателен с FILE
+
+p95-gate:
+  extends: .perfscale:gate
+  needs: [load-test]   # скачивает артефакт сводки run-джобы
+  variables:
+    PERFSCALE_GATE_METRIC: ".summary.p95_ms"
+    PERFSCALE_GATE_MAX: "500"
+```
+
+Укажите **ровно одну** engine-переменную — `PERFSCALE_K6`,
+`PERFSCALE_LOCUST` или `PERFSCALE_FILE`. Ключевые переменные (все
+опциональны, если не сказано иное):
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `PERFSCALE_VERSION` | `latest` | Релиз perfscale для установки; для air-gapped закрепите тег |
+| `PERFSCALE_K6` / `PERFSCALE_LOCUST` / `PERFSCALE_FILE` | — | Скрипт для запуска — ровно один; `FILE` — нативный движок |
+| `PERFSCALE_CONFIG` | — | Путь к `config.yaml`; обязателен с `FILE`, опционален для locust |
+| `PERFSCALE_SUMMARY` | `perfscale-summary.json` | Машиночитаемая JSON-сводка, сохраняется артефактом джобы |
+| `PERFSCALE_ARCH` | `amd64` | Архитектура бинаря: `amd64` или `arm64` |
+| `PERFSCALE_DOWNLOAD_BASE` | релизы github.com | Базовый URL дерева релизов — укажите своё зеркало для air-gapped раннеров |
+| `PERFSCALE_GATE_METRIC` | `.summary.p95_ms` | jq-путь метрики, которую проверяет гейт |
+| `PERFSCALE_GATE_MAX` | `500` | Бюджет: гейт-джоба падает выше этого значения |
+
+Коды выхода повторяют CLI: `0` — прогон завершился (даже если запросы или
+проверки падали), `1` — прогон не смог выполниться, `2` — невалидные
+переменные. Зелёная джоба *не* означает выполненный SLA — для этого и нужна
+гейт-джоба, и ей необходим `needs:` на run-джобу, чтобы видеть её артефакт
+сводки.
+
+### Self-managed GitLab
+
+Шаблоны работают на любом инстансе GitLab с docker-executor'ом на
+Linux-раннерах, но две вещи по умолчанию указывают на github.com:
+
+- **Подключение шаблона.** `include: remote` заставляет инстанс забирать
+  файл с `raw.githubusercontent.com`. Если инстанс туда не достаёт,
+  скопируйте `templates/*.gitlab-ci.yml` в свой репозиторий и используйте
+  `include: local`, либо зеркалируйте `Perfscale/gitlab-ci` в свой инстанс и
+  используйте `include: project`.
+- **Скачивание бинаря.** В air-gapped сети зеркалируйте релизные ассеты на
+  хост, доступный вашим раннерам, — сохраняя layout
+  `download/<tag>/<asset>` и `sha256sums.txt` — укажите его в
+  `PERFSCALE_DOWNLOAD_BASE` и закрепите `PERFSCALE_VERSION`: редирект
+  `latest` существует только на github.com.
+
 ## REST API
 
 Любая CI-система может управлять платформой напрямую. Создайте **персональный
@@ -117,6 +188,7 @@ curl https://perfscale.su/api/v1/tasks/task_02 \
 
 ## Дальше
 
+- [Интеграция с Git](/docs/concepts/git-integration) — синк тестов из репозитория, commit status и комментарии в PR/MR.
 - [Триггеры](/docs/concepts/triggers) — расписания прогонов, на которые реагирует ваш пайплайн.
 - [Webhooks](/docs/concepts/webhooks) — события, подписи, ретраи.
 - [MCP-сервер и API-токены](/docs/api-reference/mcp) — управление токенами и лимиты.

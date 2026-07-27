@@ -8,10 +8,12 @@ order: 7
 
 ## Overview
 
-perfscale fits into a pipeline three ways, and they compose:
+perfscale fits into a pipeline four ways, and they compose:
 
 - **GitHub Action** — run a load test as a workflow step and gate the build
   on the metrics, all on the GitHub runner.
+- **GitLab CI templates** — the same run-and-gate pair for GitLab pipelines,
+  as an `include:` away.
 - **REST API** — trigger a task on your workspace machines from any CI system
   and poll for the result.
 - **Webhooks** — get run-completion events pushed back into your CI,
@@ -75,6 +77,73 @@ completed (even if requests or checks failed), `1` = the run could not
 execute, `2` = invalid arguments — so a green step does *not* mean a green
 SLA; gate on `summary-json` as shown.
 
+On GitHub Enterprise Server runners the action works as long as the runner
+can reach github.com — it downloads the perfscale binary from the public
+releases. There is no separate GHES mirror.
+
+## GitLab CI
+
+For GitLab pipelines there are ready-made CI templates in
+[`Perfscale/gitlab-ci`](https://github.com/Perfscale/gitlab-ci): a hidden
+`.perfscale:run` job (downloads the pinned, sha256-verified perfscale binary,
+runs your test, keeps the JSON summary as an artifact) and a `.perfscale:gate`
+job that fails the pipeline when a metric exceeds its budget. Include them
+and extend:
+
+```yaml
+include:
+  - remote: https://raw.githubusercontent.com/Perfscale/gitlab-ci/main/templates/perfscale.gitlab-ci.yml
+  - remote: https://raw.githubusercontent.com/Perfscale/gitlab-ci/main/templates/gate.gitlab-ci.yml
+
+load-test:
+  extends: .perfscale:run
+  variables:
+    PERFSCALE_FILE: examples/hello.test.yaml     # native step engine
+    PERFSCALE_CONFIG: examples/hello.config.yaml # required with FILE
+
+p95-gate:
+  extends: .perfscale:gate
+  needs: [load-test]   # downloads the run job's summary artifact
+  variables:
+    PERFSCALE_GATE_METRIC: ".summary.p95_ms"
+    PERFSCALE_GATE_MAX: "500"
+```
+
+Set **exactly one** engine variable — `PERFSCALE_K6`, `PERFSCALE_LOCUST`, or
+`PERFSCALE_FILE`. Key variables (all optional unless noted):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PERFSCALE_VERSION` | `latest` | perfscale release to install; pin a tag for air-gapped setups |
+| `PERFSCALE_K6` / `PERFSCALE_LOCUST` / `PERFSCALE_FILE` | — | Script to run — exactly one; `FILE` is the native engine |
+| `PERFSCALE_CONFIG` | — | Path to `config.yaml`; required with `FILE`, optional for locust |
+| `PERFSCALE_SUMMARY` | `perfscale-summary.json` | Machine-readable JSON summary, kept as a job artifact |
+| `PERFSCALE_ARCH` | `amd64` | Binary architecture: `amd64` or `arm64` |
+| `PERFSCALE_DOWNLOAD_BASE` | github.com releases | Release tree base URL — point at your own mirror for air-gapped runners |
+| `PERFSCALE_GATE_METRIC` | `.summary.p95_ms` | jq path of the metric the gate checks |
+| `PERFSCALE_GATE_MAX` | `500` | Budget: the gate job fails above this value |
+
+Exit codes mirror the CLI: `0` = the run completed (even if requests or
+checks failed), `1` = the run could not execute, `2` = invalid variables. A
+green job does *not* mean your SLA held — that is what the gate job is for,
+and it needs `needs:` on the run job to see its summary artifact.
+
+### Self-managed GitLab
+
+The templates work on any GitLab instance with a docker executor on Linux
+runners, but two things point at github.com by default:
+
+- **Including the template.** `include: remote` makes the instance fetch the
+  file from `raw.githubusercontent.com`. If your instance cannot reach it,
+  vendor `templates/*.gitlab-ci.yml` into your repository and use
+  `include: local`, or mirror `Perfscale/gitlab-ci` into your instance and
+  use `include: project`.
+- **Downloading the binary.** In an air-gapped network, mirror the release
+  assets to a host your runners can reach — keeping the
+  `download/<tag>/<asset>` layout plus `sha256sums.txt` — set
+  `PERFSCALE_DOWNLOAD_BASE` to it, and pin `PERFSCALE_VERSION`: the `latest`
+  redirect only exists on github.com.
+
 ## REST API
 
 Any CI system can drive the platform directly. Create a **personal API
@@ -117,6 +186,7 @@ point it at your CI's incoming-webhook or chat endpoint:
 
 ## Next steps
 
+- [Git integration](/docs/concepts/git-integration) — sync tests from a repository and get commit statuses and PR/MR comments.
 - [Triggers](/docs/concepts/triggers) — schedule the runs your pipeline reacts to.
 - [Webhooks](/docs/concepts/webhooks) — events, signatures, retries.
 - [MCP server & API tokens](/docs/api-reference/mcp) — token management and limits.
