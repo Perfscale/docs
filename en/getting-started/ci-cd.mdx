@@ -1,0 +1,123 @@
+---
+title: CI/CD integration
+description: Load-test from your pipeline — the GitHub Action, the REST API, and webhooks back into CI
+section: Getting Started
+sectionOrder: 1
+order: 7
+---
+
+## Overview
+
+perfscale fits into a pipeline three ways, and they compose:
+
+- **GitHub Action** — run a load test as a workflow step and gate the build
+  on the metrics, all on the GitHub runner.
+- **REST API** — trigger a task on your workspace machines from any CI system
+  and poll for the result.
+- **Webhooks** — get run-completion events pushed back into your CI,
+  chat, or status page.
+
+## GitHub Action
+
+[`Perfscale/github-action`](https://github.com/Perfscale/github-action)
+installs the pinned `perfscale` release binary on the runner (Linux, macOS,
+Windows; x64 and arm64), verifies its `sha256`, runs your test, and packs the
+summary plus generated metrics files into a zip. Set **exactly one** engine
+input — `k6`, `locust`, or `file`:
+
+```yaml
+name: load-test
+on:
+  push:
+    branches: [main]
+
+jobs:
+  perfscale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Perfscale/github-action@v1
+        id: loadtest
+        with:
+          file: examples/hello.test.yaml      # native step engine
+          config: examples/hello.config.yaml  # required with `file`
+
+      - name: Gate on p95
+        run: |
+          p95=$(jq '.summary.p95_ms' "${{ steps.loadtest.outputs.summary-json }}")
+          echo "p95 = ${p95} ms"
+          awk "BEGIN { exit !(${p95} < 500) }" || { echo '::error::p95 over budget'; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perfscale-metrics
+          path: ${{ steps.loadtest.outputs.output-file }}
+```
+
+Key inputs (all optional unless noted):
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `version` | `latest` | perfscale release to install (a tag like `v0.2.0`) |
+| `k6` / `locust` / `file` | — | Script to run — exactly one; `file` is the native engine and requires `config` |
+| `config` | — | Path to `config.yaml` (`vus`, `duration`); optional for `locust` |
+| `host` | — | Target base URL for the locust engine |
+| `summary-export` | `perfscale-summary.json` | Machine-readable JSON summary; empty disables it |
+| `job-summary` | `true` | Render the metric table into the GitHub Actions job summary |
+| `output` | `perfscale-output.zip` | Zip artifact with the summary and metrics files |
+| `args` | — | Extra raw arguments appended verbatim to `perfscale run` |
+
+Outputs: `summary-json` (for gates like the one above), `summary-file`,
+`output-file`, and `exit-code`. Exit codes mirror the CLI: `0` = the run
+completed (even if requests or checks failed), `1` = the run could not
+execute, `2` = invalid arguments — so a green step does *not* mean a green
+SLA; gate on `summary-json` as shown.
+
+## REST API
+
+Any CI system can drive the platform directly. Create a **personal API
+token** in the dashboard under **Settings → API Tokens** — the plaintext
+`psk_...` is shown once; store it in your CI's secret store. Token limits
+follow your plan, and the Starter plan does not include API access.
+
+```bash
+# 1. Trigger a task — returns 202 Accepted with the task ID
+curl -X POST https://perfscale.su/api/v1/tasks \
+  -H "Authorization: Bearer $PERFSCALE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"testId": "your-test-id"}'
+
+# 2. Poll until the task leaves pending/running
+curl https://perfscale.su/api/v1/tasks/task_02 \
+  -H "Authorization: Bearer $PERFSCALE_TOKEN"
+```
+
+The task object ends up carrying `status` (`passed`, `failed`, …) plus the
+summary metrics — `p50`, `p95`, `p99`, `error_rate`, `requests_per_sec`,
+`total_requests` — everything a `jq` gate needs. Use `https://perfscale.ru`
+as the base URL if your workspace lives there. Full endpoint reference:
+[API Reference](/docs/api-reference).
+
+## Webhooks back into CI
+
+When the run was started by a schedule or someone else's pipeline, you still
+want the completion event in *your* system. Subscribe a
+[webhook](/docs/concepts/webhooks) to `test.completed` / `test.failed` and
+point it at your CI's incoming-webhook or chat endpoint:
+
+- Deliveries are signed (`X-Perfscale-Signature`, HMAC-SHA256) — verify
+  before trusting the payload.
+- Failures retry with backoff (1 min, 5 min, 30 min, 2 h) and land in the
+  per-webhook **deliveries history**, so a red delivery is debuggable.
+- The payload carries `task_id`, `status`, `duration_ms`, and `log_url` —
+  enough to post "nightly regression passed, p95 310 ms" to Slack or fail a
+  waiting pipeline job.
+
+## Next steps
+
+- [Triggers](/docs/concepts/triggers) — schedule the runs your pipeline reacts to.
+- [Webhooks](/docs/concepts/webhooks) — events, signatures, retries.
+- [MCP server & API tokens](/docs/api-reference/mcp) — token management and limits.
+- [Runs & live metrics](/docs/concepts/runs) — what a CI-triggered run looks like in the console.

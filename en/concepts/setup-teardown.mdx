@@ -1,0 +1,106 @@
+---
+title: Setup & teardown
+description: Run one-time setup before the load and guaranteed cleanup after — sidecar processes, readiness gates, and graceful kills in the native YAML engine
+section: Concepts
+sectionOrder: 2
+order: 11
+---
+
+## Overview
+
+Real load tests rarely start at the first request. The system under test may
+need a mock server, a fixture database, or a sidecar proxy running *before*
+the first VU connects — and somebody has to shut all of that down afterwards.
+The native YAML engine builds this in: `before:` steps run once ahead of the
+load, `after:` steps run once after it, and the `std/child_process@v1` /
+`std/kill_process@v1` actions manage local OS processes across the run.
+
+Setup & teardown is part of the **open-source engine** — available on every
+plan, in the CLI and on platform machines alike.
+
+## `before:` and `after:`
+
+Both live in the run config next to `vus` / `duration`:
+
+- **`before:`** steps run **once, in order, before any VU starts**. A step's
+  `outputs` name is exposed to every test step under the `config` namespace —
+  start a server, then point your steps at `${{ config.web.port }}`. If any
+  setup step fails, the run **aborts before spawning VUs** — a broken setup
+  would make every iteration fail identically.
+- **`after:`** steps run **once after the load stops** — on a normal finish,
+  on a failed run, on a failed `before:`, and on Ctrl-C/SIGTERM alike. A
+  failing teardown step is logged but does not abort the remaining ones:
+  cleanup is best-effort and always attempted.
+
+## Starting a process: `std/child_process@v1`
+
+Spawns a local OS process and keeps it alive across the run. Typical home is
+the `before:` block, paired with `after:`:
+
+```yaml
+# config.yaml — serve fixtures locally, load-test against them, clean up
+allow_process_actions: true
+
+before:
+  - name: web
+    uses: std/child_process@v1
+    with:
+      command: python3
+      args: ["-m", "http.server", "8080"]
+      waitUntil:
+        port_open: 8080
+        timeout: 10s
+      restart: on-failure
+    outputs: web        # → ${{ config.web.port }}, ${{ config.web.pid }}
+
+after:
+  - name: stop web
+    uses: std/kill_process@v1
+    with: { name: web, signal: TERM }
+```
+
+- **Readiness gate.** `waitUntil` blocks the step until the process is ready —
+  match on captured output (`stdout_contains`, `stderr_matches`, …) or probe a
+  port (`port_open`), with a `timeout` (default `30s`) and `on_timeout`
+  (`fail`, or `continue` to log and go on). A process that exits before
+  becoming ready fails the step with its exit code and an stderr tail.
+- **Restart policy.** A supervisor applies `restart: never | on-failure |
+  always` for the rest of the run (`max_restarts`, `backoff_ms`), logging
+  each restart.
+- **Live logs.** The child's stdout/stderr streams into the run log with a
+  `{step}: ` prefix, alongside your load output.
+
+## Stopping it: `std/kill_process@v1`
+
+The `after:` counterpart. Stop by **registry name** (the step or `outputs`
+name) — preferred, because the lookup always targets the *current* pid even
+across restarts — or by raw `pid` as a best-effort fallback for processes
+outside the registry (unix only).
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `signal` | `TERM` | `TERM`, `KILL`, `INT`, `HUP`, `QUIT`, `USR1`, `USR2` |
+| `grace_ms` | `5000` | Wait this long before escalating to SIGKILL |
+| `tree` | `true` | Signal the whole process group, not just the leader |
+
+Killing an already-stopped process is a no-op, not an error. And whatever is
+still alive when the run ends — normal finish, failed `before:`, or Ctrl-C —
+is **stopped automatically** (SIGTERM, escalated to SIGKILL after a grace
+period, whole process group), so a forgotten `kill_process` never leaks a
+server.
+
+## The safety gate
+
+Process actions are **fail-closed**: the run must opt in with
+`allow_process_actions: true` in the config. A step list from an untrusted
+source cannot touch processes until you explicitly allow it — the same gate
+covers both `std/child_process@v1` and `std/kill_process@v1`.
+
+## Next steps
+
+- [Setup & teardown guide](/docs/oss/core/setup-teardown) — the full walkthrough
+  in the OSS docs.
+- [Engine actions](/docs/oss/core/actions) — `std/child_process@v1` and
+  `std/kill_process@v1` parameter references.
+- [YAML reference](/docs/oss/yaml-reference) — `before:`, `after:`, and
+  `allow_process_actions` in the config schema.

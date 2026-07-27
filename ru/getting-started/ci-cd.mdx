@@ -1,0 +1,123 @@
+---
+title: Интеграция с CI/CD
+description: Нагрузочное тестирование из пайплайна — GitHub Action, REST API и вебхуки обратно в CI
+section: Начало работы
+sectionOrder: 1
+order: 7
+---
+
+## Обзор
+
+perfscale встраивается в пайплайн тремя способами, и они комбинируются:
+
+- **GitHub Action** — запускает нагрузочный тест шагом workflow и гейтит
+  сборку по метрикам, всё на раннере GitHub.
+- **REST API** — запуск задачи на машинах вашего рабочего пространства из
+  любой CI-системы с опросом результата.
+- **Вебхуки** — события о завершении прогона, отправленные обратно в ваш CI,
+  чат или статус-страницу.
+
+## GitHub Action
+
+[`Perfscale/github-action`](https://github.com/Perfscale/github-action)
+устанавливает закреплённый релизный бинарник `perfscale` на раннер (Linux,
+macOS, Windows; x64 и arm64), проверяет его `sha256`, запускает ваш тест и
+упаковывает сводку вместе со сгенерированными файлами метрик в zip. Укажите
+**ровно один** engine-input — `k6`, `locust` или `file`:
+
+```yaml
+name: load-test
+on:
+  push:
+    branches: [main]
+
+jobs:
+  perfscale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Perfscale/github-action@v1
+        id: loadtest
+        with:
+          file: examples/hello.test.yaml      # нативный step-движок
+          config: examples/hello.config.yaml  # обязателен с `file`
+
+      - name: Gate on p95
+        run: |
+          p95=$(jq '.summary.p95_ms' "${{ steps.loadtest.outputs.summary-json }}")
+          echo "p95 = ${p95} ms"
+          awk "BEGIN { exit !(${p95} < 500) }" || { echo '::error::p95 over budget'; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perfscale-metrics
+          path: ${{ steps.loadtest.outputs.output-file }}
+```
+
+Ключевые входы (все опциональны, если не сказано иное):
+
+| Вход | По умолчанию | Описание |
+|------|--------------|----------|
+| `version` | `latest` | Релиз perfscale для установки (тег вида `v0.2.0`) |
+| `k6` / `locust` / `file` | — | Скрипт для запуска — ровно один; `file` — нативный движок, требует `config` |
+| `config` | — | Путь к `config.yaml` (`vus`, `duration`); опционально для `locust` |
+| `host` | — | Базовый URL цели для движка locust |
+| `summary-export` | `perfscale-summary.json` | Машиночитаемая JSON-сводка; пустое значение отключает |
+| `job-summary` | `true` | Отрисовать таблицу метрик в job summary GitHub Actions |
+| `output` | `perfscale-output.zip` | Zip-артефакт со сводкой и файлами метрик |
+| `args` | — | Дополнительные сырые аргументы, добавляемые к `perfscale run` как есть |
+
+Выходы: `summary-json` (для гейтов вроде приведённого выше), `summary-file`,
+`output-file` и `exit-code`. Коды выхода повторяют CLI: `0` — прогон
+завершился (даже если запросы или проверки падали), `1` — прогон не смог
+выполниться, `2` — неверные аргументы, — поэтому зелёный шаг *не* означает
+выполненный SLA; гейтить нужно по `summary-json`, как показано выше.
+
+## REST API
+
+Любая CI-система может управлять платформой напрямую. Создайте **персональный
+API-токен** в дашборде в **Settings → API Tokens** — открытый `psk_...`
+показывается один раз; сохраните его в секрет-хранилище вашей CI. Лимиты
+токенов зависят от тарифа, а на Starter API-доступ не входит.
+
+```bash
+# 1. Запуск задачи — возвращает 202 Accepted с ID задачи
+curl -X POST https://perfscale.su/api/v1/tasks \
+  -H "Authorization: Bearer $PERFSCALE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"testId": "your-test-id"}'
+
+# 2. Опрос, пока задача не выйдет из pending/running
+curl https://perfscale.su/api/v1/tasks/task_02 \
+  -H "Authorization: Bearer $PERFSCALE_TOKEN"
+```
+
+В итоге объект задачи содержит `status` (`passed`, `failed`, …) и сводные
+метрики — `p50`, `p95`, `p99`, `error_rate`, `requests_per_sec`,
+`total_requests` — всё, что нужно гейту на `jq`. Если ваше рабочее
+пространство живёт на perfscale.ru, используйте `https://perfscale.ru` как
+базовый URL. Полный справочник endpoint'ов — [Справочник API](/docs/api-reference).
+
+## Вебхуки обратно в CI
+
+Когда прогон запущен расписанием или чужим пайплайном, событие о завершении
+всё равно нужно в *вашей* системе. Подпишите
+[вебхук](/docs/concepts/webhooks) на `test.completed` / `test.failed` и
+направьте его на incoming-webhook вашего CI или чата:
+
+- Доставки подписаны (`X-Perfscale-Signature`, HMAC-SHA256) — проверяйте
+  подпись до того, как доверять payload.
+- Ошибки ретраятся с backoff (1 мин, 5 мин, 30 мин, 2 ч) и попадают в
+  **историю доставок** вебхука, так что красную доставку можно отладить.
+- Payload несёт `task_id`, `status`, `duration_ms` и `log_url` — достаточно,
+  чтобы отправить в Slack «ночная регрессия прошла, p95 310 мс» или завалить
+  ожидающий джоб пайплайна.
+
+## Дальше
+
+- [Триггеры](/docs/concepts/triggers) — расписания прогонов, на которые реагирует ваш пайплайн.
+- [Webhooks](/docs/concepts/webhooks) — события, подписи, ретраи.
+- [MCP-сервер и API-токены](/docs/api-reference/mcp) — управление токенами и лимиты.
+- [Прогоны и живые метрики](/docs/concepts/runs) — как выглядит запущенный из CI прогон в консоли.

@@ -1,0 +1,95 @@
+---
+title: Runs & live metrics
+description: The life of a task — dispatch to machines, live logs and metrics during the run, the final report, and run history
+section: Concepts
+sectionOrder: 2
+order: 10
+---
+
+## Overview
+
+Every execution of a test is a **task** — and a task is observable from the
+moment it is created: you watch it dispatch to a machine, stream its logs and
+metrics while it runs, and read a summarized report when it finishes. This
+page walks that lifecycle; [Tests & Tasks](/docs/concepts/tests) defines the
+records themselves.
+
+## Starting a run
+
+A run starts the same way no matter who asks:
+
+- **Manually** — **Run** on the test page, or **Start Test** to pick a machine
+  and a configuration first.
+- **On a schedule** — a [trigger](/docs/concepts/triggers) fires the test on
+  its cron expression, or immediately via its **run now** button.
+- **From automation** — `POST /api/v1/tasks` with a `testId` returns
+  `202 Accepted` and the task ID; the MCP server's `run_test` tool does the
+  same from an AI agent.
+
+The new task enters the lifecycle `pending → running → passed | failed |
+cancelled | timeout`. Cancel a pending or running task any time with
+`DELETE /api/v1/tasks/:id`.
+
+## Distribution across machines
+
+perfscale selects among the workspace's `online` machines — a machine
+executing a task shows as `busy` and stays out of rotation until it finishes.
+When several machines are available, the load is distributed evenly. See
+[Machines](/docs/concepts/machines) for statuses and capacity.
+
+## Live logs
+
+While the task runs, **Runs & logs** streams everything it produces: the
+dispatch, per-request lines, check results, and the final metric summary —
+all timestamped and filterable.
+
+![The Runs & logs page streaming execution output](/docs-assets/platform/runs-logs.webp)
+
+The full log stays attached to the run afterwards — downloadable from the run
+page, over the API, or through ASK AI's run actions.
+
+## Live metrics and the final report
+
+Aggregated latency percentiles and throughput land on the **Metrics**
+dashboard as the run progresses. The dashboard detects the run's protocol
+from the metric families it streams — **FIX**, **gRPC**, **WebSocket**,
+**HTTP**, or **Generic** — and swaps in the matching tile set, with a badge
+next to the run selector showing what was detected. See
+[Protocol metrics](/docs/concepts/protocol-metrics) for the tile sets.
+
+When the task finishes, its summary metrics are recorded with it:
+
+| Metric | Description |
+|--------|-------------|
+| `p50` | Median response time in milliseconds |
+| `p95` | 95th percentile response time |
+| `p99` | 99th percentile response time |
+| `errorRate` | Fraction of failed requests (0.0–1.0) |
+| `requestsPerSec` | Throughput at peak load |
+| `totalRequests` | Total requests sent during the task |
+
+Need it as a document? Ask ASK AI — it assembles a full run report with
+status, key metrics, and latency charts, downloadable as a PDF.
+
+## Run history
+
+Every task is kept with its metrics and log, newest first —
+`GET /api/v1/tasks` lists them for the workspace, and the MCP server exposes
+`list_runs`, `get_run`, `get_run_logs`, and `runs_by_machine` for the same
+data. On the **Metrics** dashboard the run selector switches between a test's
+runs, so lining up today's run against yesterday's is two clicks — protocol
+detection is per run, so each shows its own tile set.
+
+How far back the history reaches depends on the plan's result retention:
+30 days on Starter, 90 on Growing, up to a year on Enterprise (see
+[Billing](/docs/concepts/billing)).
+
+## Next steps
+
+- [Tests & Tasks](/docs/concepts/tests) — the records behind a run.
+- [Protocol metrics](/docs/concepts/protocol-metrics) — how the dashboard
+  adapts to each run.
+- [Webhooks](/docs/concepts/webhooks) — get `test.completed` / `test.failed`
+  pushed to your endpoint.
+- [CI/CD integration](/docs/getting-started/ci-cd) — start runs from a
+  pipeline.

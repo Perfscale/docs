@@ -8,6 +8,8 @@ order: 3
 
 **ASK AI** is a chat built into the dashboard (the **AI** tab) that answers questions about your workspace — runs, tests, machines and metrics — and renders answers as live dashboard components: tables, charts, stat cards and action buttons.
 
+![The ASK AI chat answering a question about the latest run with a live table, a stat card, and run action buttons](/docs-assets/platform/ask-ai-chat.webp)
+
 ## Architecture
 
 - **Bring your own model.** The workspace owner or an admin configures an LLM endpoint under **Settings → AI provider**. Both OpenAI-compatible (`/chat/completions`) and Anthropic-compatible (Messages API) wire formats are supported. perfscale does not operate or proxy an LLM of its own.
@@ -19,6 +21,10 @@ order: 3
 ## Generative UI
 
 Answers are composed from a fixed component vocabulary — tables, line charts, stat cards, callouts — plus **run actions**: buttons that open the run page, jump to the metrics dashboard, or download the run's log file. The model supplies only data and the run ID; all URLs are constructed by the dashboard.
+
+ASK AI can also assemble a full run report on request — run status, key metrics, and latency charts in one document, downloadable as a PDF.
+
+![A run report assembled by ASK AI — run status, key metrics, and latency charts, with a Download PDF button](/docs-assets/platform/ask-ai-report.webp)
 
 ## Threads
 
