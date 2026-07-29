@@ -12,6 +12,25 @@ at `/admin` on your instance (e.g. [perfscale.su/admin](https://perfscale.su/adm
 Want to look around first? The sign-in page has a **Try the demo** button that
 prefills a read-only demo workspace.
 
+## Sign-in — password, SSO, and linked accounts
+
+The sign-in page at `/login` takes **email and password**, and — depending on
+the deployment — one-click SSO: **Yandex** and **GitFlic** on
+[perfscale.ru](https://perfscale.ru/login), **Google** on the international
+[perfscale.su](https://perfscale.su/login). Sign in via a provider whose email
+matches an existing account and the two are linked automatically — no
+confirmation-email round-trip.
+
+The **Account** tab (`/admin/account`) lists the deployment's social providers
+with a status each — **Linked as** plus your provider username, or **Not
+linked**. **Link** starts Keycloak's account-linking flow: the browser detours
+to the provider's consent screen and comes back linked. **Unlink** asks for
+confirmation first; Keycloak may refuse to remove your last remaining sign-in
+method, in which case the page shows its error message.
+
+That is how one person keeps several ways in — say, both Yandex and GitFlic —
+tied to a single perfscale account.
+
 ## 1. Machines — your load generators
 
 A **machine** is any host running the perfscale agent: a bare-metal box, a VM, a
