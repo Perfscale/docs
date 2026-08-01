@@ -65,9 +65,9 @@ variables:
 подключении:
 
 - `id` (обязательный) — подключение, обычно `"${{ conn.id }}"`.
-- `query` — SQL с плейсхолдерами драйвера: `$1`, `$2`, … для PostgreSQL,
-  `?` для всех трёх драйверов. Текст SQL **никогда не интерполируется** —
-  значения передаются через `params`.
+- `query` — SQL с плейсхолдерами драйвера: `$1`, `$2`, … для PostgreSQL
+  (который отвергает `?`), `?` для MySQL/MariaDB и SQLite. Текст SQL
+  **никогда не интерполируется** — значения передаются через `params`.
 - `params` — позиционные значения биндинга; каждый элемент *может*
   интерполироваться (`"${{ vars.uid }}"`). Биндятся строки, числа, булевы
   значения и null; массивы и объекты отклоняются.
@@ -250,6 +250,332 @@ db_query_duration: avg=0.42ms p(50)=0.38ms p(90)=0.61ms p(95)=0.74ms p(99)=1.10m
 `http_req_*`, поэтому чистый database-прогон экспортирует `summary: null` —
 для CI-гейта проверяйте строки `db_*` в stdout (или добавьте в сценарий
 HTTP-шаг).
+
+## 7. Примеры
+
+Готовые заготовки под типовые сценарии — копируйте и запускайте. Каждый
+пример сочетает урезанный `*.test.yaml` с нужными строками конфига; все
+блоки ниже проходят `perfscale lint` в том виде, в каком приведены.
+
+### Аналитика на чтение (PostgreSQL)
+
+SELECT-трафик отчётности через persistent-пул, припаркованный на всю
+итерацию. `max_rows` ограничивает, сколько строк runaway-результат может
+втянуть в память (при достижении лимита выход лишь получает
+`truncated: true`), а check превращает ваш SLO по латенси в видимый фейл
+в сводке. `pool_size: 4` — это запас, а не параллелизм: шаги одного VU
+выполняются строго последовательно. Строковые бинды на PostgreSQL имеют
+тип text, поэтому кастуйте в SQL (`$1::timestamptz`):
+
+```yaml
+# analytics.test.yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: persistent
+      pool_size: 4
+    outputs: conn
+
+  - name: orders window
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT id, total FROM orders WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+      params: ["${{ vars.from_ts }}", "${{ vars.to_ts }}"]
+      max_rows: 500
+    check:
+      duration_ms_lt: 200
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+```yaml
+# analytics.config.yaml
+vus: 20
+duration: 5m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+  from_ts: "2026-01-01T00:00:00Z"
+  to_ts: "2026-02-01T00:00:00Z"
+```
+
+### Нагрузка на вставку (PostgreSQL)
+
+Один INSERT на итерацию, значения идут через `params` — сам текст SQL
+никогда не интерполируется. Уникальность должна откуда-то браться: в
+bind-параметрах нет токена с номером итерации, поэтому ключ пусть чеканит
+база (здесь — identity-колонка, либо `gen_random_uuid()`) — или биндьте
+значение, которое произвёл более ранний шаг. `rows_affected` в выходе
+подтверждает запись:
+
+```yaml
+# подключение — как в предыдущем примере, дальше на каждой итерации:
+  - name: insert event
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # id — GENERATED ALWAYS AS IDENTITY: база чеканит уникальный ключ
+      # на каждое выполнение; в bind-параметрах токена итерации нет.
+      query: INSERT INTO events (tenant, kind) VALUES ($1, $2)
+      params: ["${{ vars.tenant }}", "click"]
+    outputs: ins
+
+  - name: confirm write
+    uses: std/log@v1
+    with:
+      message: "rows_affected=${{ ins.rows_affected }}"
+  # Натуральные ключи вместо суррогатного id? Следите за
+  # `db_errors_constraint` в сводке — растущий счётчик это фейлы
+  # unique-ограничения.
+```
+
+```yaml
+# insert.config.yaml
+vus: 10
+duration: 2m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+  tenant: acme
+```
+
+### Денежный перевод в одной транзакции
+
+Begin, debit, credit, commit — оба UPDATE идут внутри одной транзакции на
+persistent-подключении, и каждый шаг (begin/запросы/commit) попадает в
+`db_query_duration`. Суммы и id счетов передаются биндами, а не
+склеиваются в SQL. Два факта: шаги выполняются безусловно (упавший шаг не
+останавливает список), а открытая транзакция откатывается, когда
+подключение сбрасывается в конце итерации. Поэтому коммит — последним, а
+на ветке ошибки замените его явным rollback — показан закомментированным:
+
+```yaml
+  - name: begin transfer
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: debit sender
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: UPDATE accounts SET balance = balance - $1 WHERE id = $2
+      params: ["${{ vars.amount }}", "${{ vars.from_id }}"]
+
+  - name: credit receiver
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: UPDATE accounts SET balance = balance + $1 WHERE id = $2
+      params: ["${{ vars.amount }}", "${{ vars.to_id }}"]
+
+  - name: commit transfer
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  # Ветка ошибки — замените коммит на:
+  #   - name: rollback transfer
+  #     uses: std/db-tx-rollback@v1
+  #     with: { id: "${{ conn.id }}" }
+```
+
+На PostgreSQL упавший стейтмент абортит транзакцию, так что финальный
+COMMIT откатится, а не закоммитит половину перевода; на MySQL/MariaDB
+упавший стейтмент транзакцию *не* портит — там rollback делайте явно.
+
+### Serverless / режим per-query
+
+`mode: per-query` лишь сохраняет конфиг подключения и открывает свежее
+соединение на каждый запрос — форма serverless/edge-драйверов и
+бенчмарков времени подключения. `db_query_duration` в этом режиме
+измеряет connect + query как одно целое, сам шаг подключения не делает
+сетевого I/O, а транзакции на per-query id отклоняются. Обратите внимание
+на таймаут: в этом режиме `timeout_ms` *шага запроса* покрывает connect +
+query вместе. `std/db-close@v1` здесь — no-op (профили просто
+сбрасываются), поэтому в примере его нет:
+
+```yaml
+steps:
+  - name: store connect config
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: per-query
+    outputs: pq
+
+  - name: one-shot lookup
+    uses: std/db-query@v1
+    with:
+      id: "${{ pq.id }}"
+      query: SELECT plan FROM subscriptions WHERE id = $1
+      params: ["${{ vars.sub_id }}"]
+      timeout_ms: 500        # per-query-режим: покрывает connect + query
+    check:
+      duration_ms_lt: 250
+```
+
+### Вариант для MySQL / MariaDB
+
+Тот же аналитический пример с двумя изменениями: `driver: mysql`
+(покрывает MariaDB) с DSN `mysql://` и плейсхолдеры `?`. Стиль
+плейсхолдеров — единственное синтаксическое различие между драйверами:
+PostgreSQL требует нумерованные `$1`, `$2`, … и отвергает `?`;
+MySQL/MariaDB и SQLite используют `?` и не знают `$n`.
+`tls: "skip-verify"` шифрует без проверки сертификата — только для
+стейджинга с самоподписанными сертификатами:
+
+```yaml
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: mysql                    # покрывает MariaDB
+      dsn: "${{ vars.mysql_dsn }}"     # mysql://user:pass@host:3306/db
+      tls: "skip-verify"               # только стейджинг
+    outputs: conn
+
+  - name: orders window
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # Плейсхолдеры ?, а не $1 — PostgreSQL тут особенный ($1, $2, …).
+      query: SELECT id, total FROM orders WHERE created_at >= ? AND created_at < ?
+      params: ["${{ vars.from_ts }}", "${{ vars.to_ts }}"]
+      max_rows: 500
+    check:
+      duration_ms_lt: 200
+```
+
+### SQLite без установки
+
+Никакого сервера — самый быстрый способ попробовать db-шаги. Две ловушки:
+файловому DSN нужен `?mode=rwc`, иначе первый коннект упадёт, если файла
+ещё нет, а сам DSN нужно брать в кавычки — `:` и `?` значимы в YAML. Для
+`sqlite::memory:` оставайтесь на дефолтах (`mode: persistent`,
+`pool_size: 1`) — per-query-подключение или второе соединение в пуле
+оказались бы *другой*, пустой базой:
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: sqlite
+      dsn: "sqlite:///tmp/bench.db?mode=rwc"   # mode=rwc создаёт файл
+    outputs: conn
+
+  - name: create table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE IF NOT EXISTS bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: INSERT INTO bench (id, payload) VALUES (?, ?)
+      params: ["${{ vars.uid }}", "payload"]
+
+  # … чтение обратно, закрытие — как в разделе 4 …
+```
+
+### HTTP API + проверка в базе
+
+Движки std-тира сочетаются в одном сценарии: нагружаете API по HTTP,
+затем проверяете, что строка легла в базу, — та же итерация, одна сводка
+(строки `http_req_*` и `db_*` рядом). Проверка числа строк спускается в
+выход запроса через `on:` (`data.0` — первая строка), а `message_matches`
+делает JSON-subset-матч по счётчику:
+
+```yaml
+steps:
+  - name: create order via API
+    uses: std/http@v1
+    with:
+      method: POST
+      url: "${{ vars.api_url }}/orders"
+      headers: { content-type: application/json }
+      body: '{"sku": "SKU-1", "qty": 1}'
+    check:
+      status: 201
+
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+    outputs: conn
+
+  - name: order persisted?
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT count(*) AS n FROM orders WHERE sku = $1
+      params: ["SKU-1"]
+    outputs: cnt
+    check:
+      on: cnt.data.0              # первая строка результата
+      message_matches: { n: 1 }   # subset-матч по { "n": 1 }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+```yaml
+# mixed.config.yaml
+vus: 5
+duration: 30s
+variables:
+  api_url: http://127.0.0.1:8080
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+```
+
+### Ступенчатая нагрузка (разгон → плато → спад)
+
+Профиль нагрузки в CLI — плоский `vus` × `duration`: в open-source-движке
+нет фаз внутри прогона (именованные пресеты вроде `load` живут в
+Конфигурациях платформы, которые запускают этот же файл теста). Чтобы
+сделать ступеньки из CLI, прогоните фазы подряд: один тест, три конфига,
+отличающихся только профилем нагрузки. Каждая фаза печатает свою сводку —
+сравните перцентили `db_query_duration` между фазами, чтобы найти точку,
+где база начинает сдавать:
+
+```yaml
+# phase-up.config.yaml
+vus: 5
+duration: 2m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+```
+
+```yaml
+# phase-plateau.config.yaml — тот же файл, vus: 25, duration: 5m
+# phase-down.config.yaml    — тот же файл, vus: 10, duration: 1m
+```
+
+```sh
+for phase in up plateau down; do
+  perfscale run -f analytics.test.yaml -c "phase-$phase.config.yaml" --quiet
+done
+```
+
+### Как мне…?
+
+| Задача | Что использовать |
+|--------|------------------|
+| Измерить латенси подключения | `mode: per-query` — connect + query попадают в один сэмпл `db_query_duration` |
+| Тестировать транзакцию | `std/db-tx-begin@v1` → запросы → `std/db-tx-commit@v1` (или `std/db-tx-rollback@v1`) |
+| Избежать SQL-инъекций | Все значения — только через `params`: текст SQL никогда не интерполируется |
+| Тест без сервера | SQLite-файл (`sqlite:///tmp/x.db?mode=rwc`) или `sqlite::memory:` |
+| Самоподписанный TLS-сертификат | `tls: "skip-verify"` в шаге подключения (`false` = открытый текст) |
+| Ограничить память на больших SELECT | `max_rows` в `std/db-query@v1` |
+| Проверять результаты запроса | `check` с `on: out.data.0` + `message_matches` |
+| Замедлить темп одного VU | `std/sleep@v1` между шагами |
 
 ## Дальше
 

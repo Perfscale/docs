@@ -61,8 +61,8 @@ used as labels.
 
 - `id` (required) — the connection to use, normally `"${{ conn.id }}"`.
 - `query` — SQL with driver-native placeholders: `$1`, `$2`, … for
-  PostgreSQL, `?` for all three drivers. The SQL text is **never
-  interpolated** — values move through `params`.
+  PostgreSQL (which rejects `?`), `?` for MySQL/MariaDB and SQLite. The
+  SQL text is **never interpolated** — values move through `params`.
 - `params` — positional bind values; each entry *may* be interpolated
   (`"${{ vars.uid }}"`). Strings, numbers, booleans, and null bind;
   arrays and objects are rejected.
@@ -243,6 +243,329 @@ feedback, visible in the summary, not a CLI error. Note that
 `--summary-export` parses only the `http_req_*` family, so a pure database
 run exports `summary: null` — assert on the `db_*` stdout lines (or a
 companion HTTP step) when you need a CI gate.
+
+## 7. Recipes
+
+Copy-paste starting points for the shapes people actually run. Each
+recipe pairs a trimmed `*.test.yaml` with the config lines it needs;
+every block below passes `perfscale lint` as written.
+
+### Read-only analytics (PostgreSQL)
+
+SELECT-heavy reporting traffic on a persistent pool parked for the whole
+iteration. `max_rows` caps what a runaway result set can pull into memory
+(hitting the cap only sets `truncated: true`), and the check turns a
+latency SLO into a visible summary failure. `pool_size: 4` is headroom,
+not parallelism — a VU's steps run strictly sequentially. String binds
+are text-typed on PostgreSQL, so cast in SQL (`$1::timestamptz`):
+
+```yaml
+# analytics.test.yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: persistent
+      pool_size: 4
+    outputs: conn
+
+  - name: orders window
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT id, total FROM orders WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+      params: ["${{ vars.from_ts }}", "${{ vars.to_ts }}"]
+      max_rows: 500
+    check:
+      duration_ms_lt: 200
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+```yaml
+# analytics.config.yaml
+vus: 20
+duration: 5m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+  from_ts: "2026-01-01T00:00:00Z"
+  to_ts: "2026-02-01T00:00:00Z"
+```
+
+### Write-heavy inserts (PostgreSQL)
+
+One INSERT per iteration, values moving through `params` — the SQL text
+itself is never interpolated. Uniqueness has to come from somewhere: bind
+params carry no per-iteration token, so let the database mint the key (an
+identity column here, or `gen_random_uuid()`), or bind a value an earlier
+step produced. The output's `rows_affected` confirms the write:
+
+```yaml
+# connect as in the previous recipe, then per iteration:
+  - name: insert event
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # id is GENERATED ALWAYS AS IDENTITY — the DB mints a unique key
+      # per execution; bind params have no per-iteration token.
+      query: INSERT INTO events (tenant, kind) VALUES ($1, $2)
+      params: ["${{ vars.tenant }}", "click"]
+    outputs: ins
+
+  - name: confirm write
+    uses: std/log@v1
+    with:
+      message: "rows_affected=${{ ins.rows_affected }}"
+  # Natural keys instead of a surrogate id? Watch `db_errors_constraint`
+  # in the summary — a climbing count is unique-violation failures.
+```
+
+```yaml
+# insert.config.yaml
+vus: 10
+duration: 2m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+  tenant: acme
+```
+
+### Money transfer in one transaction
+
+Begin, debit, credit, commit — both UPDATEs run inside one transaction on
+a persistent connection, and every step (begin/queries/commit) feeds
+`db_query_duration`. Amounts and account ids go through binds, never
+string-built SQL. Two things to know: steps run unconditionally (a failed
+step does not stop the list), and an open transaction rolls back when the
+connection drops at iteration end. So commit last, and on the failure
+path swap the commit for an explicit rollback — shown commented out:
+
+```yaml
+  - name: begin transfer
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: debit sender
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: UPDATE accounts SET balance = balance - $1 WHERE id = $2
+      params: ["${{ vars.amount }}", "${{ vars.from_id }}"]
+
+  - name: credit receiver
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: UPDATE accounts SET balance = balance + $1 WHERE id = $2
+      params: ["${{ vars.amount }}", "${{ vars.to_id }}"]
+
+  - name: commit transfer
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  # Failure path — replace the commit with:
+  #   - name: rollback transfer
+  #     uses: std/db-tx-rollback@v1
+  #     with: { id: "${{ conn.id }}" }
+```
+
+On PostgreSQL a failed statement aborts the transaction, so a trailing
+COMMIT rolls back instead of committing a half-transfer; on MySQL/MariaDB
+a failed statement does *not* poison the transaction — make the rollback
+explicit there.
+
+### Serverless / per-query mode
+
+`mode: per-query` stores the connect config and opens a fresh connection
+for every query — the shape of serverless/edge drivers, and of
+connect-time benchmarking. `db_query_duration` then measures connect +
+query as one unit, the connect step itself does no network I/O, and
+transactions are rejected on per-query ids. Mind the timeout placement:
+in this mode the *query* step's `timeout_ms` covers connect + query
+together. `std/db-close@v1` is a no-op here (profiles simply drop), so
+the recipe omits it:
+
+```yaml
+steps:
+  - name: store connect config
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: per-query
+    outputs: pq
+
+  - name: one-shot lookup
+    uses: std/db-query@v1
+    with:
+      id: "${{ pq.id }}"
+      query: SELECT plan FROM subscriptions WHERE id = $1
+      params: ["${{ vars.sub_id }}"]
+      timeout_ms: 500        # per-query mode: covers connect + query
+    check:
+      duration_ms_lt: 250
+```
+
+### MySQL / MariaDB variant
+
+The analytics recipe with two changes: `driver: mysql` (covers MariaDB)
+with a `mysql://` DSN, and `?` placeholders. Placeholder style is the one
+syntax difference between drivers — PostgreSQL needs numbered `$1`,
+`$2`, … and rejects `?`; MySQL/MariaDB and SQLite use `?` and know no
+`$n`. `tls: "skip-verify"` encrypts without certificate verification —
+for staging servers with self-signed certs only:
+
+```yaml
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: mysql                    # covers MariaDB
+      dsn: "${{ vars.mysql_dsn }}"     # mysql://user:pass@host:3306/db
+      tls: "skip-verify"               # staging only
+    outputs: conn
+
+  - name: orders window
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # ? placeholders, not $1 — PostgreSQL is the odd one out ($1, $2, …).
+      query: SELECT id, total FROM orders WHERE created_at >= ? AND created_at < ?
+      params: ["${{ vars.from_ts }}", "${{ vars.to_ts }}"]
+      max_rows: 500
+    check:
+      duration_ms_lt: 200
+```
+
+### SQLite zero-setup
+
+No server at all — the fastest way to try the db steps. Two gotchas: a
+file DSN needs `?mode=rwc` or the first connect fails when the file does
+not exist yet, and the DSN wants quotes because `:` and `?` are
+YAML-significant. For `sqlite::memory:` stay on the defaults
+(`mode: persistent`, `pool_size: 1`) — a per-query connection or a second
+pooled connection would be a *different*, empty database:
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: sqlite
+      dsn: "sqlite:///tmp/bench.db?mode=rwc"   # mode=rwc creates the file
+    outputs: conn
+
+  - name: create table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE IF NOT EXISTS bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: INSERT INTO bench (id, payload) VALUES (?, ?)
+      params: ["${{ vars.uid }}", "payload"]
+
+  # … read it back, close — same shape as section 4 …
+```
+
+### HTTP API + database assertion
+
+The std-tier engines compose in one scenario: drive the API over HTTP,
+then verify the row landed — same iteration, one summary (`http_req_*`
+and `db_*` lines side by side). The row-count check descends into the
+query output with `on:` (`data.0` is the first row) and `message_matches`
+does a JSON-subset match on the count:
+
+```yaml
+steps:
+  - name: create order via API
+    uses: std/http@v1
+    with:
+      method: POST
+      url: "${{ vars.api_url }}/orders"
+      headers: { content-type: application/json }
+      body: '{"sku": "SKU-1", "qty": 1}'
+    check:
+      status: 201
+
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+    outputs: conn
+
+  - name: order persisted?
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT count(*) AS n FROM orders WHERE sku = $1
+      params: ["SKU-1"]
+    outputs: cnt
+    check:
+      on: cnt.data.0              # first row of the result
+      message_matches: { n: 1 }   # subset-matches { "n": 1 }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+```yaml
+# mixed.config.yaml
+vus: 5
+duration: 30s
+variables:
+  api_url: http://127.0.0.1:8080
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+```
+
+### Ramped load (ramp-up → plateau → ramp-down)
+
+The CLI's load shape is flat `vus` × `duration` — the open-source engine
+has no in-run phases (named ramp presets like `load` live in the
+platform's Configurations, which run this same test file). To ramp from
+the CLI, run the phases back-to-back: one test, three configs that differ
+only in the load shape. Each phase prints its own summary — compare
+`db_query_duration` percentiles across phases to find where the database
+starts to bend:
+
+```yaml
+# phase-up.config.yaml
+vus: 5
+duration: 2m
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/shop
+```
+
+```yaml
+# phase-plateau.config.yaml — same file, vus: 25, duration: 5m
+# phase-down.config.yaml    — same file, vus: 10, duration: 1m
+```
+
+```sh
+for phase in up plateau down; do
+  perfscale run -f analytics.test.yaml -c "phase-$phase.config.yaml" --quiet
+done
+```
+
+### How do I…?
+
+| Task | Use |
+|------|-----|
+| Measure connect latency | `mode: per-query` — connect + query land in one `db_query_duration` sample |
+| Test a transaction | `std/db-tx-begin@v1` → queries → `std/db-tx-commit@v1` (or `std/db-tx-rollback@v1`) |
+| Avoid SQL injection | Bind every value via `params` — SQL text is never interpolated |
+| Test without a server | SQLite file (`sqlite:///tmp/x.db?mode=rwc`) or `sqlite::memory:` |
+| Self-signed TLS certificate | `tls: "skip-verify"` on the connect step (`false` = plaintext) |
+| Cap memory on big SELECTs | `max_rows` on `std/db-query@v1` |
+| Assert on query results | `check` with `on: out.data.0` + `message_matches` |
+| Slow down per-VU pacing | `std/sleep@v1` between steps |
 
 ## Next steps
 
