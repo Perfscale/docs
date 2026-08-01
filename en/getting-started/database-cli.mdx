@@ -1,0 +1,255 @@
+---
+title: Databases from the CLI
+description: Write and run a database load test with the perfscale CLI — PostgreSQL, MySQL/MariaDB, and SQLite steps, YAML config, perfscale run, and the db_* metric summary
+section: Getting Started
+sectionOrder: 1
+order: 7
+---
+
+## Overview
+
+The open-source perfscale engine drives **PostgreSQL, MySQL/MariaDB, and
+SQLite** straight from the terminal — no platform account, free in the std
+tier like the WebSocket and gRPC steps. The `std/db-*@v1` family covers
+connections, parameterized queries, and multi-statement transactions
+measured as one unit. This page walks a test from YAML to metric summary.
+
+## 1. Install the CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Or download a binary for your platform from
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). The
+binary has no runtime dependencies — the native engine is built in.
+
+## 2. Keep the DSN out of the test file
+
+Never inline a password in YAML. Put the connection string in the config
+file's `variables:` block — a file you keep out of git or generate in CI —
+and reference it by interpolation:
+
+```yaml
+# db.config.yaml
+vus: 5
+duration: 30s
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/bench
+```
+
+The test file then carries only `dsn: "${{ vars.db_dsn }}"`. The DSN is
+never logged, and raw SQL never appears in metrics — only step names are
+used as labels.
+
+## 3. The std/db-* steps
+
+**`std/db-connect@v1`** — opens a connection and names it via `outputs`:
+
+- `driver` (required) — `postgres`, `mysql` (covers MariaDB), or `sqlite`.
+- `dsn` (required) — driver-native connection string; interpolated, so
+  `${{ vars.db_dsn }}` keeps the secret out of the file.
+- `tls` — `true` (default), `false`, or `"skip-verify"`; ignored for SQLite.
+- `mode` — `persistent` (default) parks a pool that later steps reuse;
+  `per-query` only stores the connect config, and every query then opens a
+  fresh connection so connect + query are measured together. Transactions
+  are not allowed on per-query connections.
+- `pool_size` — persistent-mode pool size, default `1`.
+- `timeout_ms` — connect timeout, default `30000`.
+
+**`std/db-query@v1`** — runs one parameterized statement on a connection:
+
+- `id` (required) — the connection to use, normally `"${{ conn.id }}"`.
+- `query` — SQL with driver-native placeholders: `$1`, `$2`, … for
+  PostgreSQL, `?` for all three drivers. The SQL text is **never
+  interpolated** — values move through `params`.
+- `params` — positional bind values; each entry *may* be interpolated
+  (`"${{ vars.uid }}"`). Strings, numbers, booleans, and null bind;
+  arrays and objects are rejected.
+- `max_rows` — safety cap on rows read into memory, default `10000`;
+  hitting it only sets `truncated: true` in the output.
+- `timeout_ms` — query timeout (in per-query mode: connect + query),
+  default `30000`.
+
+INSERT, UPDATE, DELETE, and DDL are allowed by default. The output carries
+`rows`, `rows_affected`, `truncated`, `data` (rows as JSON objects), and
+`duration_ms`.
+
+**`std/db-tx-begin@v1` / `std/db-tx-commit@v1` / `std/db-tx-rollback@v1`** —
+begin, commit, or roll back a transaction on a persistent connection
+(`id` parameter, plus an optional `timeout_ms`). Queries between begin and
+commit run inside the transaction, and the whole unit feeds
+`db_query_duration`.
+
+**`std/db-close@v1`** — `id` parameter; closes the connection and releases
+its id. Whatever a scenario leaves open is dropped at iteration end.
+
+SQLite in-memory note: `sqlite::memory:` needs `mode: persistent` and
+`pool_size: 1` (the defaults) — a per-query connection, or a second pooled
+connection, would be a *different*, empty database.
+
+## 4. Write the test
+
+`db.test.yaml` — connect, run a transaction (create, insert with
+interpolated bind params, select with a latency check), commit, close.
+Every VU loops this list until the duration ends, so the connect and the
+transaction are paid once per iteration:
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: persistent
+    outputs: conn
+
+  - name: begin tx
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: create bench table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE IF NOT EXISTS bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # The SQL text is never interpolated — values move through `params`.
+      query: INSERT INTO bench (id, payload) VALUES ($1, $2)
+      params: ["${{ vars.uid }}", "payload"]
+
+  - name: read it back
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT payload FROM bench WHERE id = $1
+      params: ["${{ vars.uid }}"]
+    check:
+      duration_ms_lt: 50
+
+  - name: commit
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+`db.config.yaml` — the load shape plus the variables from section 2:
+
+```yaml
+vus: 5
+duration: 30s
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/bench
+  uid: user-1
+```
+
+No server handy? The same scenario runs on SQLite as-is — swap the connect
+step and use `?` placeholders (`sqlite::memory:` stays on the defaults
+`mode: persistent` and `pool_size: 1`, per the note above):
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: sqlite
+      dsn: "sqlite::memory:"
+    outputs: conn
+
+  - name: begin tx
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: create bench table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: INSERT INTO bench (id, payload) VALUES (?, ?)
+      params: ["${{ vars.uid }}", "payload"]
+
+  - name: read it back
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT payload FROM bench WHERE id = ?
+      params: ["${{ vars.uid }}"]
+    check:
+      duration_ms_lt: 50
+
+  - name: commit
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+## 5. Run it
+
+```sh
+perfscale run -f db.test.yaml -c db.config.yaml
+```
+
+`-f` selects the built-in native engine and requires `-c`. Validate the
+files without executing anything:
+
+```sh
+perfscale lint db.test.yaml db.config.yaml
+```
+
+## 6. Read the output
+
+Per-query lines stream live to stdout, then a k6-compatible summary prints.
+Database steps never feed the `http_req_*` series, so a pure database run's
+summary is all `db_*` lines:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 140 4.67/s
+db_rows: 280 9.33/s
+db_connect_duration: avg=1.85ms p(50)=1.76ms p(90)=2.40ms p(95)=2.72ms p(99)=3.60ms min=1.12ms max=4.35ms count=140
+db_query_duration: avg=0.42ms p(50)=0.38ms p(90)=0.61ms p(95)=0.74ms p(99)=1.10ms min=0.18ms max=1.90ms count=700
+```
+
+- `db_connect_duration` — time to open a connection (successful
+  `std/db-connect@v1` only; per-query mode folds the connect into each
+  query instead).
+- `db_query_duration` — every `std/db-query@v1` and transaction step; in
+  per-query mode it includes the fresh connect.
+- `db_rows` — rows returned per query, or rows affected when the statement
+  returned none.
+- `db_errors` — every failed DB step (the line prints only when failures
+  occur), plus one classified counter per error class:
+  `db_errors_connection`, `db_errors_constraint`,
+  `db_errors_deadlock`, `db_errors_timeout`, `db_errors_other`.
+
+The run exits `0` even when checks fail — failed checks are load-test
+feedback, visible in the summary, not a CLI error. Note that
+`--summary-export` parses only the `http_req_*` family, so a pure database
+run exports `summary: null` — assert on the `db_*` stdout lines (or a
+companion HTTP step) when you need a CI gate.
+
+## Next steps
+
+- [WebSocket from the CLI](/docs/getting-started/websocket-cli) and
+  [gRPC from the CLI](/docs/getting-started/grpc-cli) — the other std-tier
+  protocol families, same YAML model.
+- [`examples/db-sqlite.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/db-sqlite.test.yaml)
+  — the runnable SQLite version of this scenario in the OSS repo.
+- [CI/CD integration](/docs/getting-started/ci-cd) — gate a pipeline on the
+  run.

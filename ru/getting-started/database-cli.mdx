@@ -1,0 +1,262 @@
+---
+title: Базы данных из CLI
+description: Пишем и запускаем нагрузочный тест базы данных через perfscale CLI — шаги для PostgreSQL, MySQL/MariaDB и SQLite, YAML-конфиг, perfscale run и сводка метрик db_*
+section: Начало работы
+sectionOrder: 1
+order: 7
+---
+
+## Обзор
+
+Open-source-движок perfscale нагружает **PostgreSQL, MySQL/MariaDB и
+SQLite** прямо из терминала — без аккаунта на платформе, бесплатно в
+std-тире, как и шаги WebSocket и gRPC. Семейство `std/db-*@v1` покрывает
+подключения, параметризованные запросы и многостейтментные транзакции,
+измеряемые как одно целое. Эта страница проведёт тест от YAML до сводки
+метрик.
+
+## 1. Установите CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Или скачайте бинарник под свою платформу со страницы
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). У
+бинарника нет runtime-зависимостей — нативный движок встроен.
+
+## 2. Уберите DSN из файла теста
+
+Никогда не вписывайте пароль в YAML. Положите строку подключения в блок
+`variables:` конфиг-файла — файла, который не попадает в git или
+генерируется в CI, — и ссылайтесь на него интерполяцией:
+
+```yaml
+# db.config.yaml
+vus: 5
+duration: 30s
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/bench
+```
+
+В файле теста остаётся только `dsn: "${{ vars.db_dsn }}"`. DSN никогда не
+печатается в лог, а сырой SQL не попадает в метрики — лейблами служат
+только имена шагов.
+
+## 3. Шаги std/db-*
+
+**`std/db-connect@v1`** — открывает подключение и называет его через
+`outputs`:
+
+- `driver` (обязательный) — `postgres`, `mysql` (покрывает MariaDB) или
+  `sqlite`.
+- `dsn` (обязательный) — строка подключения в формате драйвера;
+  интерполируется, поэтому `${{ vars.db_dsn }}` держит секрет вне файла.
+- `tls` — `true` (по умолчанию), `false` или `"skip-verify"`; для SQLite
+  игнорируется.
+- `mode` — `persistent` (по умолчанию) паркует пул, которым пользуются
+  следующие шаги; `per-query` лишь сохраняет конфиг подключения, и каждый
+  запрос открывает свежее соединение, так что connect + query измеряются
+  вместе. Транзакции на per-query-подключениях не разрешены.
+- `pool_size` — размер пула в persistent-режиме, по умолчанию `1`.
+- `timeout_ms` — таймаут подключения, по умолчанию `30000`.
+
+**`std/db-query@v1`** — выполняет один параметризованный стейтмент на
+подключении:
+
+- `id` (обязательный) — подключение, обычно `"${{ conn.id }}"`.
+- `query` — SQL с плейсхолдерами драйвера: `$1`, `$2`, … для PostgreSQL,
+  `?` для всех трёх драйверов. Текст SQL **никогда не интерполируется** —
+  значения передаются через `params`.
+- `params` — позиционные значения биндинга; каждый элемент *может*
+  интерполироваться (`"${{ vars.uid }}"`). Биндятся строки, числа, булевы
+  значения и null; массивы и объекты отклоняются.
+- `max_rows` — защитный лимит на строки, читаемые в память, по умолчанию
+  `10000`; при достижении лимита выход лишь получает `truncated: true`.
+- `timeout_ms` — таймаут запроса (в per-query-режиме: connect + query),
+  по умолчанию `30000`.
+
+INSERT, UPDATE, DELETE и DDL разрешены по умолчанию. Выход содержит `rows`,
+`rows_affected`, `truncated`, `data` (строки как JSON-объекты) и
+`duration_ms`.
+
+**`std/db-tx-begin@v1` / `std/db-tx-commit@v1` / `std/db-tx-rollback@v1`** —
+начало, коммит или откат транзакции на persistent-подключении (параметр
+`id`, плюс опциональный `timeout_ms`). Запросы между begin и commit идут
+внутри транзакции, и вся единица попадает в `db_query_duration`.
+
+**`std/db-close@v1`** — параметр `id`; закрывает подключение и освобождает
+его id. Всё, что сценарий оставил открытым, сбрасывается в конце итерации.
+
+Заметка про SQLite in-memory: `sqlite::memory:` требует `mode: persistent`
+и `pool_size: 1` (это и есть дефолты) — per-query-подключение или второе
+соединение в пуле оказались бы *другой*, пустой базой.
+
+## 4. Напишите тест
+
+`db.test.yaml` — подключение, транзакция (create, insert с
+интерполированными bind-параметрами, select с проверкой латенси), коммит,
+закрытие. Каждый VU крутит этот список, пока не истечёт длительность, так
+что подключение и транзакция оплачиваются раз на итерацию:
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      mode: persistent
+    outputs: conn
+
+  - name: begin tx
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: create bench table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE IF NOT EXISTS bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      # Текст SQL никогда не интерполируется — значения идут через `params`.
+      query: INSERT INTO bench (id, payload) VALUES ($1, $2)
+      params: ["${{ vars.uid }}", "payload"]
+
+  - name: read it back
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT payload FROM bench WHERE id = $1
+      params: ["${{ vars.uid }}"]
+    check:
+      duration_ms_lt: 50
+
+  - name: commit
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+`db.config.yaml` — профиль нагрузки плюс переменные из раздела 2:
+
+```yaml
+vus: 5
+duration: 30s
+variables:
+  db_dsn: postgres://bench:secret@127.0.0.1:5432/bench
+  uid: user-1
+```
+
+Нет сервера под рукой? Тот же сценарий работает на SQLite как есть —
+поменяйте шаг подключения и используйте плейсхолдеры `?`
+(`sqlite::memory:` остаётся на дефолтах `mode: persistent` и
+`pool_size: 1`, см. заметку выше):
+
+```yaml
+steps:
+  - name: connect
+    uses: std/db-connect@v1
+    with:
+      driver: sqlite
+      dsn: "sqlite::memory:"
+    outputs: conn
+
+  - name: begin tx
+    uses: std/db-tx-begin@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: create bench table
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: CREATE TABLE bench (id TEXT, payload TEXT)
+
+  - name: insert row
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: INSERT INTO bench (id, payload) VALUES (?, ?)
+      params: ["${{ vars.uid }}", "payload"]
+
+  - name: read it back
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT payload FROM bench WHERE id = ?
+      params: ["${{ vars.uid }}"]
+    check:
+      duration_ms_lt: 50
+
+  - name: commit
+    uses: std/db-tx-commit@v1
+    with: { id: "${{ conn.id }}" }
+
+  - name: close
+    uses: std/db-close@v1
+    with: { id: "${{ conn.id }}" }
+```
+
+## 5. Запустите
+
+```sh
+perfscale run -f db.test.yaml -c db.config.yaml
+```
+
+`-f` выбирает встроенный нативный движок и требует `-c`. Проверить файлы
+без запуска:
+
+```sh
+perfscale lint db.test.yaml db.config.yaml
+```
+
+## 6. Читаем вывод
+
+Построчный вывод по запросам стримится в stdout, затем печатается
+k6-совместимая сводка. Шаги баз данных никогда не попадают в серию
+`http_req_*`, поэтому сводка чистого database-прогона состоит только из
+строк `db_*`:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 140 4.67/s
+db_rows: 280 9.33/s
+db_connect_duration: avg=1.85ms p(50)=1.76ms p(90)=2.40ms p(95)=2.72ms p(99)=3.60ms min=1.12ms max=4.35ms count=140
+db_query_duration: avg=0.42ms p(50)=0.38ms p(90)=0.61ms p(95)=0.74ms p(99)=1.10ms min=0.18ms max=1.90ms count=700
+```
+
+- `db_connect_duration` — время открытия подключения (только успешные
+  `std/db-connect@v1`; per-query-режим вместо этого включает connect в
+  каждый запрос).
+- `db_query_duration` — каждый `std/db-query@v1` и транзакционный шаг; в
+  per-query-режиме включает свежий connect.
+- `db_rows` — строки, возвращённые запросом, либо затронутые строки, если
+  стейтмент не вернул строк.
+- `db_errors` — каждый упавший DB-шаг (строка печатается, только когда
+  были ошибки), плюс по классифицированному счётчику на класс ошибки:
+  `db_errors_connection`, `db_errors_constraint`,
+  `db_errors_deadlock`, `db_errors_timeout`, `db_errors_other`.
+
+Прогон завершается с кодом `0`, даже если проверки падали, — упавшие
+проверки это обратная связь нагрузочного теста, видимая в сводке, а не
+ошибка CLI. Учтите, что `--summary-export` парсит только семейство
+`http_req_*`, поэтому чистый database-прогон экспортирует `summary: null` —
+для CI-гейта проверяйте строки `db_*` в stdout (или добавьте в сценарий
+HTTP-шаг).
+
+## Дальше
+
+- [WebSocket из CLI](/docs/getting-started/websocket-cli) и
+  [gRPC из CLI](/docs/getting-started/grpc-cli) — остальные протокольные
+  семейства std-тира, та же YAML-модель.
+- [`examples/db-sqlite.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/db-sqlite.test.yaml)
+  — runnable SQLite-версия этого сценария в OSS-репозитории.
+- [Интеграция с CI/CD](/docs/getting-started/ci-cd) — гейт пайплайна по
+  результатам прогона.
