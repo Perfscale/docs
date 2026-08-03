@@ -1,0 +1,90 @@
+---
+title: Thresholds — SLO gates
+description: Fail a run when latency or error rate breaks your SLO — std/thresholds@v1 in the after block, k6-style expressions, CI exit codes
+section: Getting started
+sectionOrder: 1
+order: 8
+---
+
+**Thresholds** turn a load test into an SLO gate: after all iterations
+finish, the engine evaluates expressions against the run's aggregated metrics
+and fails the run when they are violated. In CI this means a non-zero exit
+code — the pipeline goes red exactly when your service got slower, not when
+someone reads a report.
+
+## 1. Declare a gate
+
+Thresholds are a step in the scenario's `after:` block:
+
+```yaml
+config:
+  vus: 10
+  duration: 1m
+steps:
+  - name: query
+    use: std/db-query@v1
+    with:
+      id: ${{ conn.id }}
+      query: SELECT * FROM orders WHERE created > $1
+      params: ["2026-01-01"]
+after:
+  - name: slo gate
+    use: std/thresholds@v1
+    with:
+      db_query_duration: ["p95<500", "max<2000"]
+      db_query_failed: ["rate<0.05"]
+      db_errors: ["count==0"]
+    severity: fail
+    message: "checkout SLO"
+```
+
+Expressions are k6-style strings: `<aggregation><operator><number>`.
+
+- Aggregations: `avg`, `min`, `max`, `p50`, `p90`, `p95`, `p99`, `count`, `rate`.
+- Operators: `<`, `<=`, `>`, `>=`, `==`, `!=`.
+- Duration metrics (`http_req_duration`, `ws_msg_rtt`, `grpc_req_duration`,
+  `db_connect_duration`, `db_query_duration`, …) support the percentile and
+  average aggregations. Error metrics (`*_failed`) support `rate` — failed
+  invocations divided by total invocations of that step. Counters
+  (`db_errors`) support `count`.
+
+## 2. Status, message, exit code
+
+- `severity: fail` (default) — a violated gate sets run status to **fail**
+  and the CLI exits with code **1** (`error: thresholds failed: …`).
+- `severity: warn` / `info` — the violation is recorded and shown, but the
+  exit code stays **0**.
+- `message` — optional label for the gate (interpolated). The engine also
+  generates the violation summary itself (`db_query_duration p95=612ms ≥
+  500ms; …`) and truncates the result to 200 characters.
+
+The same block lands in the run summary JSON (`--summary-export`):
+
+```json
+"thresholds": {
+  "status": "fail",
+  "message": "db_query_duration p95=614.40ms ≥ 500ms; checkout SLO",
+  "violations": [{ "metric": "db_query_duration", "expr": "p95<500", "actual": 614.4 }]
+}
+```
+
+On the platform, the run page shows a thresholds card with the status and
+violations, and a **`run.threshold_failed`** webhook event fires when a run
+fails its gate — point it at your chat or alerting system.
+
+## 3. Notes
+
+- Gates read the same HDR-histogram aggregates as the text summary — the
+  numbers you see in the run output are the numbers the gate evaluates.
+- A gate over an unknown metric name fails the run loudly (config error) —
+  typos can't silently pass your SLO.
+- For point-in-time assertions on a single response (not the whole run), use
+  `std/check@v1` on the step itself — thresholds are about the distribution.
+
+## Next steps
+
+- [Database testing](/docs/getting-started/database-cli) — db metrics for
+  gates
+- [gRPC testing](/docs/getting-started/grpc-cli) — grpc metrics for gates
+- [CI/CD](/docs/getting-started/ci-cd) — wire the exit code into your
+  pipeline
