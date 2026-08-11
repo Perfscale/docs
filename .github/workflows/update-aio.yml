@@ -1,0 +1,17 @@
+name: Update AIO
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  update-aio:
+    name: Trigger AIO update
+    uses: Perfscale/actions/.github/workflows/update-aio.yml@master
+    with:
+      submodule: docs
+      source-ref: ${{ github.ref_name }}
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}

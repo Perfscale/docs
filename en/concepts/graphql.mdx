@@ -1,0 +1,164 @@
+---
+title: GraphQL
+description: Load-test GraphQL endpoints — queries and mutations with schema-aware validation, GraphQL-level failure semantics, and per-operation metrics
+section: Concepts
+sectionOrder: 2
+order: 6
+---
+
+## Overview
+
+perfscale drives **GraphQL** endpoints under load: one operation per step,
+queries and mutations over HTTP POST (or opt-in GET), with every document
+validated against the endpoint's own schema before it is ever sent.
+
+GraphQL is part of the **open-source engine** — the `std/graphql@v1` action
+is available on every plan. No codegen and no client stubs: the document is
+plain text in the YAML (or a `.graphql` file), variables are JSON, and
+responses come back as structured `data`/`errors` that later steps extract
+from with `${{ … }}` interpolation.
+
+## The action: `std/graphql@v1`
+
+```yaml
+steps:
+  - name: fetch viewer
+    use: std/graphql@v1
+    with:
+      url: https://api.example.com/graphql
+      query: |
+        query GetViewer($id: ID!) {
+          viewer(id: $id) { id name }
+        }
+      variables: { "id": "${{ vars.viewer_id }}" }
+    check:
+      status: 200
+    outputs: viewer
+
+  - name: rename widget
+    use: std/graphql@v1
+    with:
+      url: https://api.example.com/graphql
+      query: |
+        mutation Rename($id: ID!, $name: String!) {
+          renameWidget(id: $id, name: $name) { id }
+        }
+      variables: { "id": "${{ viewer.data.viewer.id }}", "name": "w-${seq}" }
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `url` | string | **required** | GraphQL endpoint, e.g. `https://api.example.com/graphql` |
+| `query` | string | one of query/query_file | Inline GraphQL document |
+| `query_file` | string (path) | one of query/query_file | Read the document from a `.graphql` file. Filesystem access: requires `allow_file_actions`, honours `fs_root` |
+| `variables` | object | — | Query variables. `${{ … }}` interpolation applies, and single-brace `${…}` generator tokens (`${uuid}`, `${rand}`, `${now}`) expand per execution |
+| `operation` | string | — | `operationName` to execute. Required when the document holds several operations; also the per-operation metrics tag |
+| `method` | string | `POST` | `POST` (JSON body) or `GET` (URL query parameters, for CDN-cacheable reads) |
+| `headers` | object | — | `{ "Name": "Value" }`, string values only |
+| `timeout` | integer (ms) | `10000` | Per-request timeout |
+| `insecure` | boolean | `false` | Skip TLS certificate verification |
+| `introspection` | boolean | `true` | Fetch the endpoint's schema once per run and validate every query before sending. Fetch failure degrades to unvalidated runs (logged once) |
+| `schema_file` | string (path) | — | Validate against a local SDL file instead of introspection (fallback for endpoints with introspection disabled). Same filesystem rules as `query_file` |
+| `pool` | string | `per-vu` | `per-vu` pins the step to the VU's HTTP client shard (the `std/http@v1` behaviour); `shared` puts every VU on one process-global client |
+
+### Output
+
+Available via `outputs` / `__last__`:
+
+```json
+{
+  "status": 200,
+  "data": { "viewer": { "id": "u-1" } },
+  "errors": [ { "message": "widgets timed out" } ],
+  "body": "{\"data\":…}",
+  "duration_ms": 12.31,
+  "headers": { "content-type": "application/json" }
+}
+```
+
+`data` and `errors` are the decoded GraphQL payload (`errors` only present
+when the server sent it); `body` keeps the raw text for `body_contains`
+checks. Extraction reads the structured payload:
+`${{ create.data.createWidget.id }}`.
+
+## Schema validation
+
+Every query is parsed before it is sent, and — when a schema is available —
+validated against it. A typo fails the step (and `perfscale lint`) with a
+did-you-mean suggestion instead of burning requests against the target:
+
+```text
+fetch viewer: query validation failed: unknown field 'viewr' on type 'Query' — did you mean 'viewer'?
+```
+
+Two schema sources:
+
+- **Introspection** (default) — the engine POSTs an introspection query to
+  the endpoint once per run, caches the schema process-wide, and validates
+  every query against it. One round trip per endpoint, no matter how many
+  VUs.
+- **`schema_file: schema.graphql`** — validate against a local SDL file. This
+  is the fallback for endpoints that refuse introspection (common in
+  production): when introspection fails and no `schema_file` is given, the
+  step still runs — unvalidated, with one `[sys]` log line saying so.
+  `introspection: false` opts out of fetching entirely.
+
+`perfscale lint` applies the same gate: syntax always (offline), schema when
+the endpoint is reachable or an SDL file is given. `perfscale lint --offline`
+skips the network pass.
+
+## What counts as failure
+
+GraphQL errors travel in a `200 OK` body, so HTTP status alone is not the
+verdict:
+
+- HTTP status ≥ 400 → the step fails.
+- `errors` present, `data` null/absent → the step fails (nothing resolved).
+- Partial `data` **plus** `errors` → the step **passes** — the server
+  resolved what it could — and the errors are counted in `graphql_errors`.
+
+A syntax error, a schema-validation failure, or an unreadable `query_file`
+fails the step **before** any request is made — the target never sees a
+malformed query.
+
+Standard `check:` assertions work unchanged: `status`, `duration_ms_lt`,
+`body_contains` (against the raw body).
+
+## Metrics
+
+- `graphql_req_duration` — histogram of every operation's round trip; the
+  runner derives `graphql_req_failed` (rate). Gate on it with
+  `std/thresholds@v1`: `"graphql_req_duration": ["p99<200"]`.
+- `graphql_errors` — counter of GraphQL-level errors, including the
+  partial-data ones that pass the step.
+- `graphql_op_<operationName>_duration` — per-operation histogram, emitted
+  only when the operation is named (explicit `operation` or a single named
+  operation), so metric cardinality stays bounded by the test definition.
+- The request also feeds the standard `http_req_duration` /
+  `http_req_failed` / `http_reqs` aggregates, like any HTTP step.
+
+## Connection pooling
+
+`pool: per-vu` (default) pins the step to the VU's HTTP client shard — the
+same keep-alive behaviour as `std/http@v1`, so a VU reuses its warm
+connections across iterations. `pool: shared` puts every VU on one
+process-global client: maximal connection reuse against a single endpoint,
+at the cost of pool-lock contention under very high VU counts.
+
+## Limits
+
+- Subscriptions are not supported (the transport is HTTP request/response);
+  a document containing one fails validation.
+- Request batching (arrays of operations) and incremental delivery
+  (`@defer`/`@stream`) are not supported — one operation per step.
+- `query_file` and `schema_file` are filesystem access: they require
+  `allow_file_actions` in the run config and honour `fs_root` confinement.
+
+## Next steps
+
+- [GraphQL from the CLI](/docs/getting-started/graphql-cli) — a walkthrough
+  from YAML to metric summary.
+- [`examples/graphql.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/graphql.test.yaml)
+  — a runnable scenario in the OSS repo.

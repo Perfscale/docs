@@ -1,0 +1,149 @@
+---
+title: GraphQL from the CLI
+description: Write and run a GraphQL load test with the perfscale CLI — queries and mutations, schema-aware validation, perfscale run, and the GraphQL metric summary
+section: Getting Started
+sectionOrder: 1
+order: 8
+---
+
+## Overview
+
+The open-source perfscale engine drives GraphQL endpoints from the terminal —
+no codegen, no client stubs, no platform account. The document is plain text
+in the YAML, variables are JSON, and every query is validated against the
+endpoint's own schema before it is sent. This page walks a test from YAML to
+metric summary; the [GraphQL concepts page](/docs/concepts/graphql) is the
+full parameter reference.
+
+## 1. Install the CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Or download a binary for your platform from
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). The
+binary has no runtime dependencies — the native engine is built in.
+
+## 2. Write the test
+
+`graphql.test.yaml` — two queries and a mutation against one endpoint. The
+introspection round trip is paid once per run (cached process-wide); a typo'd
+field fails the step before any request is made:
+
+```yaml
+steps:
+  - name: fetch viewer
+    use: std/graphql@v1
+    with:
+      url: http://127.0.0.1:4000/graphql
+      query: |
+        query GetViewer($id: ID) {
+          viewer(id: $id) { id name }
+        }
+      variables: { "id": "u-1" }
+    check:
+      status: 200
+      duration_ms_lt: 250
+    outputs: viewer
+
+  - name: list widgets
+    use: std/graphql@v1
+    with:
+      url: http://127.0.0.1:4000/graphql
+      query: |
+        {
+          widgets { id name }
+        }
+    outputs: widgets
+
+  - name: rename widget
+    use: std/graphql@v1
+    with:
+      url: http://127.0.0.1:4000/graphql
+      query: |
+        mutation Rename($id: String!, $name: String!) {
+          renameWidget(id: $id, name: $name) { id name }
+        }
+      # ${uuid} expands per execution — every rename sends a fresh name.
+      variables: { "id": "w-1", "name": "renamed-${uuid}" }
+    check:
+      status: 200
+```
+
+`graphql.config.yaml` — the load shape:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+The OSS repo ships a matching local GraphQL server:
+
+```sh
+cargo run -p perfscale-core --example graphql_server   # listens on 4000
+```
+
+Values flow between steps through `outputs` and `${{ … }}` interpolation —
+`${{ viewer.data.viewer.id }}` reads the decoded GraphQL payload of an
+earlier step. Single-brace generator tokens (`${uuid}`, `${rand}`, `${now}`,
+`${seq}`) expand per execution, so every iteration can send fresh values.
+
+## 3. Validate before you run
+
+```sh
+perfscale lint graphql.test.yaml graphql.config.yaml
+```
+
+`lint` parses every GraphQL document (offline) and, when the endpoint is
+reachable, validates it against the introspected schema — an unknown field
+fails lint with a did-you-mean suggestion. `perfscale lint --offline` skips
+the network pass. Endpoints with introspection disabled can supply a local
+SDL file via `schema_file:` instead.
+
+## 4. Run it
+
+```sh
+perfscale run -f graphql.test.yaml -c graphql.config.yaml
+```
+
+`-f` selects the built-in native engine and requires `-c`.
+
+## 5. Read the output
+
+Per-request lines stream live to stdout, then a k6-compatible summary prints.
+GraphQL steps feed both their own `graphql_*` series and the standard
+`http_req_*` aggregates:
+
+```text
+vus....................: 5 min=1 max=5
+iterations..............: 210 7.00/s
+graphql_errors: 0 0.00/s
+graphql_req_failed: 0 0.00/s
+graphql_req_duration: avg=3.10ms p(50)=2.90ms p(90)=4.20ms p(95)=4.80ms p(99)=6.10ms min=1.80ms max=9.40ms count=630
+graphql_op_GetViewer_duration: avg=2.95ms p(50)=2.80ms p(90)=4.00ms p(95)=4.60ms p(99)=5.90ms min=1.80ms max=8.70ms count=210
+graphql_op_Rename_duration: avg=3.35ms p(50)=3.10ms p(90)=4.50ms p(95)=5.10ms p(99)=6.60ms min=2.00ms max=9.40ms count=210
+http_req_duration: avg=3.10ms p(50)=2.90ms p(90)=4.20ms p(95)=4.80ms p(99)=6.10ms min=1.80ms max=9.40ms count=630
+http_reqs: 630 21.00/s
+```
+
+- `graphql_req_duration` — every operation's round trip; gate on it with
+  `std/thresholds@v1`: `"graphql_req_duration": ["p99<200"]`.
+- `graphql_errors` — GraphQL-level errors, including partial-data responses
+  that pass the step (the server resolved what it could).
+- `graphql_op_<name>_duration` — per-operation latency, emitted when the
+  operation is named.
+- `graphql_req_failed` — operations that failed: HTTP status ≥ 400, or
+  `errors` with no `data` at all.
+
+The run exits `0` even when checks fail — failed checks are load-test
+feedback, visible in the summary, not a CLI error.
+
+## Next steps
+
+- [GraphQL concepts](/docs/concepts/graphql) — all parameters, schema
+  sources, failure semantics, and connection pooling.
+- [Thresholds](/docs/getting-started/thresholds) — turn `graphql_req_duration`
+  percentiles into CI gates.
+- [`examples/graphql.test.yaml`](https://github.com/Perfscale/perfscale/blob/main/examples/graphql.test.yaml)
+  — the runnable version of this scenario in the OSS repo.
