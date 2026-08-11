@@ -1,0 +1,120 @@
+---
+title: Document imports
+description: Compose test and config YAML from a shared base — local paths, HTTP URLs, or git refs, with deep-merge overrides and a fail-closed security model
+section: Concepts
+sectionOrder: 2
+order: 13
+---
+
+## Overview
+
+Both test definitions and load configs accept a top-level `import:` key
+naming a **base document**. The base loads first — recursively, since it may
+import its own base — then the importing document deep-merges on top. Teams
+keep one blessed base (load shape, variables, SLO gates) and each service
+overrides only what differs.
+
+```yaml
+# perf/config/_base.yaml — owned by the platform team
+vus: 50
+duration: 5m
+variables:
+  region: eu-west
+  base_url: https://staging.example.com
+```
+
+```yaml
+# services/checkout/perf.yaml — owned by the checkout team
+import: ../../perf/config/_base.yaml
+variables:
+  base_url: https://checkout.staging.example.com   # region inherited
+```
+
+Imports are part of the **open-source engine** and work identically for
+`-f test.yaml` and `-c config.yaml`.
+
+## Merge semantics
+
+- **Objects merge key-by-key**, recursively — `variables:` from both
+  documents combine; same-name keys are won by the importing side.
+- **Everything else is replaced** — scalars, and arrays *including
+  `steps:`*. A document that defines `steps:` replaces the base's list
+  outright; one that omits it inherits the base's steps unchanged.
+- Chains work (A imports B imports C); cycles fail with the chain printed.
+
+Validation runs on the **merged** document: `perfscale lint` and
+`perfscale run` resolve imports first, so errors point at what would
+actually execute.
+
+## Source forms
+
+```yaml
+# 1. relative filesystem path — resolved against the importing file's dir
+import: ../shared/_base.yaml
+
+# 2. raw HTTP(S) URL — the ref pinned in the path
+import: "https://raw.githubusercontent.com/org/repo/v1.2.0/perf/config/_base.yaml"
+
+# 3. a file at a ref of any git remote (SSH or HTTPS, self-hosted included)
+import:
+  git: git@gitlab.example.com:group/repo.git
+  ref: v1.2.0          # tag, branch, or commit SHA
+  file: perf/config/_base.yaml
+```
+
+Git imports shell out to your system `git` (`clone --depth 1`), so SSH
+keys, credential helpers, and proxy settings all apply — private repos work
+with whatever auth `git clone` already has.
+
+## Security: remote imports are opt-in
+
+Import resolution happens at config-load time — **before** the
+`allow_file_actions` / `allow_process_actions` gates ever run. A network
+`import:` inside an untrusted config (say, a file changed in a PR) would be
+an SSRF primitive and a supply-chain vector: a remote base could carry
+`allow_process_actions: true` plus a `std/child_process@v1` step.
+
+Permission therefore comes from the **caller**, never the document:
+
+```sh
+perfscale run -f t.yaml -c c.yaml --allow-remote-import
+perfscale lint c.yaml --allow-remote-import
+```
+
+Without the flag, URL and git imports fail closed with an explanation.
+There is deliberately no YAML field to enable them — a document cannot
+grant itself network access.
+
+Origins stay confined: a URL-fetched document resolves relative imports
+against its own URL; a git-fetched document may only import files inside
+the same clone (`../` escapes are rejected). A remote document can never
+read the local filesystem.
+
+## Caching
+
+Git clones cache under `~/.cache/perfscale/imports/<hash(git+ref)>`:
+
+| Ref kind | Behaviour |
+|---|---|
+| Commit SHA | Immutable — cached forever, never refetched |
+| Tag | Treated as immutable — cached forever; `--refresh-imports` refetches |
+| Branch | Revalidated via `git ls-remote` after a 5-minute TTL — `ref: main` follows the branch instead of silently freezing at its first fetch |
+
+`--refresh-imports` forces the revalidation immediately. HTTP imports fetch
+per run — pin a tag or SHA in the URL for reproducibility.
+
+## Editor support
+
+The generated JSON Schemas include the `import` property, so any editor
+wired to `# yaml-language-server: $schema=…` autocompletes it. The platform
+YAML workbench suggests both forms: `import` (path/URL) and
+`import (git ref)`.
+
+## Next steps
+
+- [OSS imports guide](https://github.com/Perfscale/perfscale/blob/main/docs/core/imports.md)
+  — the full reference, including origin-confinement rules and limits.
+- [`examples/import/`](https://github.com/Perfscale/perfscale/tree/main/examples/import)
+  — a runnable base + override pair.
+- [Setup & teardown](/docs/concepts/setup-teardown) — `before:`/`after:`
+  blocks that a shared base typically owns.
