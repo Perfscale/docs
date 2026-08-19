@@ -1,0 +1,160 @@
+---
+title: SOAP
+description: Load-test SOAP services — WSDL profiles, envelopes, SOAP Fault parsing
+section: Pro Features
+sectionOrder: 3
+order: 2
+---
+
+## Overview
+
+perfscale can drive **SOAP** services under load (banking gateways, government
+services, ERPs, billing systems): it builds a proper `Envelope/Body`, sets the
+headers according to the protocol version, parses SOAP Faults in responses, and
+records latency in the shared `http_req_duration` histogram — alongside the
+HTTP/WS/gRPC metrics.
+
+SOAP is a **paid** capability (Scale and Enterprise plans). Tests that use the
+`pro/soap*` actions are rejected at creation time for Starter tenants.
+
+## Actions
+
+### `pro/soap@v1` — call a single operation
+
+Sends a SOAP request as a POST and times the exchange. The step succeeds only
+on a 2xx status **without** a SOAP Fault in the body — a fault fails the step
+even on HTTP 200 (see "Fault semantics" below).
+
+```yaml
+steps:
+  - name: add two numbers
+    uses: pro/soap@v1
+    with:
+      url: http://www.dneonline.com/calculator.asmx
+      soap_action: "http://tempuri.org/Add"
+      payload: |
+        <Add xmlns="http://tempuri.org/">
+          <intA>2</intA>
+          <intB>2</intB>
+        </Add>
+    check:
+      status: 200
+      body_contains: "<AddResult>4</AddResult>"
+```
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `url` | — | Service endpoint (required unless `connection` provides an `endpoint`) |
+| `connection` | — | A profile from `pro/soap-config@v1`; explicit parameters override it |
+| `operation` | — | Operation name from the WSDL profile — supplies its `soapAction` |
+| `soap_action` | — | Explicit `SOAPAction`; overrides `operation` |
+| `payload` | — | Inner XML of the `Body` (required unless `envelope` is set) |
+| `envelope` | — | A complete envelope — the escape hatch, mutually exclusive with `payload` |
+| `header_xml` | — | Optional `Header` block inside the envelope |
+| `soap_version` | from the profile, otherwise `1.1` | Protocol version: `1.1` or `1.2` |
+| `timeout` | `10000` | Milliseconds per request |
+| `insecure` | `false` | Skip TLS certificate verification (self-signed staging only) |
+| `pool` | `per-vu` | Connection pool: `per-vu` (a warm pool per VU) or `shared` (one per process) |
+
+`payload` and `header_xml` go through the engine's `${{ }}` interpolation, so
+request parameters can come from `variables`, `config`, and previous step
+outputs.
+
+Step output: `status`, `body` (the raw response XML — `body_contains` works in
+`check`), `duration_ms`, `headers`, and on a fault — `fault: { code, string }`:
+
+```yaml
+    check:
+      status: 200
+      body_contains: "<AddResult>"
+# the output is available downstream: outputs: add → "${{ add.fault.string }}", "${{ add.status }}"
+```
+
+### `pro/soap-config@v1` — a profile from a WSDL
+
+Parses the service's WSDL **once** in the `before:` block of the config file
+and produces a profile: the endpoint, the SOAP version, and a map of operations
+with their `soapAction`. Many steps share one profile via `connection`:
+
+```yaml
+# config.yaml
+vus: 50
+duration: 5m
+before:
+  - uses: pro/soap-config@v1
+    with: { wsdl_url: http://www.dneonline.com/calculator.asmx?WSDL }
+    outputs: calc
+```
+
+```yaml
+# test.yaml — endpoint/version/soapAction are inherited from the profile
+steps:
+  - uses: pro/soap@v1
+    with:
+      connection: "${{ config.calc }}"
+      operation: Add
+      payload: |
+        <Add xmlns="http://tempuri.org/"><intA>2</intA><intB>2</intB></Add>
+```
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `wsdl_url` | — | WSDL URL (downloaded once at config-build time) |
+| `wsdl` | — | Inline WSDL XML (mutually exclusive with `wsdl_url`) |
+| `service` | first | Service name, if the WSDL defines several |
+| `port` | first | Port name within the service |
+
+Profile format (camelCase, for `${{ config.calc.* }}`):
+
+```json
+{
+  "wsdlUrl": "http://www.dneonline.com/calculator.asmx?WSDL",
+  "endpoint": "http://www.dneonline.com/calculator.asmx",
+  "soapVersion": "1.1",
+  "operations": [
+    { "name": "Add", "soapAction": "http://tempuri.org/Add" }
+  ]
+}
+```
+
+The parser is namespace-tolerant: prefixes are not hardcoded but resolved from
+the document's xmlns declarations (`…/wsdl/soap/` — 1.1, `…/wsdl/soap12/` —
+1.2), so WSDLs with non-standard prefixes parse correctly. If an operation is
+not found in the profile, the step fails with a list of available operations —
+before the load starts, not on the wire.
+
+## Fault semantics
+
+Raw HTTP counts `200 OK` as a success — for SOAP that's a trap: servers send
+`<Fault>` with both 200 and 500. `pro/soap@v1` always parses the response body:
+
+- **2xx without a Fault** → the step succeeds;
+- **any status with a Fault** → the step fails; `fault.code`/`fault.string`
+  are extracted (`faultcode`/`faultstring` for 1.1, `Code/Value` + `Reason/Text`
+  for 1.2) and land in the output and the log line;
+- **non-2xx without a Fault** → a regular error (the `soap_errors` metric).
+
+## SOAP 1.1 vs 1.2
+
+Headers are set automatically according to the version:
+
+| | SOAP 1.1 | SOAP 1.2 |
+|---|----------|----------|
+| `Content-Type` | `text/xml; charset=utf-8` | `application/soap+xml; charset=utf-8` |
+| Action | `SOAPAction` header | `action="…"` parameter in Content-Type |
+
+The version comes from the WSDL profile or is set explicitly: `soap_version: "1.2"`.
+
+## Metrics
+
+Every call adds counters to the run summary: `soap_requests` (total),
+`soap_faults` (responses with a Fault), `soap_errors` (transport errors and
+non-2xx responses without a Fault). The latency of every exchange lands in the
+shared `http_req_duration` histogram, so SOAP percentiles are comparable with
+the rest of the traffic and usable in `std/thresholds@v1` gates.
+
+## Limitations
+
+- **No envelope generation from XSD** — you write the payload yourself.
+- **WS-Security** (signing, encryption) is not supported.
+- **MTOM/attachments** — out of scope.

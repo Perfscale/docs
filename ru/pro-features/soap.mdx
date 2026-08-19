@@ -1,0 +1,159 @@
+---
+title: SOAP
+description: Нагрузочное тестирование SOAP-сервисов — WSDL-профили, конверты, разбор SOAP Fault
+section: Pro-возможности
+sectionOrder: 3
+order: 2
+---
+
+## Обзор
+
+perfscale умеет нагружать **SOAP**-сервисы (банковские шлюзы, госсервисы,
+ERP, биллинги): собирает корректный конверт `Envelope/Body`, выставляет
+заголовки по версии протокола, разбирает SOAP Fault в ответе и замеряет
+латентность в общей гистограмме `http_req_duration` — рядом с метриками
+HTTP/WS/gRPC.
+
+SOAP — **платная** возможность (планы Scale и Enterprise). Тесты с действиями
+`pro/soap*` отклоняются при создании для тенантов на плане Starter.
+
+## Действия
+
+### `pro/soap@v1` — один вызов операции
+
+Отправляет SOAP-запрос POST'ом и замеряет обмен. Шаг успешен только при
+статусе 2xx **без** SOAP Fault в теле — фолт роняет шаг даже на HTTP 200
+(см. «Семантика Fault» ниже).
+
+```yaml
+steps:
+  - name: add two numbers
+    uses: pro/soap@v1
+    with:
+      url: http://www.dneonline.com/calculator.asmx
+      soap_action: "http://tempuri.org/Add"
+      payload: |
+        <Add xmlns="http://tempuri.org/">
+          <intA>2</intA>
+          <intB>2</intB>
+        </Add>
+    check:
+      status: 200
+      body_contains: "<AddResult>4</AddResult>"
+```
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `url` | — | Endpoint сервиса (обязателен, если нет `connection` с `endpoint`) |
+| `connection` | — | Профиль из `pro/soap-config@v1`; явные параметры перекрывают его |
+| `operation` | — | Имя операции из WSDL-профиля — подставляет её `soapAction` |
+| `soap_action` | — | Явный `SOAPAction`; перекрывает `operation` |
+| `payload` | — | Внутренний XML тела `Body` (обязателен, если нет `envelope`) |
+| `envelope` | — | Полный конверт целиком — escape hatch, взаимоисключает `payload` |
+| `header_xml` | — | Опциональный блок `Header` внутри конверта |
+| `soap_version` | из профиля, иначе `1.1` | Версия протокола: `1.1` или `1.2` |
+| `timeout` | `10000` | Миллисекунды на запрос |
+| `insecure` | `false` | Не проверять TLS-сертификат (только self-signed staging) |
+| `pool` | `per-vu` | Пул соединений: `per-vu` (тёплый пул на VU) или `shared` (один на процесс) |
+
+`payload` и `header_xml` проходят движковую `${{ }}`-интерполяцию, поэтому
+параметры запроса можно брать из `variables`, `config` и выходов прошлых шагов.
+
+Вывод шага: `status`, `body` (сырой XML ответа — работает `body_contains` в
+`check`), `duration_ms`, `headers`, а при фолте — `fault: { code, string }`:
+
+```yaml
+    check:
+      status: 200
+      body_contains: "<AddResult>"
+# вывод доступен дальше: outputs: add → "${{ add.fault.string }}", "${{ add.status }}"
+```
+
+### `pro/soap-config@v1` — профиль из WSDL
+
+Парсит WSDL сервиса **один раз** в блоке `before:` конфиг-файла и выдаёт
+профиль: endpoint, версию SOAP и карту операций с их `soapAction`. Много
+шагов делят один профиль через `connection`:
+
+```yaml
+# config.yaml
+vus: 50
+duration: 5m
+before:
+  - uses: pro/soap-config@v1
+    with: { wsdl_url: http://www.dneonline.com/calculator.asmx?WSDL }
+    outputs: calc
+```
+
+```yaml
+# test.yaml — endpoint/version/soapAction наследуются из профиля
+steps:
+  - uses: pro/soap@v1
+    with:
+      connection: "${{ config.calc }}"
+      operation: Add
+      payload: |
+        <Add xmlns="http://tempuri.org/"><intA>2</intA><intB>2</intB></Add>
+```
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `wsdl_url` | — | URL WSDL (скачивается один раз при сборке конфига) |
+| `wsdl` | — | Inline-XML WSDL (взаимоисключает `wsdl_url`) |
+| `service` | первый | Имя сервиса, если в WSDL их несколько |
+| `port` | первый | Имя порта внутри сервиса |
+
+Формат профиля (camelCase, для `${{ config.calc.* }}`):
+
+```json
+{
+  "wsdlUrl": "http://www.dneonline.com/calculator.asmx?WSDL",
+  "endpoint": "http://www.dneonline.com/calculator.asmx",
+  "soapVersion": "1.1",
+  "operations": [
+    { "name": "Add", "soapAction": "http://tempuri.org/Add" }
+  ]
+}
+```
+
+Парсер namespace-толерантный: префиксы не хардкодятся, а резолвятся по
+xmlns-объявлениям документа (`…/wsdl/soap/` — 1.1, `…/wsdl/soap12/` — 1.2),
+поэтому WSDL с нестандартными префиксами разбираются корректно. Если операция
+не найдена в профиле, шаг падает с перечнем доступных операций — до запуска
+нагрузки, а не на проводе.
+
+## Семантика Fault
+
+Сырой HTTP считает `200 OK` успехом — для SOAP это ловушка: серверы шлют
+`<Fault>` и с 200, и с 500. `pro/soap@v1` всегда разбирает тело ответа:
+
+- **2xx без Fault** → шаг успешен;
+- **любой статус с Fault** → шаг неуспешен, `fault.code`/`fault.string`
+  извлекаются (`faultcode`/`faultstring` для 1.1, `Code/Value` + `Reason/Text`
+  для 1.2) и попадают в вывод и лог-строку;
+- **не-2xx без Fault** → обычная ошибка (метрика `soap_errors`).
+
+## SOAP 1.1 против 1.2
+
+Заголовки выставляются по версии автоматически:
+
+| | SOAP 1.1 | SOAP 1.2 |
+|---|----------|----------|
+| `Content-Type` | `text/xml; charset=utf-8` | `application/soap+xml; charset=utf-8` |
+| Действие | заголовок `SOAPAction` | параметр `action="…"` в Content-Type |
+
+Версия берётся из WSDL-профиля либо задаётся явно: `soap_version: "1.2"`.
+
+## Метрики
+
+Каждый вызов добавляет в сводку рана счётчики: `soap_requests` (всего),
+`soap_faults` (ответы с Fault), `soap_errors` (транспортные ошибки и не-2xx
+без Fault). Латентность каждого обмена ложится в общую гистограмму
+`http_req_duration`, так что перцентили SOAP сопоставимы с остальным трафиком
+и доступны в `std/thresholds@v1`-гейтах.
+
+## Ограничения
+
+- **Нет генерации envelope из XSD** — payload пишете вы сами.
+- **WS-Security** (подписи, шифрование) не поддерживается.
+- **MTOM/attachments** — вне скоупа.
