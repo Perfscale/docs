@@ -1,0 +1,126 @@
+---
+title: Pub/Sub
+description: Load-test pub/sub messaging — NATS and in-memory subjects, publish/consume latency, message assertions
+section: Concepts
+sectionOrder: 2
+order: 15
+---
+
+## Overview
+
+perfscale drives **pub/sub** messaging under load: publish event bursts to a
+subject, wait for matching messages, and measure both publish throughput and
+end-to-end (publish → consumed) latency alongside your HTTP/gRPC/WebSocket
+metrics.
+
+Pub/Sub is part of the **open-source engine** — `std/pubsub@v1` ships two
+drivers:
+
+| Driver | Transport |
+|---|---|
+| `memory` (default) | In-process broadcast bus — no broker needed. One channel per subject, shared by all VUs in the process: one VU's publish reaches every VU subscribed to that subject (cross-VU fan-out is a feature) |
+| `nats` | A real [NATS](https://nats.io) server (core NATS, no JetStream) |
+
+Vendor-specific drivers — **Kafka, Redis** — are a **pro** capability
+registered on the same driver seam. On an OSS build, `driver: kafka` fails
+the step with the list of registered drivers, so it is always clear which
+build you need.
+
+## One-shot step
+
+A single step can publish, consume, or both. When both are given, the
+subscription is established **first** — a same-subject roundtrip always sees
+its own messages:
+
+```yaml
+steps:
+  - name: order events roundtrip
+    use: std/pubsub@v1
+    with:
+      subject: orders.created          # memory driver (default) — no broker
+      publish:
+        - '{"id":"ord-1","total":42.50}'
+        - '{"id":"ord-2","total":17.00}'
+      subscribe:
+        count: 2                       # wait for both messages
+        until_contains: '"id"'         # each counted message must match
+        timeout_ms: 2000
+    check:
+      body_contains: ord-2
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `driver` | `memory` | `memory`, `nats`, or a pro-registered driver (`kafka`, `redis`) |
+| `subject` | **required** | NATS subject / in-memory topic name |
+| `url` | — | Broker URL; required by `nats`, ignored by `memory` |
+| `publish` | — | One message or a list; non-strings are serialized to JSON text |
+| `subscribe.count` | `1` | Messages to wait for |
+| `subscribe.until_contains` | — | Substring each counted message must contain |
+| `subscribe.timeout_ms` | `5000` | Give up (and fail the step) after this |
+
+The step fails on connect failure, publish error, or subscribe timeout — the
+error says how many of `count` arrived and how many the matcher rejected.
+
+## Producer-only load
+
+Hammer a broker without consuming — success means every publish was accepted:
+
+```yaml
+steps:
+  - name: produce order events
+    use: std/pubsub@v1
+    with:
+      driver: nats
+      url: nats://nats.internal:4222
+      subject: orders.created
+      publish:
+        - '{"id":"ord-${seq}","total":${randf(10,100,2)}}'
+```
+
+Message payloads interpolate like any other step — `${seq}`,
+`${randf(1.05, 1.15, 5)}`, outputs of previous steps.
+
+## Consumer with assertions
+
+Wait for a specific event and assert on the payload:
+
+```yaml
+steps:
+  - name: await shipment event
+    use: std/pubsub@v1
+    with:
+      driver: nats
+      url: nats://nats.internal:4222
+      subject: orders.shipped
+      subscribe:
+        count: 1
+        until_contains: '"id":"ord-1"'
+        timeout_ms: 3000
+    outputs: shipment
+    check:
+      body_contains: ord-1
+```
+
+`outputs` exposes `published`, `received`, `duration_ms`, and `body` (the
+newline-joined matched payloads) to later steps.
+
+## Metrics and thresholds
+
+Every exchange folds into the run summary as custom metrics:
+`pubsub_msgs_published` / `pubsub_msgs_received` counters and the
+`pubsub_e2e_ms` trend (one sample per matched message: start of the publish
+phase → consumed). Gate a run on them with `std/thresholds@v1`:
+
+```yaml
+  - use: std/thresholds@v1
+    with:
+      pubsub_e2e_ms:
+        - "p(95)<50"              # 95% of messages land within 50 ms
+      pubsub_e2e_ms_failed:
+        - "rate<0.01"             # fewer than 1% timed-out/failed exchanges
+```
+
+Under load the memory driver shows the engine's raw ceiling (loopback, no
+broker), while the same test against `nats` adds the real broker round trip —
+diffing the two isolates what the broker costs you.
