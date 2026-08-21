@@ -21,8 +21,9 @@ drivers:
 | `memory` (default) | In-process broadcast bus — no broker needed. One channel per subject, shared by all VUs in the process: one VU's publish reaches every VU subscribed to that subject (cross-VU fan-out is a feature) |
 | `nats` | A real [NATS](https://nats.io) server (core NATS, no JetStream) |
 
-Vendor-specific drivers — **Kafka, Redis** — are a **pro** capability
-registered on the same driver seam. On an OSS build, `driver: kafka` fails
+Vendor-specific drivers — **Kafka, Redis, MQTT** — are a **pro** capability
+registered on the same driver seam ([pro drivers](/docs/pro-features/pubsub)).
+On an OSS build, `driver: kafka` fails
 the step with the list of registered drivers, so it is always clear which
 build you need.
 
@@ -51,13 +52,14 @@ steps:
 
 | Parameter | Default | Description |
 |---|---|---|
-| `driver` | `memory` | `memory`, `nats`, or a pro-registered driver (`kafka`, `redis`) |
+| `driver` | `memory` | `memory`, `nats`, or a pro-registered driver (`kafka`, `redis`, `mqtt`) |
 | `subject` | **required** | NATS subject / in-memory topic name |
 | `url` | — | Broker URL; required by `nats`, ignored by `memory` |
 | `publish` | — | One message or a list; non-strings are serialized to JSON text |
 | `subscribe.count` | `1` | Messages to wait for |
 | `subscribe.until_contains` | — | Substring each counted message must contain |
 | `subscribe.timeout_ms` | `5000` | Give up (and fail the step) after this |
+| `options` | — | Driver-specific tuning passed through verbatim (ignored by the built-ins; the pro drivers take QoS, consumer-group, and auth knobs from it) |
 
 The step fails on connect failure, publish error, or subscribe timeout — the
 error says how many of `count` arrived and how many the matcher rejected.

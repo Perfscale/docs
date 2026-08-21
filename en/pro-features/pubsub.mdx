@@ -1,0 +1,296 @@
+---
+title: Pub/Sub — Redis, MQTT, Kafka
+description: Load-test message brokers — Redis Pub/Sub, MQTT, and Kafka drivers for the pub/sub step
+section: Pro Features
+sectionOrder: 3
+order: 3
+---
+
+## Overview
+
+perfscale drives **message brokers** under load with the `std/pubsub@v1`
+step: publish bursts, consume with assertions, and measure end-to-end
+(publish → consumed) latency. The step itself and its `memory`/`nats` drivers
+are [open source](/docs/concepts/pubsub); the drivers on this page —
+**Redis Pub/Sub**, **MQTT**, and **Kafka** — are a **paid** capability (Scale
+and Enterprise plans) that registered paid agents add on the same driver seam.
+
+On an OSS build, `driver: kafka` fails the step with the list of registered
+drivers, so it is always clear which build you need.
+
+Every driver shares the step's semantics:
+
+- **subscribe-first** — when `publish` and `subscribe` are both given, the
+  subscription is established before anything is published, so a same-subject
+  roundtrip always sees its own messages;
+- at least one of `publish` / `subscribe` is required — publish-only is a
+  pure producer step, subscribe-only a pure consumer;
+- a subscribe timeout fails the step with how many of `count` arrived and how
+  many the `until_contains` matcher rejected — it is an assertion failure,
+  not a transport error;
+- `pubsub_msgs_published` / `pubsub_msgs_received` counters and the
+  `pubsub_e2e_ms` trend fold into the run summary and thresholds.
+
+Driver-specific tuning travels in the step's **`options`** object, passed to
+the driver verbatim. Unknown keys are rejected with the list of supported
+ones — a typo fails loudly instead of being silently ignored. Numeric options
+accept string forms (`qos: "1"`), so `${{ }}`-interpolated values work.
+
+## `driver: redis`
+
+Redis Pub/Sub. `subject` is the Pub/Sub channel; auth lives in the URL, so
+there are no driver options.
+
+| Param | Default | Description |
+|---|---|---|
+| `url` | **required** | `redis://[:password@]host:6379[/db]`, or `rediss://` for TLS |
+
+Roundtrip with payload assertions:
+
+```yaml
+steps:
+  - name: order events roundtrip
+    use: std/pubsub@v1
+    with:
+      driver: redis
+      url: redis://:secret@redis.internal:6379/0
+      subject: orders.created
+      publish:
+        - '{"id":"ord-1","total":42.50}'
+        - '{"id":"ord-2","total":17.00}'
+      subscribe:
+        count: 2
+        until_contains: '"id"'
+        timeout_ms: 2000
+    check:
+      body_contains: ord-2
+```
+
+Redis Pub/Sub is fire-and-forget: no persistence, no replay — a subscriber
+that is not connected yet misses messages. The step subscribes first, so
+same-step roundtrips are safe; for a consumer-only step, make sure the
+producer starts publishing after the consumers are up.
+
+### Producer / consumer pair
+
+The realistic broker pattern: one process generates load, others consume.
+Two files, one shared config, run concurrently against one broker:
+
+```yaml
+# producer.yaml — pure producer, success = every publish accepted
+steps:
+  - name: produce order events
+    use: std/pubsub@v1
+    with:
+      driver: redis
+      url: redis://127.0.0.1:6379
+      subject: orders.created
+      publish:
+        - '{"id":"ord-${seq}","total":${randf(10,100,2)}}'
+```
+
+```yaml
+# consumer.yaml — pure consumer: wait for 10 events per iteration
+steps:
+  - name: consume order events
+    use: std/pubsub@v1
+    with:
+      driver: redis
+      url: redis://127.0.0.1:6379
+      subject: orders.created
+      subscribe:
+        count: 10
+        until_contains: '"id"'
+        timeout_ms: 30000
+```
+
+```yaml
+# config.yaml
+vus: 4
+duration: 30s
+```
+
+```sh
+perfscale run -f consumer.yaml -c config.yaml &
+perfscale run -f producer.yaml -c config.yaml
+```
+
+A consumer that falls behind fails its step on the subscribe timeout — that
+is the signal you are sizing consumers for.
+
+## `driver: mqtt`
+
+MQTT v3.1.1 (the most widely supported version — v5 is deliberately not
+used). `subject` is the MQTT topic; wildcards (`sensors/+`) are accepted for
+subscribe, exact topics are the norm.
+
+| Param | Default | Description |
+|---|---|---|
+| `url` | **required** | `mqtt://[user:pass@]host[:port]` (default port `1883`) or `mqtts://…` (TLS, default `8883`) |
+| `options.qos` | `0` | `0`, `1`, or `2` — at-most-once is the right default for load |
+| `options.client_id` | `perfscale-<uuid>` | Client ID per exchange |
+| `options.keep_alive_secs` | `30` | MQTT keep-alive |
+
+Roundtrip at QoS 1 with credentials:
+
+```yaml
+steps:
+  - name: telemetry roundtrip
+    use: std/pubsub@v1
+    with:
+      driver: mqtt
+      url: mqtt://device-sim:s3cret@mqtt.internal:1883
+      subject: sensors/temperature
+      publish:
+        - '{"sensor":"t-1","celsius":${randf(18,26,1)}}'
+      subscribe:
+        count: 1
+        until_contains: '"sensor"'
+        timeout_ms: 3000
+      options:
+        qos: 1
+```
+
+Consumer-only over TLS, waiting for a fleet event:
+
+```yaml
+steps:
+  - name: await overheat alert
+    use: std/pubsub@v1
+    with:
+      driver: mqtt
+      url: mqtts://mqtt.internal:8883
+      subject: sensors/alerts
+      subscribe:
+        count: 1
+        until_contains: overheat
+        timeout_ms: 60000
+      options:
+        qos: 1
+        client_id: perfscale-listener
+    check:
+      body_contains: overheat
+```
+
+`mqtts://` uses rustls with webpki roots — the broker certificate must chain
+to a public CA and match the host in the URL. QoS 1/2 publishes count as
+published once handed to the client's event loop, not on PUBACK/PUBCOMP.
+
+## `driver: kafka`
+
+Apache Kafka via `rdkafka` (bundled librdkafka). `subject` is the topic.
+
+| Param | Default | Description |
+|---|---|---|
+| `url` | **required** | Bootstrap servers: `host:9092` or `h1:9092,h2:9092`; an optional `kafka://` prefix is stripped |
+| `options.group_id` | `perfscale-<uuid>` | Client `group.id` (the client requires one; nothing is ever committed) |
+| `options.auto_offset_reset` | `latest` | `latest` — each partition starts at the watermark at exchange start (fits the subscribe-first roundtrip); `earliest` replays the topic from the beginning |
+| `options.message_timeout_ms` | `5000` | Per-message delivery timeout |
+| `options.key` | — | Record key for every published message |
+| `options.security_protocol` | — | `plaintext`, `ssl`, `sasl_plaintext`, `sasl_ssl` |
+| `options.sasl_mechanism` | — | `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512` |
+| `options.sasl_username` / `options.sasl_password` | — | SASL credentials |
+
+Same-topic roundtrip:
+
+```yaml
+steps:
+  - name: order events roundtrip
+    use: std/pubsub@v1
+    with:
+      driver: kafka
+      url: kafka://kafka-1.internal:9092,kafka-2.internal:9092
+      subject: orders.created
+      publish:
+        - '{"id":"ord-1","total":42.50}'
+        - '{"id":"ord-2","total":17.00}'
+      subscribe:
+        count: 2
+        until_contains: '"id"'
+        timeout_ms: 10000
+```
+
+Managed clusters (SASL/SSL, SCRAM) — publish-only producer:
+
+```yaml
+steps:
+  - name: produce order events
+    use: std/pubsub@v1
+    with:
+      driver: kafka
+      url: kafka://broker-1.example.com:9092,broker-2.example.com:9092
+      subject: orders.created
+      publish:
+        - '{"id":"ord-${seq}","total":${randf(10,100,2)}}'
+      options:
+        security_protocol: sasl_ssl
+        sasl_mechanism: SCRAM-SHA-512
+        sasl_username: load-generator
+        sasl_password: ${env(KAFKA_PASSWORD)}
+        message_timeout_ms: 10000
+```
+
+Replaying a topic to measure consumer-side throughput (`earliest` + a long
+wait):
+
+```yaml
+steps:
+  - name: drain the topic
+    use: std/pubsub@v1
+    with:
+      driver: kafka
+      url: kafka://kafka-1.internal:9092
+      subject: orders.created
+      subscribe:
+        count: 1000
+        timeout_ms: 60000
+      options:
+        auto_offset_reset: earliest
+```
+
+Two Kafka specifics worth knowing:
+
+- **Manual partition assignment, not a consumer-group join.** Before
+  publishing, every partition's start offset is pinned to the watermark at
+  exchange start. A group join cannot be awaited deterministically and the
+  lazy `latest` reset can skip a roundtrip's own messages; pinned watermarks
+  make the subscribe-first rule exact. Every exchange sees all partitions, so
+  consumers fan out like the NATS driver, and `enable.auto.commit` is always
+  off — a load run never moves a real consumer group's offsets.
+- **Topics are best-effort auto-created** (replication factor 1) before
+  consuming, so a same-step roundtrip on a fresh topic has something to
+  assign. Per-topic errors (already exists, authorization) are ignored;
+  clusters with auto-creation or pre-provisioned topics behave the same.
+
+## Thresholds
+
+Broker runs gate on the same custom metrics as the OSS drivers — e2e latency
+percentiles and the failure rate:
+
+```yaml
+  - use: std/thresholds@v1
+    with:
+      pubsub_e2e_ms:
+        - "p(95)<100"             # 95% of messages land within 100 ms
+      pubsub_e2e_ms_failed:
+        - "rate<0.01"             # fewer than 1% timed-out/failed exchanges
+      pubsub_msgs_received:
+        - "count>=10000"          # consumers actually kept up
+```
+
+## Connection posture
+
+Like the built-in `nats` driver, every exchange is a full cycle: connect →
+subscribe → publish → collect → drop. Connections are **not** pooled across
+steps or VU iterations — under load each VU opens fresh broker connections
+per iteration. That keeps the e2e measurement honest (connect cost included),
+but brokers see real connection churn; size test rates accordingly, and prefer
+`duration`-bounded runs over unbounded iteration counts when pointing at a
+shared staging broker.
+
+## Related
+
+- [Pub/Sub concepts](/docs/concepts/pubsub) — the step's parameters, output,
+  and the open-source `memory` / `nats` drivers.
+- [SOAP](/docs/pro-features/soap) and [FIX](/docs/pro-features/fix) — the
+  other pro protocol drivers.
