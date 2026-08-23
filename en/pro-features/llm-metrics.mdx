@@ -1,0 +1,119 @@
+---
+title: LLM & GPU metrics
+description: Detailed LLM metrics — ITL/TPOT percentiles, cost estimates — and an extended nvidia-smi-pro GPU collector
+section: Pro Features
+sectionOrder: 3
+order: 4
+---
+
+## Overview
+
+The OSS engine's [`std/llm@v1` step](/docs/oss/core/llm) already measures
+TTFT, tokens/sec, and token counts per request, and the
+[`gpu:` section](/docs/oss/core/gpu) samples the host's GPUs during the
+run. Paid agents add the **detailed** layer on top of the same streams:
+
+- **ITL/TPOT percentiles** — inter-token latency (avg/p50/p95/p99) and
+  time-per-output-token for every streamed request, merged into the step's
+  `metrics` object as `pro_llm_*` trends — they fold into the run summary
+  and thresholds like any built-in metric;
+- **Cost estimates** — per-request USD cost from **your** price list (the
+  agent ships no price tables);
+- **Run-level aggregates** — TTFT/total/ITL distributions and total cost
+  grouped by `(endpoint, model)`;
+- **`nvidia-smi-pro` GPU source** — everything the OSS `nvidia-smi` source
+  reports, plus SM/memory clocks, throttle reasons, and per-process
+  compute-app aggregates.
+
+```yaml
+vus: 10
+duration: 5m
+
+gpu:
+  enabled: true
+  source: nvidia-smi-pro   # extended pro collector
+  interval_ms: 1000
+
+steps:
+  - name: chat completions
+    use: std/llm@v1
+    with:
+      url: http://localhost:11434/v1/chat/completions
+      model: llama3.1
+      prompt: Summarize the plot of Hamlet in three sentences.
+      max_tokens: 256
+
+thresholds:
+  pro_llm_itl_p95_ms: p95 < 100   # gate on inter-token latency
+```
+
+On an OSS build the `pro_llm_*` metrics simply never appear and
+`gpu.source: nvidia-smi-pro` warns once as an unknown source — the run
+itself works unchanged.
+
+## Step metrics
+
+Every **successful** `std/llm@v1` request adds to its `metrics` object:
+
+| Key | Kind | Meaning |
+|-----|------|---------|
+| `pro_llm_itl_avg_ms` | trend | Mean inter-token latency (chunk-to-chunk deltas; the TTFT interval is excluded) |
+| `pro_llm_itl_p50_ms` / `pro_llm_itl_p95_ms` / `pro_llm_itl_p99_ms` | trend | ITL percentiles over the request's chunks |
+| `pro_llm_tpot_ms` | trend | Time per output token: `(total − ttft) / (completion_tokens − 1)` |
+| `pro_llm_cost_usd` | counter | Request cost from the configured prices |
+
+ITL metrics appear only for streamed requests with ≥2 chunks; TPOT needs a
+TTFT and ≥2 completion tokens; cost appears only when a price matches the
+model. Failed requests carry no metrics but still count in the run
+aggregates' error counter.
+
+Because these ride as ordinary trends/counters, they work everywhere the
+built-in `llm_*` metrics do: the end-of-run summary, `--summary-export`
+JSON, and `thresholds:` gates.
+
+## Cost configuration
+
+Prices are **yours** — per 1M input/output tokens, in USD, with no
+hardcoded tables. The agent reads them (in priority order) from:
+
+1. `PERFSCALE_LLM_PRICES` — inline JSON:
+
+   ```json
+   {
+     "gpt-4o-mini": { "input_per_1m": 0.15, "output_per_1m": 0.6 },
+     "*":           { "input_per_1m": 1.0,  "output_per_1m": 3.0 }
+   }
+   ```
+
+2. `PERFSCALE_LLM_PRICES_FILE` — path to a file with the same JSON.
+
+`"*"` is the fallback for models without an exact entry. A model with no
+matching price simply gets no `pro_llm_cost_usd` metric; an invalid
+configuration logs one warning and disables cost metrics — it never fails
+a run.
+
+Cost of one request:
+`prompt_tokens / 1M × input_per_1m + completion_tokens / 1M × output_per_1m`.
+
+## GPU: `nvidia-smi-pro`
+
+The pro collector samples the standard fields (utilization, VRAM,
+temperature, power — the run summary is unchanged) plus, flattened into
+each timeseries sample:
+
+| Key | Meaning |
+|-----|---------|
+| `pro_gpu_clocks_sm_mhz` / `pro_gpu_clocks_mem_mhz` | Current SM / memory clocks |
+| `pro_gpu_throttle_reasons` | `clocks_event_reasons.active` bitmask (0 = not throttled) |
+| `pro_gpu_process_count` / `pro_gpu_process_memory_mib` | Compute apps on the device (count / total VRAM, MiB) |
+
+A clock drop next to a non-zero throttle bitmask during the load phase is
+the smoking gun for thermal/power throttling of a local LLM server, and the
+process aggregates show at a glance whether something else is sharing the
+GPU with the server under test.
+
+The compute-apps query (`nvidia-smi --query-compute-apps`) is best-effort:
+if it fails (older drivers, WSL), GPU rows still come through without the
+`pro_gpu_process_*` fields. Per-process utilization is not available from
+`nvidia-smi` (that needs NVML). The built-in `nvidia-smi` source is
+untouched — `nvidia-smi-pro` is strictly opt-in.
