@@ -47,6 +47,10 @@ PERFSCALE_SHARED_REDIS_URL=redis://:secret@redis.internal:6379/0
 - Two independent environments sharing one Redis server: use different
   logical DBs in the URL (`/0`, `/1`, …) — a variable name means nothing
   across DB boundaries.
+- Agents on another machine than the server: never publish bare Redis on a
+  public port. The infra compose ships a `redis-gateway` nginx stream that
+  terminates TLS on `:6479`; external agents use
+  `rediss://:<password>@<host>:6479/0`.
 
 The connection is multiplexed and auto-reconnecting; a broker hiccup fails
 the affected step, not the agent.
