@@ -1,0 +1,125 @@
+---
+title: Shared Variables — Redis
+description: Shared state across agent machines — the Redis driver for the shared-variable steps in distributed, multi-instance runs
+section: Pro Features
+sectionOrder: 3
+order: 5
+---
+
+## Overview
+
+[Shared variables](/docs/oss/core/shared-variables) coordinate VUs inside a
+run — producer/consumer queues, shared counters, barriers. The built-in
+`memory` driver shares them between the VUs of **one agent process**. The
+**`redis` driver** on this page is a **paid** capability (Scale and
+Enterprise plans) that registered paid agents add on the same driver seam:
+the store moves to a Redis server, so every agent pointing at it shares
+**one** state — a queue filled on one machine is drained on another.
+
+On an OSS build, or an agent without the agent-side URL configured,
+`driver: redis` fails the step with the list of registered drivers, so it is
+always clear which build you need.
+
+Everything else is identical to the `memory` driver — the step shape, the
+ops (`set` / `get` / `increment` / `append` / `pop`), blocking `wait_for`,
+`extract` mappings, and the mandatory `shared_variables:` declarations with
+pre-start validation. Only the backing store changes:
+
+| Driver | Store | Shared between |
+|---|---|---|
+| `memory` (default) | Process-global map | VUs of one agent process |
+| `redis` | Redis server | VUs of **every** agent pointed at the server |
+
+## Agent configuration
+
+The Redis URL is an **agent-level** setting — a shared variable is
+infrastructure, not a per-step endpoint, so there is no `url` in the step
+itself. Each agent that should join the shared store starts with:
+
+```bash
+# .env on the agent machine
+PERFSCALE_SHARED_REDIS_URL=redis://:secret@redis.internal:6379/0
+```
+
+- `redis://[:password@]host:6379[/db]`, or `rediss://` for TLS.
+- Agents without the variable simply don't register the driver — their
+  `driver: redis` steps fail with the registered-drivers list.
+- Two independent environments sharing one Redis server: use different
+  logical DBs in the URL (`/0`, `/1`, …) — a variable name means nothing
+  across DB boundaries.
+
+The connection is multiplexed and auto-reconnecting; a broker hiccup fails
+the affected step, not the agent.
+
+## Example
+
+Declarations live in the config file, exactly as with `memory`:
+
+```yaml
+# config.yaml
+shared_variables:
+  pending_orders: []      # list → append / pop
+  approved_count: 0       # number → increment
+```
+
+```yaml
+# producer.yaml — runs on agent A
+steps:
+  - name: enqueue order
+    use: std/set_shared_variable@v1
+    with:
+      driver: redis
+      name: pending_orders
+      op: append
+      value: { id: "${{ uuid }}", total: 42.50 }
+```
+
+```yaml
+# consumer.yaml — runs on agent B, drains what A produces
+steps:
+  - name: take next order
+    use: std/get_shared_variable@v1
+    with:
+      driver: redis
+      name: pending_orders
+      op: pop
+      wait_for: { length_gte: 1, timeout_ms: 10000 }
+    outputs:
+      order_id: value.id
+```
+
+## Atomicity — one Redis command per op
+
+Every op maps to a single server-side atomic command, the same contract the
+`memory` driver gives with one lock acquisition. There is no
+read-modify-write pair to race, and no lock primitive to deadlock.
+
+| Op | Redis command | Result |
+|---|---|---|
+| `increment` (integer delta) | `INCRBY` | new value, stays integer |
+| `increment` (float delta) | `INCRBYFLOAT` | new value |
+| `append` | `RPUSH` | new list length |
+| `pop` | `LPOP` | first element, `null` when empty |
+| `set` | `SET` / `DEL`+`RPUSH` (lists) | the stored value |
+| `get` | `GET` / `LRANGE` (lists) | the stored value |
+
+Values are stored so these commands apply directly: numbers as plain
+strings, list elements as JSON, other scalars as JSON strings. A `get`
+decides list vs scalar via the server-side `TYPE` of the key, so agents
+always read each other's writes correctly.
+
+## Run lifecycle
+
+- **Keys** live at `perfscale:shared:<name>`.
+- **Run start**: every agent re-seeds the declared keys (`DEL` + initial
+  value) and drops keys its previous run left behind. A run always starts
+  from the declared initial values — cross-run carry-over is intentionally
+  impossible.
+- **Multi-agent start**: each agent re-seeds when *it* starts, so a variable
+  written before the last agent joined is reset. Patterns that build state
+  during the run (a `before:` block filling a queue, producers starting
+  together) are unaffected; don't treat the store as warm before all agents
+  report in.
+- `wait_for` polls the server with a small sleep between checks — on a
+  distant Redis each poll is a network round trip, so prefer timeouts in
+  seconds, not milliseconds.
