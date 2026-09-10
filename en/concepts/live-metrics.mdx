@@ -1,0 +1,115 @@
+---
+title: Live metrics streaming
+description: During-run metrics — what the engine streams while a test runs, how delivery is engineered to never hurt the load generator, and how to read the data live or from Grafana
+section: Concepts
+sectionOrder: 2
+order: 16
+---
+
+## Overview
+
+A run is observable while it is still applying load — not just when the
+end-of-run summary lands. The engine on the machine takes a cumulative
+snapshot of every metric the run has collected every few seconds and streams
+it to the platform; the run page draws its charts as the samples arrive, and
+the same feed powers the **Metrics** dashboard, the Prometheus-compatible
+query API, and Remote Write. No InfluxDB, no extra collector — the stream is
+built into the run itself.
+
+## Turning it on
+
+Add a `report:` block with `during_run: true` to the **Configuration** the
+test runs with — the configuration editor has a **During-run metrics** snippet
+for exactly this:
+
+```yaml
+report:
+  during_run: true        # default false — end-of-run summary only
+  interval_ms: 5000       # snapshot/flush interval, min 1000
+  batch_size: 500         # seal a batch at this many samples
+  max_cpu_percent: 90     # CPU gate; 0 disables it (Linux)
+  max_pending: 24         # undelivered batches before drop-oldest
+```
+
+The agent handles the rest: it authenticates the stream with its machine
+token and stamps every sample with `task_id` and `machine_id`, so a
+distributed run splits cleanly per load generator.
+
+Streaming applies to the **native engine**. k6, JMeter, and Locust scripts
+still produce their normalized end-of-run summary and live logs, but do not
+stream during-run samples.
+
+## What the engine streams
+
+Each snapshot flattens every metric family the run collected into
+Prometheus-convention samples (durations in **seconds**):
+
+| Engine metric | Shipped samples |
+|---|---|
+| Histogram (`http_req_duration`, custom trends) | `<name>{quantile="0.5"/"0.9"/"0.95"/"0.99"}`, `<name>_count`, `<name>_sum` |
+| Counter | `<name>_total` |
+| Failure rate (`http_req_failed`, …) | `<name>_total` (invocations), `<name>_failed_total` (failures) |
+| GPU gauge (with `gpu.enabled`) | `gpu_utilization_pct`, `gpu_memory_used_mib`, `gpu_temperature_c`, `gpu_power_w` per device — on Apple Silicon also `ane_power_w`, `cpu_power_w`, `package_power_w` |
+
+Custom metrics your steps emit — gRPC latencies, DB query times,
+`llm_ttft_ms`, WebSocket counters — ride along automatically; nothing to
+wire per metric.
+
+Snapshots are **cumulative** (histograms and counters never reset mid-run);
+the platform diffs successive snapshots to chart per-interval values. GPU
+gauges are point-in-time and charted as-is.
+
+## How delivery behaves
+
+A batch seals at `batch_size` samples or on the `interval_ms` tick, whichever
+comes first, and is POSTed to the platform with a strictly increasing `seq`.
+The ingest side deduplicates on `(task_id, seq)`, so a retried batch can
+never double-count. When the run ends, everything still queued is flushed
+(final drain, 30-second cap), then the usual end-of-run summary follows.
+
+## Protecting the load generator
+
+The shipper lives by one rule: **generating load always wins over reporting
+it.**
+
+- The engine never blocks on metrics — snapshots go over a bounded channel,
+  and a full channel drops the snapshot instead of slowing virtual users.
+- **CPU gate**: while the machine's busy CPU sits at or above
+  `max_cpu_percent` (default 90%, Linux), the shipper drops snapshots and
+  holds all batches — zero uploads until the machine recovers. If the
+  generator is pinned, perfscale goes quiet rather than compete with the
+  virtual users for the last cores.
+- Memory stays bounded: at most `max_pending` sealed-but-undelivered batches,
+  then the oldest is dropped. An unreachable platform cannot grow the
+  agent's footprint.
+- Network errors, 5xx and 429 retry the same batch with the same `seq`
+  (backoff capped at 60 s); any other 4xx drops the poison batch and moves
+  on.
+
+The full engineering contract is in the OSS reference:
+[During-run metrics](/docs/oss/core/metrics#during-run-metrics-reportduring_run).
+
+## Reading the metrics
+
+- **Run page** — charts draw themselves as samples arrive: latency
+  quantiles, throughput, failure rate, GPU curves. No refresh, no waiting
+  for the summary.
+- **Metrics dashboard** — detects the run's protocol from the streamed
+  families and swaps in the matching tile set ([Protocol metrics](/docs/concepts/protocol-metrics)).
+- **Grafana** — the platform exposes a Prometheus-compatible query API.
+  Settings → **Integrations** gives you the datasource URL
+  (`<instance>/api/v1/integrations/prometheus`); authenticate with a personal
+  API token from Settings → **Keys** (`Authorization: Bearer psk_…`). Query
+  it like any Prometheus — `rate(http_req_duration_count[1m])`, split by
+  `machine_id`, and so on.
+- **Remote Write** — prefer your own store? Settings → **Integrations** →
+  **Prometheus Remote Write** pushes every ingested sample to your
+  Prometheus, Mimir, VictoriaMetrics, or Grafana Cloud, with optional basic
+  or bearer auth.
+
+## Next steps
+
+- [Runs & live metrics](/docs/concepts/runs) — the task lifecycle around the stream.
+- [Environment variables](/docs/concepts/environment-variables) — keep secrets out of scripts and logs.
+- [OSS: metrics reference](/docs/oss/core/metrics) — engine-side metric families and the full during-run contract.
+- [OSS: YAML reference](/docs/oss/yaml-reference) — every `report:` knob.

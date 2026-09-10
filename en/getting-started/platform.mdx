@@ -49,13 +49,18 @@ Kubernetes. The agent registers itself and appears here within seconds. See
 **Configurations** are reusable load profiles — how many virtual users, for how
 long, with what ramp. The built-in presets (`debug`, `smoke`, `load`, `stress`,
 `spike`, `soak`) match the CLI presets, and you can add custom profiles with
-ramp-up / steady-state / ramp-down phases.
+ramp-up / steady-state / ramp-down phases. A configuration can also carry a
+`report:` block: flip `during_run` on (the **During-run metrics** snippet in
+the editor) and native runs stream live metrics to the run page — see
+[Live metrics streaming](/docs/concepts/live-metrics).
 
 ![The Configurations page with built-in presets and environment variables](/docs-assets/platform/configurations.webp)
 
-The same page holds **Environment Variables** injected into every run —
-`API_BASE_URL`, secrets, connection strings. Mark a value *masked* to keep it
-out of logs and the UI.
+The same page holds the workspace's **Environment Variables** — the values
+your tests reference (`API_BASE_URL`, tokens, connection strings) and the
+registry the platform uses to keep secrets out of every log. Mark a value
+*masked* to redact it wherever it could appear. See
+[Environment variables](/docs/concepts/environment-variables).
 
 ## 3. Tests — author and run
 

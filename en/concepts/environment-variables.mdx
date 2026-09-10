@@ -1,0 +1,83 @@
+---
+title: Environment variables
+description: Workspace-level variables and secrets — visibility levels, the log-masking guarantee, and how tests consume them
+section: Concepts
+sectionOrder: 2
+order: 17
+---
+
+## Overview
+
+**Environment Variables** (on the **Configurations** page) are the
+workspace's registry of values your tests depend on — `API_BASE_URL`, API
+tokens, DSNs, cookie secrets. The registry does two jobs:
+
+1. **Keeps values out of scripts.** The test editor's side panel lists the
+   variables in scope, so a script references a name instead of hardcoding a
+   value — and one edit re-points every test at a staging or production
+   target.
+2. **Keeps secrets out of logs.** Every variable carries a **visibility**
+   flag; values marked *masked* are redacted wherever they could appear in
+   output.
+
+## Visible vs masked
+
+- **visible** — plain reference values (hosts, environment names). Shown in
+  the UI, untouched in logs.
+- **masked** — secrets. Hidden behind `•••` in the UI and replaced with
+  `***` in **every** log surface the platform controls: the live run stream,
+  the stored run log you download afterwards, and the raw OTEL metric chunks
+  in the logs bucket.
+
+Masking is **value-based**, not key-based: the platform replaces the secret
+wherever it appears — inside a URL, a DSN (`postgres://user:SECRET@host/db`
+becomes `postgres://user:***@host/db`), a header dump, or an error message.
+Values of 4+ characters are replaced anywhere they occur; shorter values
+only as whole tokens, so a short value like `abc` cannot corrupt unrelated
+words.
+
+One honest boundary: workspace members can still read variable values over
+the API — *masked* protects logs and the UI, it is not an access-control
+mechanism. Treat the registry as convenience plus a redaction guarantee, not
+as a secret vault.
+
+## How tests consume variables
+
+Register the value once, then use it wherever the test needs it — in the
+test's `variables:` block, a header, a DSN. If that exact value ever reaches
+a log line, the masker recognizes it and redacts it there. That is the
+contract: **you may use a masked value freely; it will not leak into logs.**
+
+For k6/JMeter/Locust scripts the same applies — if the script prints a
+registered masked value (via `__ENV` or a literal), the platform redacts it
+before the log is streamed, stored, or chunked.
+
+## Machine-side environment (`${{ env.* }}`)
+
+Native perfscale tests can also read the **machine's** process environment
+directly with `${{ env.NAME }}` — the channel for secrets that should live
+on the load generator and nowhere else (the variable stays out of the test
+YAML entirely):
+
+```yaml
+steps:
+  - use: std/http@v1
+    with:
+      url: https://api.example.com/me
+      headers:
+        authorization: "Bearer ${{ env.API_TOKEN }}"
+```
+
+A missing variable fails the step with a clear error instead of silently
+sending an empty credential. And the engine records every value it resolves
+from `env.*` into a run-scoped registry and **masks it in the run log
+automatically** — same `***` rules as above — so even a secret embedded in a
+request URL or a debug `std/log@v1` message cannot end up in the output.
+See the [OSS YAML reference](/docs/oss/yaml-reference) for the full
+interpolation contract.
+
+## Next steps
+
+- [Using the platform](/docs/getting-started/platform) — the Configurations page where variables live.
+- [Live metrics streaming](/docs/concepts/live-metrics) — what runs emit while they execute.
+- [Runs & live metrics](/docs/concepts/runs) — the task lifecycle.

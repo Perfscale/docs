@@ -57,6 +57,12 @@ from the metric families it streams — **FIX**, **gRPC**, **WebSocket**,
 next to the run selector showing what was detected. See
 [Protocol metrics](/docs/concepts/protocol-metrics) for the tile sets.
 
+Under the hood, the engine on the machine streams these metrics while the
+run is in flight — cumulative snapshots every few seconds, with delivery
+engineered so it can never distort the load it measures.
+[Live metrics streaming](/docs/concepts/live-metrics) covers what is sent,
+when, and how to read the same data from Grafana.
+
 When the task finishes, its summary metrics are recorded with it:
 
 | Metric | Description |
