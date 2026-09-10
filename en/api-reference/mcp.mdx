@@ -34,6 +34,33 @@ permission — owners and admins by default, configurable in Access Controls).
   token's *last used* timestamp, and creation/revocation are recorded in the
   audit log.
 
+### Fine-grained tokens
+
+New tokens can be limited to a subset of the API instead of full access.
+Pick scopes at creation — the token then only reaches the endpoints its
+scopes cover and gets `403` everywhere else (scoped tokens can never manage
+users, tokens, or billing):
+
+| Scope | Unlocks |
+|---|---|
+| `tests:read` / `tests:write` | List and read tests; create, edit, delete tests |
+| `runs:read` / `runs:write` | Read runs and their logs; start and cancel runs |
+| `machines:read` / `machines:write` | List machines; manage them |
+| `metrics:read` | Metrics queries, OTEL run metrics, the Prometheus/Grafana API |
+
+Typical recipes: a Grafana datasource → `metrics:read`; a CI pipeline →
+`tests:read`, `runs:read`, `runs:write`; a read-only MCP connection →
+`tests:read`, `runs:read`, `machines:read`, `metrics:read`. Scopes only ever
+narrow what your role allows — a scoped token can never exceed it.
+
+### Rotation
+
+Any token can be **rotated** from Settings → API Tokens (or
+`POST /api/v1/api-tokens/{id}/rotate`): you get a fresh `psk_...` shown once,
+and the old secret stops working immediately. Name, scopes, and expiry carry
+over, so automation keeps exactly the same access — update the stored secret
+and you are done. Full-access and fine-grained tokens rotate the same way.
+
 Tokens work for the whole REST API too:
 
 ```sh
