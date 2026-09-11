@@ -30,6 +30,23 @@ The new task enters the lifecycle `pending → running → passed | failed |
 cancelled | timeout`. Cancel a pending or running task any time with
 `DELETE /api/v1/tasks/:id`.
 
+## Cancelling a run
+
+`DELETE /api/v1/tasks/:id` accepts the task UUID or its shareable public id
+and cancels a `pending` or `running` task:
+
+- A **pending** task never starts — the dispatcher skips it.
+- A **running** task stops within about two seconds: the log stream from the
+  machine is dropped, and the partial log captured up to that point stays
+  attached to the run. The task ends as `cancelled` with the elapsed
+  `duration_ms`.
+- Cancelling an already-finished task (`passed` / `failed` / `cancelled` /
+  `timeout`) returns `409 Conflict` — run history is never rewritten.
+
+Scoped API tokens need `runs:write` for this call (`runs:read` is enough to
+watch runs, not to stop them). A cancelled run fires no completion webhooks
+and produces no result metrics.
+
 ## Distribution across machines
 
 perfscale selects among the workspace's `online` machines — a machine
