@@ -28,7 +28,7 @@ report:
   interval_ms: 5000       # snapshot/flush interval, min 1000
   batch_size: 500         # seal a batch at this many samples
   max_cpu_percent: 90     # CPU gate; 0 disables it (Linux)
-  max_pending: 24         # undelivered batches before drop-oldest
+  max_pending: 24         # soft warn cap — batches are never dropped mid-run
 ```
 
 The agent handles the rest: it authenticates the stream with its machine
@@ -75,13 +75,14 @@ it.**
 - The engine never blocks on metrics — snapshots go over a bounded channel,
   and a full channel drops the snapshot instead of slowing virtual users.
 - **CPU gate**: while the machine's busy CPU sits at or above
-  `max_cpu_percent` (default 90%, Linux), the shipper drops snapshots and
-  holds all batches — zero uploads until the machine recovers. If the
+  `max_cpu_percent` (default 90%, Linux), the shipper holds all batches and
+  queues incoming snapshots instead of dropping them — zero uploads until
+  the machine recovers, then the queued points ship in order. If the
   generator is pinned, perfscale goes quiet rather than compete with the
   virtual users for the last cores.
-- Memory stays bounded: at most `max_pending` sealed-but-undelivered batches,
-  then the oldest is dropped. An unreachable platform cannot grow the
-  agent's footprint.
+- Points are not dropped mid-run: sealed-but-undelivered batches are kept
+  however long an outage lasts. `max_pending` is a soft cap — crossing it
+  logs a warning, and delivery resumes in order once the platform responds.
 - Network errors, 5xx and 429 retry the same batch with the same `seq`
   (backoff capped at 60 s); any other 4xx drops the poison batch and moves
   on.
