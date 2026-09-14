@@ -228,6 +228,49 @@ Get a single task by ID.
 
 **Response `200 OK`** — same shape as a single element from the list.
 
+### GET /api/v1/tasks/:id/log-stream
+
+Live log stream of a running task over **Server-Sent Events**
+(`text/event-stream`). `:id` accepts the task UUID or its public id; the
+caller must authenticate with the usual Bearer token.
+
+Each `data:` frame carries one task event as JSON:
+
+```json
+data: {"type": "log", "source": "out", "text": "running (01m00.0s), 1/1 VUs"}
+```
+
+| `type` | Payload | Terminal |
+|--------|---------|----------|
+| `log` | `source` (`out`/`err`), `text` — one output line | no |
+| `done` | `task` — the final task record with metrics | yes |
+| `error` | `message` — unrecoverable dispatch error | yes |
+
+After a terminal event the stream ends. If the run finished before you
+connected (or its live stream is no longer available), the endpoint answers
+immediately with a single `done` event built from the current task record.
+
+### GET /api/v1/tasks/:id/ws
+
+The same live stream over **WebSocket** — the alternative transport selected
+with `"transport": "ws"` when starting a run (the run response then advertises
+this URL in `stream.<machineId>.url`). Authentication, id resolution, and the
+fallback semantics are identical to the SSE endpoint.
+
+- Every task event is delivered as one **text message** with exactly the same
+  JSON as the SSE `data:` frames above.
+- After the terminal (`done`/`error`) message the server closes the socket
+  with code **1000** (normal closure).
+- The server pings every ~30 s and drops clients whose pong is overdue;
+  answer pings with pongs (any standard WS client does this automatically).
+- Unknown or cross-tenant task ids are rejected with plain `404`/`401` HTTP
+  responses before the upgrade, so a failed handshake carries the JSON error
+  body.
+
+`"transport": "sse"` (default) maps to the SSE endpoint above;
+`"transport": "long_polling"` is not implemented and currently falls back to
+SSE.
+
 ### DELETE /api/v1/tasks/:id
 
 Cancel a pending or running task.
