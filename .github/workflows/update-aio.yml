@@ -9,7 +9,7 @@ on:
 jobs:
   update-aio:
     name: Trigger AIO update
-    uses: Perfscale/actions/.github/workflows/update-aio.yml@master
+    uses: Perfscale/infra/.github/workflows/reusable-update-aio.yml@main
     with:
       submodule: docs
       source-ref: ${{ github.ref_name }}
