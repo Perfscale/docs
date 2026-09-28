@@ -1,16 +1,50 @@
 name: Update AIO
 
+# Self-contained copy of Perfscale/infra's reusable-update-aio.yml: this repo
+# is public, and public repos cannot call reusable workflows in private repos.
+# Keep the logic in sync with reusable-update-aio.yml.
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  update-aio:
-    name: Trigger AIO update
-    uses: Perfscale/infra/.github/workflows/reusable-update-aio.yml@main
-    with:
-      submodule: docs
-      source-ref: ${{ github.ref_name }}
-    secrets:
-      GH_PAT: ${{ secrets.GH_PAT }}
+  update-submodule:
+    name: Update docs in aio
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout aio repository (no submodules — gitlink bump only)
+        uses: actions/checkout@v4
+        with:
+          repository: Perfscale/aio
+          token: ${{ secrets.GH_PAT }}
+          submodules: false
+
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Point docs at ${{ github.sha }}
+        id: changes
+        run: |
+          old=$(git ls-tree HEAD -- docs | awk '{print $3}')
+          if [ "$old" = "${{ github.sha }}" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "Submodule already at ${{ github.sha }}"
+          else
+            git update-index --cacheinfo 160000,${{ github.sha }},docs
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Bumped docs: $old → ${{ github.sha }}"
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git commit -m "chore: update docs submodule (${{ github.ref_name }})"
+          git push
+
+      - name: No changes detected
+        if: steps.changes.outputs.has_changes == 'false'
+        run: echo "No changes to commit - submodule already up to date"
