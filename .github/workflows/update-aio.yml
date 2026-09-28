@@ -3,7 +3,6 @@ name: Update AIO
 on:
   push:
     branches:
-      - master
       - main
 
 jobs:
