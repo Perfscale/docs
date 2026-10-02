@@ -230,6 +230,19 @@ steps:
         message_timeout_ms: 10000
 ```
 
+#### SASL notes
+
+- Prefer `sasl_ssl` (SASL over TLS). `sasl_plaintext` sends credentials
+  unencrypted — acceptable only inside a trusted network.
+- Supported mechanisms: `PLAIN` (most managed clusters), `SCRAM-SHA-256`,
+  `SCRAM-SHA-512`. The mechanism must match the broker's user entry —
+  a SCRAM user created for SHA-256 cannot authenticate as SHA-512.
+- Never hardcode `sasl_password` — inject it via `${env(...)}` as above.
+- **Local builds**: the SASL feature links the system cyrus-sasl library, so
+  a source build needs `libsasl2-dev` (Debian/Ubuntu), `cyrus-sasl-devel`
+  (RHEL/Fedora), or `brew install cyrus-sasl` (macOS). The released agent
+  binary is static — it vendors cyrus-sasl and needs nothing installed.
+
 Replaying a topic to measure consumer-side throughput (`earliest` + a long
 wait):
 
