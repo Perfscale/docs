@@ -127,6 +127,33 @@ a runaway component can do on the hot path, and time inside a library call
 is counted in the enclosing step's duration — library cost shows up in
 metrics, never hidden.
 
+## Library lifecycle on the platform
+
+When the load generator is a platform machine (an agent), the library cache
+is managed remotely — the flow mirrors the CLI but is driven from the
+controlplane:
+
+1. **Install** — the controlplane pushes the library to the machine
+   (UI-driven, over the agent API): the artifact is fetched once,
+   digest-verified, and stored in the agent's content-addressed cache
+   (`<cache>/libraries/<sha256>.wasm`). For HTTPS installs the `sha256` pin
+   is optional: when present it is verified (a mismatch is a hard error),
+   when absent the digest is computed from whatever the URL serves.
+2. **Install-time burn** — a freshly installed library is also AOT
+   precompiled to `<sha256>.cwasm`. The burn is *advisory*: a precompile
+   failure downgrades to a warning, never a failed install.
+3. **Auto-burn before every run** — the advisory burn can be missing (a
+   failed burn, a cache copied without `.cwasm` files, an artifact burned by
+   an older engine), so the agent re-checks before each test run and
+   precompiles any digest-pinned library whose `.cwasm` is missing or
+   stale — Cranelift compilation never lands inside the measured run. A
+   failure here degrades to a run-log warning and run-time compilation,
+   never a failed run.
+4. **Uninstall + deburn** — removing a library from a machine deletes both
+   the `.wasm` artifact and its `.cwasm` burn from the cache, so nothing
+   stale is left behind. Built-in `@std` libraries ship inside the engine
+   binary and can never be uninstalled.
+
 ## Writing your own library
 
 One shape, three languages — each SDK hides the WIT plumbing and gives you
