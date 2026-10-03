@@ -8,17 +8,9 @@ order: 1
 
 ## Базовый URL
 
-Все эндпоинты обслуживаются Rust BFF:
+Все эндпоинты доступны по адресу `{base_url}/api/v1`. Для облачной версии `{base_url}` — это `https://perfscale.ru`; при self-hosted развёртывании подставьте публичный адрес вашего шлюза.
 
-```
-http://localhost:8090/api/v1
-```
-
-**OpenAPI-спецификация:** полный машиночитаемый контракт (все 100 путей, схемы запросов и ответов, схемы безопасности) генерируется [utoipa](https://github.com/juhaku/utoipa) из исходного кода BFF и доступна для скачивания:
-
-[Скачать openapi.json](/api-reference/openapi.json)
-
-На живом развёртывании также работает интерактивный **Swagger UI** по адресу `/swagger-ui/` на хосте BFF (например, [http://localhost:8090/swagger-ui/](http://localhost:8090/swagger-ui/)). Эта страница — краткий обзор; точные типы полей и значения enum смотрите в спецификации.
+Полный машиночитаемый контракт доступен в формате OpenAPI: [openapi.json](/api-reference/openapi.json). На self-hosted развёртываниях BFF также отдаёт Swagger UI по адресу `/swagger-ui/` на своём порту.
 
 ## Аутентификация
 
@@ -28,12 +20,12 @@ API поддерживает два типа Bearer-учётных данных,
 Authorization: Bearer <token>
 ```
 
-**Персональные API-токены (`psk_…`)** — рекомендуемый способ обращения к API из скриптов и CI. Токены создаются для конкретного пользователя, поддерживают срок действия и тонкие scope'ы, управляются через `/api/v1/api-tokens` (см. раздел [API-токены](#api-токены)). Открытое значение токена показывается только один раз при создании. Если scope'ы токена не покрывают операцию, возвращается `403`.
+**Персональные API-токены (`psk_…`)** — рекомендуемый способ обращения к API из скриптов и CI. Токены создаются для конкретного пользователя, поддерживают срок действия и тонкие scope'ы, управляются через `/api/v1/api-tokens`. Открытое значение токена показывается только один раз при создании. Если scope'ы токена не покрывают операцию, возвращается `403`.
 
-**Keycloak JWT** — короткоживущий access token, выданный Keycloak. Приложение Next.js получает его автоматически через next-auth. При прямых обращениях к API используйте ROPC grant:
+**Keycloak JWT** — короткоживущий access token, выданный Keycloak. Веб-приложение получает его автоматически при входе. При прямых обращениях к API используйте ROPC grant:
 
 ```bash
-curl -X POST http://localhost:8080/realms/perfscale/protocol/openid-connect/token \
+curl -X POST {base_url}/realms/perfscale/protocol/openid-connect/token \
   -d "grant_type=password" \
   -d "client_id=perfscale-site" \
   -d "client_secret=$CLIENT_SECRET" \
@@ -41,11 +33,11 @@ curl -X POST http://localhost:8080/realms/perfscale/protocol/openid-connect/toke
   -d "password=demo1234"
 ```
 
-**Машинные токены (`machine_auth`)** — M2M-токены, получаемые из Keycloak по grant'у `client_credentials`. Они несут claim `tenant_id`, привязывающий машину к её workspace, и предназначены для **агентов** (ping машин, приём OTel-метрик), а не для пользовательского доступа к API.
+**Машинные токены** — M2M-токены, получаемые из Keycloak по grant'у `client_credentials`. Они привязывают машину к её workspace и предназначены для **агентов** (ping машин, приём OTel-метрик), а не для пользовательского доступа к API.
 
-## Биллинговый барьер
+## Биллинг
 
-Развёртывания с включённым биллингом (`BILLING_ENFORCE=true`, например perfscale.ru) требуют активной платной подписки. Тенанты без неё получают на все операции `/api/v1/*`:
+Требуется активная подписка: на платном контуре API отвечает `402 {"code":"PAYMENT_REQUIRED"}` на операции `/api/v1/*` для тенантов без активной подписки. Исключения: auth/me, управление тенантами и платежами, приглашения, подписка.
 
 **`402 Payment Required`**
 
@@ -56,388 +48,13 @@ curl -X POST http://localhost:8080/realms/perfscale/protocol/openid-connect/toke
 }
 ```
 
-Исключения (доступны всегда): `GET /api/v1/auth/me`, `POST /api/v1/contact`, `POST /api/v1/users/provision`, `GET /api/v1/tenants`, `POST /api/v1/tenants/switch`, `GET /api/v1/tenants/billing-status`, `GET /api/v1/tenants/payments`, `POST /api/v1/tenants/subscription/cancel`, `POST /api/v1/tenants/subscription/resume`, а также принятие приглашений. На развёртываниях, где биллинг отключён полностью, биллинговые эндпоинты возвращают `503` с кодом `BILLING_DISABLED`.
+Исключения (доступны всегда): `GET /api/v1/auth/me`, `POST /api/v1/contact`, `POST /api/v1/users/provision`, `GET /api/v1/tenants`, `POST /api/v1/tenants/switch`, `GET /api/v1/tenants/billing-status`, `GET /api/v1/tenants/payments`, `POST /api/v1/tenants/subscription/cancel`, `POST /api/v1/tenants/subscription/resume`, а также принятие приглашений.
 
----
+## Интерактивный справочник
 
-## Auth
+Все эндпоинты с параметрами, схемами запросов и ответов и консолью для пробных вызовов:
 
-### GET /api/v1/auth/me
-
-Возвращает идентификационные данные текущего аутентифицированного пользователя, декодированные из JWT.
-
-**Ответ `200 OK`**
-
-```json
-{
-  "sub": "a1b2c3d4-...",
-  "email": "demo@perfscale.ru",
-  "name": "Demo User",
-  "preferred_username": "demo",
-  "roles": ["member"]
-}
-```
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `sub` | string | UUID пользователя в Keycloak |
-| `email` | string? | Адрес электронной почты |
-| `name` | string? | Отображаемое имя |
-| `preferred_username` | string? | Имя пользователя в Keycloak |
-| `roles` | string[] | Realm-роли, назначенные пользователю |
-
----
-
-## Машины
-
-Машины — это рабочие хосты (агенты), зарегистрированные в workspace тенанта, на которых выполняются прогоны тестов.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/machines` | Список машин (с пагинацией) |
-| `POST /api/v1/machines` | Зарегистрировать машину вручную |
-| `GET /api/v1/machines/:id` | Детали машины |
-| `DELETE /api/v1/machines/:id` | Удалить машину (`204`) |
-| `PATCH /api/v1/machines/:id/status` | Изменить статус (`online` / `offline` / `maintenance`) |
-| `POST /api/v1/machines/:id/reinstall` | Перевыпустить скрипт установки агента |
-| `POST /api/v1/machines/:id/update-agent` | Запустить самообновление агента |
-| `POST /api/v1/machines/register/ssh` | Зарегистрировать машину по SSH (асинхронная задача) |
-| `GET /api/v1/machines/register/ssh/:job_id/events` | Прогресс SSH-регистрации (SSE) |
-| `POST /api/v1/machines/ping` | Heartbeat агента (`machine_auth`) |
-| `GET /api/v1/machines/events` | События статусов машин (SSE) |
-| `GET /api/v1/machines/:machine_id/tasks` | Задачи, выполнявшиеся на машине |
-| `GET /api/v1/machines/:id/libraries` | Установленные библиотеки (с пагинацией) |
-| `POST /api/v1/machines/:id/libraries/install` | Установить библиотеку на машину |
-| `DELETE /api/v1/machines/:id/libraries/:sha256` | Удалить библиотеку |
-
-**Объект машины**
-
-```json
-{
-  "id": "m_01",
-  "name": "worker-node-01",
-  "hostname": "worker-01.internal",
-  "ip_address": "10.0.0.1",
-  "os": "linux",
-  "arch": "amd64",
-  "cpu_cores": 8,
-  "memory_gb": 16,
-  "status": "online"
-}
-```
-
----
-
-## Тесты
-
-Определения тестов (скрипт + инструмент), которые можно запускать на машинах.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/tests` | Список определений тестов (с пагинацией) |
-| `POST /api/v1/tests` | Создать тест (`201`) |
-| `GET /api/v1/tests/:id` | Детали теста |
-| `PUT /api/v1/tests/:id` | Заменить название, скрипт или статус |
-| `DELETE /api/v1/tests/:id` | Удалить определение теста (`204`) |
-
-| Поле | Тип | Значения |
-|------|-----|----------|
-| `tool` | enum | `k6` \| `jmeter` \| `locust` \| `artillery` \| `gatling` \| `custom` |
-| `status` | enum | `draft` \| `active` \| `archived` (по умолчанию: `draft`) |
-
----
-
-## Конфигурации
-
-Именованные конфигурации запуска (окружение, пороги, профиль нагрузки), переиспользуемые в тестах и триггерах.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/configurations` | Список конфигураций |
-| `POST /api/v1/configurations` | Создать конфигурацию (`201`) |
-| `GET /api/v1/configurations/:id` | Детали конфигурации |
-| `PUT /api/v1/configurations/:id` | Обновить конфигурацию |
-| `DELETE /api/v1/configurations/:id` | Удалить (`204`) |
-| `POST /api/v1/configurations/resolve-import` | Разрешить импортируемую конфигурацию |
-
----
-
-## Задачи
-
-Задача — это один запуск теста на машине.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/tasks` | Список задач, новые первыми (с пагинацией) |
-| `POST /api/v1/tasks` | Запустить выполнение теста (`202 Accepted`) |
-| `GET /api/v1/tasks/:id` | Детали задачи с метриками |
-| `DELETE /api/v1/tasks/:id` | Отменить ожидающую или выполняющуюся задачу (`204`) |
-| `GET /api/v1/tasks/:id/log` | Сохранённый лог завершённого прогона |
-| `GET /api/v1/tasks/:id/otel-metrics` | Агрегированные OTel-метрики прогона |
-| `GET /api/v1/tasks/:id/otel-timeseries` | Временные ряды OTel-метрик прогона |
-
-**POST /api/v1/tasks — тело запроса**
-
-```json
-{
-  "testId": "t_01"
-}
-```
-
-**Ответ `202 Accepted`**
-
-```json
-{
-  "id": "task_02",
-  "status": "pending"
-}
-```
-
-Отслеживайте прогресс через `GET /api/v1/tasks/:id`.
-
-**Запись задачи**
-
-```json
-{
-  "id": "task_01",
-  "test_id": "t_01",
-  "status": "passed",
-  "p50": 142,
-  "p95": 310,
-  "p99": 490,
-  "error_rate": 0.002,
-  "requests_per_sec": 230.5,
-  "total_requests": 6900,
-  "started_at": "2025-01-15T10:05:00Z",
-  "finished_at": "2025-01-15T10:05:30Z"
-}
-```
-
-### POST /api/v1/test/run
-
-Разовый запуск: отправить тест на конкретную машину без предварительного создания постоянной задачи. Обязательные поля — `machine` и `test`; опционально `configuration` и `transport` (`sse` | `ws` | `long_polling`). В ответе URL живого стрима рекламируется в `stream.<machineId>.url`.
-
-### GET /api/v1/tasks/:id/log-stream
-
-Живой лог-стрим выполняющейся задачи по **Server-Sent Events**
-(`text/event-stream`). `:id` принимает UUID задачи или её публичный id;
-аутентификация — обычный Bearer-токен.
-
-Каждый `data:`-фрейм несёт одно событие задачи в JSON:
-
-```json
-data: {"type": "log", "source": "out", "text": "running (01m00.0s), 1/1 VUs"}
-```
-
-| `type` | Полезная нагрузка | Терминальное |
-|--------|-------------------|--------------|
-| `log` | `source` (`out`/`err`), `text` — одна строка вывода | нет |
-| `done` | `task` — финальная запись задачи с метриками | да |
-| `error` | `message` — неустранимая ошибка запуска | да |
-
-После терминального события стрим завершается. Если прогон закончился до
-подключения (или живой стрим уже недоступен), эндпоинт сразу отвечает одним
-событием `done`, построенным из актуальной записи задачи.
-
-### GET /api/v1/tasks/:id/ws
-
-Тот же живой стрим по **WebSocket** — альтернативный транспорт, выбираемый
-`"transport": "ws"` при запуске прогона (ответ тогда рекламирует этот URL в
-`stream.<machineId>.url`). Аутентификация, разрешение id и семантика фолбэка
-полностью совпадают с SSE-эндпоинтом.
-
-- Каждое событие задачи приходит одним **текстовым сообщением** с тем же
-  JSON, что в SSE `data:`-фреймах выше.
-- После терминального (`done`/`error`) сообщения сервер закрывает сокет с
-  кодом **1000** (нормальное закрытие).
-- Сервер пингует каждые ~30 с и отключает клиентов с просроченным pong;
-  отвечайте на ping pong'ом (любой стандартный WS-клиент делает это сам).
-- Неизвестные или чужие id задач отклоняются обычными HTTP `404`/`401` до
-  апгрейда, поэтому неудачный handshake несёт JSON с ошибкой.
-
-`"transport": "sse"` (по умолчанию) ведёт на SSE-эндпоинт выше;
-`"transport": "long_polling"` не реализован и пока откатывается на SSE.
-
----
-
-## Триггеры
-
-Cron-расписания для автоматического запуска тестов.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/triggers` | Список триггеров |
-| `POST /api/v1/triggers` | Создать триггер (`201`) — обязательные: `name`, `testId`, `machineId`, `cron`; опциональные: `timezone`, `configurationId`, `enabled`, `description` |
-| `GET /api/v1/triggers/:id` | Детали триггера |
-| `PUT /api/v1/triggers/:id` | Обновить триггер |
-| `DELETE /api/v1/triggers/:id` | Удалить (`204`) |
-| `POST /api/v1/triggers/:id/run` | Запустить триггер немедленно |
-
----
-
-## Вебхуки
-
-Исходящие HTTP-уведомления о событиях задач.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/webhooks` | Список вебхуков |
-| `POST /api/v1/webhooks` | Создать вебхук (`201`) — обязательные: `name`, `url`, `events` |
-| `PUT /api/v1/webhooks/:id` | Обновить вебхук |
-| `DELETE /api/v1/webhooks/:id` | Удалить (`204`) |
-| `GET /api/v1/webhooks/:id/deliveries` | История доставок |
-| `POST /api/v1/webhooks/:id/test` | Отправить тестовую доставку |
-
----
-
-## Тенанты и биллинг
-
-Мультитенантность и управление подпиской.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/tenants` | Тенанты, в которых состоит текущий пользователь |
-| `POST /api/v1/tenants/switch` | Переключить активный тенант (`tenantId`) |
-| `GET /api/v1/tenants/limits` | Лимиты тарифа активного тенанта |
-| `GET /api/v1/tenants/billing-status` | Статус биллинга: `paid`, `plan`, `autoRenew`, `paidUntil` |
-| `GET /api/v1/tenants/payments` | История платежей |
-| `POST /api/v1/tenants/subscription/cancel` | Отменить автопродление |
-| `POST /api/v1/tenants/subscription/resume` | Возобновить отменённую подписку |
-
-Биллинговые эндпоинты возвращают `503` (`BILLING_DISABLED`), если биллинг не настроен. `POST /api/v1/tenants/:id/payments` (запись платежей) и `PUT /api/v1/tenants/:id/plan` (смена тарифа) — внутренние операции, не входящие в публичный API.
-
----
-
-## Пользователи, приглашения и права
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/users` | Участники активного тенанта |
-| `POST /api/v1/users/invite` | Пригласить пользователя (`email`, `name`, `role`) |
-| `POST /api/v1/users/provision` | Провижионировать пользователя при первом входе |
-| `PATCH /api/v1/users/:id/role` | Изменить роль участника |
-| `DELETE /api/v1/users/:id` | Удалить участника |
-| `GET /api/v1/invitations/:token` | Детали приглашения (публичный) |
-| `POST /api/v1/invitations/:token/accept` | Принять приглашение |
-| `GET /api/v1/permissions` | Полная матрица роль → права |
-| `PUT /api/v1/permissions/:role` | Обновить права роли |
-
----
-
-## Переменные окружения
-
-Переменные уровня тенанта, подставляемые в прогоны тестов.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/env-vars` | Список переменных |
-| `POST /api/v1/env-vars` | Создать (`key`, `value`, `visibility`) |
-| `PUT /api/v1/env-vars/:id` | Обновить |
-| `DELETE /api/v1/env-vars/:id` | Удалить (`204`) |
-
----
-
-## API-токены
-
-Персональные `psk_…`-токены для программного доступа (см. [Аутентификация](#аутентификация)).
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/api-tokens` | Список ваших токенов (`?all=true` — все токены тенанта, требует `manage_api_tokens`) |
-| `POST /api/v1/api-tokens` | Создать токен (`201`) — открытое значение возвращается **один раз** |
-| `POST /api/v1/api-tokens/:id/rotate` | Ротировать секрет; старое значение перестаёт работать немедленно |
-| `DELETE /api/v1/api-tokens/:id` | Отозвать токен (`204`) |
-
-**Создание — тело запроса**
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `name` | string | Обязательное отображаемое имя |
-| `expiresAt` | string? | Метка времени RFC 3339; опустите для бессрочного токена |
-| `scopes` | string[]? | Тонкие scope'ы; опустите или передайте `null` для полного доступа (пустой массив отклоняется) |
-
----
-
-## Метрики
-
-Запрос метрик, собранных из прогонов и агентов, и управление пользовательскими дашбордами.
-
-| Метод и путь | Назначение |
-|---|---|
-| `POST /api/v1/metrics` | Приём сэмплов метрик (со стороны агента) |
-| `GET /api/v1/metrics/catalog` | Доступные имена метрик и лейблы |
-| `GET /api/v1/metrics/query` | Запрос рядов метрик |
-| `GET /api/v1/metric-dashboards` | Список пользовательских дашбордов |
-| `POST /api/v1/metric-dashboards` | Создать дашборд |
-| `PUT /api/v1/metric-dashboards/:id` | Обновить |
-| `DELETE /api/v1/metric-dashboards/:id` | Удалить (`204`) |
-
----
-
-## Интеграции
-
-**Prometheus-совместимый API чтения** — направьте любой PromQL-клиент (Grafana и т.п.) на BFF:
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/integrations/prometheus/api/v1/query` | Мгновенный запрос |
-| `GET /api/v1/integrations/prometheus/api/v1/query_range` | Запрос диапазона |
-| `GET /api/v1/integrations/prometheus/api/v1/labels` | Имена лейблов |
-| `GET /api/v1/integrations/prometheus/api/v1/label/:name/values` | Значения лейбла |
-| `GET /api/v1/integrations/prometheus/api/v1/series` | Поиск рядов |
-| `GET /api/v1/integrations/prometheus/api/v1/status/buildinfo` | Информация о сборке |
-
-**Remote write** — пересылка метрик во внешний Prometheus:
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/integrations/remote-write` | Текущая конфигурация remote write |
-| `PUT /api/v1/integrations/remote-write` | Настроить remote write |
-| `DELETE /api/v1/integrations/remote-write` | Удалить конфигурацию |
-| `POST /api/v1/integrations/remote-write/test` | Проверить соединение |
-
-**Allure** — отправка результатов тестов на сервер Allure TestOps:
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/integrations/allure` | Список Allure-интеграций |
-| `POST /api/v1/integrations/allure` | Создать |
-| `PUT /api/v1/integrations/allure/:id` | Обновить |
-| `DELETE /api/v1/integrations/allure/:id` | Удалить (`204`) |
-| `POST /api/v1/integrations/allure/:id/test` | Проверить соединение |
-| `POST /api/v1/integrations/allure/:id/send-sample` | Отправить пример результата |
-
----
-
-## Приём OTel
-
-| Метод и путь | Назначение |
-|---|---|
-| `POST /api/v1/otel` | Приём OpenTelemetry-метрик от агентов (`machine_auth`) |
-
----
-
-## Логи прогонов
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/run-logs` | Агрегированная история прогонов по тенанту (с пагинацией) |
-
----
-
-## Git-репозитории
-
-Подключение Git-провайдеров для получения тестовых скриптов и отчёта о статусе коммитов.
-
-| Метод и путь | Назначение |
-|---|---|
-| `GET /api/v1/git/repositories` | Подключённые репозитории |
-| `POST /api/v1/git/repositories` | Подключить репозиторий (`name`, `url`, `provider`, `authMethod`, …) |
-| `DELETE /api/v1/git/repositories/:id` | Отключить (`204`) |
-| `POST /api/v1/git/repositories/:id/sync` | Запустить синхронизацию |
-| `GET /api/v1/git/sync/:job_id/events` | Прогресс синхронизации (SSE) |
-
----
+<ApiReference />
 
 ## Ответы с ошибками
 
@@ -454,7 +71,7 @@ Cron-расписания для автоматического запуска �
 |--------|----------|
 | `400` | Некорректное тело запроса |
 | `401` | Отсутствующий или истёкший токен |
-| `402` | Требуется оплата — нет активной платной подписки (см. [Биллинговый барьер](#биллинговый-барьер)) |
+| `402` | Требуется оплата — нет активной платной подписки (см. [Биллинг](#биллинг)) |
 | `403` | Токен действителен, но прав недостаточно — также возвращается, когда scope'ы `psk_`-токена не покрывают операцию |
 | `404` | Ресурс не найден |
 | `409` | Конфликт (например, hostname машины уже зарегистрирован) |
