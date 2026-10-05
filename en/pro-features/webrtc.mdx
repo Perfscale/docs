@@ -47,9 +47,9 @@ webrtc:
 
 | Action | Purpose |
 |---|---|
-| `pro/webrtc-connect@v1` | Create the peer connection and complete signaling (`signal: whip` / `whep` / `library`). Returns a handle for the other steps |
-| `pro/webrtc-publish@v1` | Attach tracks and start sending: `source: synthetic` (Opus tone / test video at the requested bitrate) or `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, looped) |
-| `pro/webrtc-subscribe@v1` | Receive remote tracks; `sink: measure` counts frames/packets, `sink: record` also persists each track per VU (`.ogg` / `.ivf` / `.h264`) |
+| `pro/webrtc-connect@v1` | Create the peer connection and complete signaling (`signal: whip` / `whep` / `library`); `tracks:` declares the send layout (default 1 audio + 1 video). Returns a handle for the other steps |
+| `pro/webrtc-publish@v1` | Attach tracks and start sending — multiple tracks per connection, Opus/VP8/H.264/AV1: `source: synthetic` (AV1 is really encoded at the requested resolution/bitrate; VP8/H.264 replay the 320x240 asset) or `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, looped); video tracks may declare simulcast `layers:` |
+| `pro/webrtc-subscribe@v1` | Receive remote tracks; `sink: measure` counts frames/packets, `sink: record` also persists each track per VU (`.ogg` / `.ivf` / `.h264`); `jitter_buffer_ms:` applies a real playout delay |
 | `pro/webrtc-stats@v1` | Immediate `getStats` snapshot into step outputs for `check:` assertions |
 | `pro/webrtc-close@v1` | Graceful close with a final stats flush |
 | `pro/webrtc-call@v1` | Composite P2P call between VU pairs (rendezvous over [shared variables](/docs/oss/core/shared-variables), no signaling server needed) |
@@ -96,10 +96,11 @@ steps:
 ## Metrics
 
 Setup: `webrtc_ice_duration_ms`, `webrtc_dtls_duration_ms`,
-`webrtc_setup_ms`, `webrtc_ttff_ms`. Media quality, per track kind:
-`webrtc_{audio,video}_rtt_ms`, `webrtc_{audio,video}_jitter_ms`,
-`webrtc_{audio,video}_packets_lost_total`,
-`webrtc_{audio,video}_bitrate_bps`. Composite calls:
+`webrtc_setup_ms`, `webrtc_ttff_ms`, `webrtc_ice_restarts_total`. Media
+quality, per track kind: `webrtc_{audio,video}_rtt_ms`,
+`webrtc_{audio,video}_jitter_ms`, `webrtc_{audio,video}_packets_lost_total`,
+`webrtc_{audio,video}_bitrate_bps`; multi-track/simulcast adds per-track and
+per-layer series (`webrtc_video0_*`, `webrtc_video1_f_*`). Composite calls:
 `webrtc_calls_total`, `webrtc_call_duration_ms`, and per-stage failure
 counters `webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}`.
 

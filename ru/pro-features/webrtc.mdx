@@ -48,9 +48,9 @@ webrtc:
 
 | Действие | Назначение |
 |---|---|
-| `pro/webrtc-connect@v1` | Создать peer connection и завершить сигнализацию (`signal: whip` / `whep` / `library`). Возвращает хендл для остальных шагов |
-| `pro/webrtc-publish@v1` | Прикрепить треки и начать отправку: `source: synthetic` (тон Opus / тестовое видео с заданным битрейтом) или `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, по кругу) |
-| `pro/webrtc-subscribe@v1` | Принимать удалённые треки; `sink: measure` считает кадры/пакеты, `sink: record` дополнительно сохраняет каждый трек per-VU (`.ogg` / `.ivf` / `.h264`) |
+| `pro/webrtc-connect@v1` | Создать peer connection и завершить сигнализацию (`signal: whip` / `whep` / `library`); `tracks:` объявляет отправную раскладку (по умолчанию 1 аудио + 1 видео). Возвращает хендл для остальных шагов |
+| `pro/webrtc-publish@v1` | Прикрепить треки и начать отправку — несколько треков на одном соединении, Opus/VP8/H.264/AV1: `source: synthetic` (AV1 честно кодируется с запрошенным разрешением/битрейтом; VP8/H.264 проигрывают ассет 320x240) или `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, по кругу); видеотреки могут объявлять simulcast-`layers:` |
+| `pro/webrtc-subscribe@v1` | Принимать удалённые треки; `sink: measure` считает кадры/пакеты, `sink: record` дополнительно сохраняет каждый трек per-VU (`.ogg` / `.ivf` / `.h264`); `jitter_buffer_ms:` применяет реальную задержку воспроизведения |
 | `pro/webrtc-stats@v1` | Мгновенный снимок `getStats` в outputs шага для проверок `check:` |
 | `pro/webrtc-close@v1` | Корректное закрытие с финальным сбросом статистики |
 | `pro/webrtc-call@v1` | Композитный P2P-звонок между парами VU (рандеву через [общие переменные](/docs/oss/core/shared-variables), сигнальный сервер не нужен) |
@@ -97,10 +97,12 @@ steps:
 ## Метрики
 
 Сетап: `webrtc_ice_duration_ms`, `webrtc_dtls_duration_ms`,
-`webrtc_setup_ms`, `webrtc_ttff_ms`. Качество медиа, по типу трека:
-`webrtc_{audio,video}_rtt_ms`, `webrtc_{audio,video}_jitter_ms`,
+`webrtc_setup_ms`, `webrtc_ttff_ms`, `webrtc_ice_restarts_total`. Качество
+медиа, по типу трека: `webrtc_{audio,video}_rtt_ms`,
+`webrtc_{audio,video}_jitter_ms`,
 `webrtc_{audio,video}_packets_lost_total`,
-`webrtc_{audio,video}_bitrate_bps`. Композитные звонки:
+`webrtc_{audio,video}_bitrate_bps`; мультитрек/simulcast добавляет серии по
+трекам и слоям (`webrtc_video0_*`, `webrtc_video1_f_*`). Композитные звонки:
 `webrtc_calls_total`, `webrtc_call_duration_ms` и счётчики ошибок по стадиям
 `webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}`.
 
