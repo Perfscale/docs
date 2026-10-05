@@ -1,0 +1,151 @@
+---
+title: WebRTC from the CLI
+description: Write and run a WebRTC load test with the perfscale CLI — WHIP publish, P2P calls between VUs, and the WebRTC metric summary
+section: Getting Started
+sectionOrder: 1
+order: 11
+---
+
+## Overview
+
+The perfscale engine runs WebRTC load tests through the real media path —
+every virtual user performs ICE/DTLS-SRTP handshakes and moves real RTP. This
+page walks a WHIP publish test from YAML to metric summary; the
+[WebRTC pro feature page](/docs/pro-features/webrtc) is the full action and
+parameter reference.
+
+WebRTC actions (`pro/webrtc-*`) are a **paid capability** — they require a
+Scale or Enterprise plan, both in the CLI and under the controlplane.
+
+![A WebRTC load-test dashboard — TTFF latency percentiles, virtual users streaming RTP to an SFU, and an ICE-restart counter](/docs-assets/getting-started/webrtc-cli.webp)
+
+## 1. Install the CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Or download a binary for your platform from
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). The
+binary has no runtime dependencies — WebRTC runs on the built-in native
+engine, no external binary.
+
+## 2. Write the test
+
+`webrtc.test.yaml` — publish synthetic audio/video into a WHIP endpoint, take
+a stats snapshot, close:
+
+```yaml
+steps:
+  - name: publish camera
+    use: pro/webrtc-connect@v1
+    with:
+      signal: whip
+      url: https://stream.example.com/whip/cam-${vu}
+      bearer: ${WHIP_TOKEN}
+    outputs: cam
+
+  - name: send media
+    use: pro/webrtc-publish@v1
+    with:
+      id: ${cam.id}
+      tracks:
+        - kind: video
+          codec: av1
+          source: synthetic
+          bitrate: 1500kbps
+          resolution: 1280x720
+        - kind: audio
+          codec: opus
+          source: synthetic
+          bitrate: 64kbps
+
+  - name: measure
+    use: pro/webrtc-stats@v1
+    with: { id: ${cam.id} }
+
+  - name: hang up
+    use: pro/webrtc-close@v1
+    with: { id: ${cam.id} }
+```
+
+`webrtc.config.yaml` — the load shape:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+To try it locally you need a WHIP target — any standards-compliant server
+works (a local LiveKit, mediasoup, or a Pion WHIP example). Without one, use
+`perfscale lint` below to validate the files, or point the test at a P2P
+call between VUs (`pro/webrtc-call@v1`), which needs no server at all:
+
+```yaml
+steps:
+  - name: p2p call
+    use: pro/webrtc-call@v1
+    with:
+      pairing:
+        key: webrtc-room-1      # memory driver — one engine is enough
+      media: bidirectional
+      hold: 10s
+```
+
+## 3. Run it
+
+```sh
+perfscale run -f webrtc.test.yaml -c webrtc.config.yaml
+```
+
+`-f` selects the built-in native engine and requires `-c`. Validate the files
+without executing anything:
+
+```sh
+perfscale lint webrtc.test.yaml webrtc.config.yaml
+```
+
+Lint is also where capability mistakes surface: pro actions require the plan
+capability, and a scenario that omits a required `capabilities:` entry fails
+validation before any packet is sent.
+
+## 4. Read the output
+
+A WebRTC run prints its own lines next to the shared HTTP ones:
+
+```text
+vus....................: 5 min=1 max=5
+iterations.............: 48 1.60/s
+webrtc_setup_ms........: avg=412.30 p(50)=398.10 p(90)=520.40 p(95)=561.00 p(99)=640.20
+webrtc_ttff_ms.........: avg=255.80 p(50)=241.00 p(90)=330.50 p(95)=370.10 p(99)=402.00
+webrtc_audio_rtt_ms....: avg=18.40 p(95)=42.10
+webrtc_video_bitrate_bps: avg=1482.0k
+webrtc_video_packets_lost_total: 3
+webrtc_calls_total.....: 24
+```
+
+- `webrtc_ice_duration_ms` / `webrtc_dtls_duration_ms` / `webrtc_setup_ms` —
+  connect-phase latency, one sample per successful connect.
+- `webrtc_ttff_ms` — time to first frame on the subscribing side.
+- `webrtc_{audio,video}_*` — media quality from the background `getStats`
+  sampler while connections are open; multi-track publishes add per-track and
+  per-layer series (`webrtc_video1_f_bitrate_bps`).
+- `webrtc_call_errors_<stage>` — per-stage failure counters for composite
+  P2P calls (`ice`, `dtls`, `signaling`, `publish`, `subscribe`, `hold`).
+
+To gate CI on the numbers, export the summary and assert on the file:
+
+```sh
+perfscale run -f webrtc.test.yaml -c webrtc.config.yaml --summary-export result.json
+jq -e '.summary.error_rate < 0.01' result.json
+```
+
+## Next steps
+
+- [WebRTC (pro)](/docs/pro-features/webrtc) — every parameter of the
+  `pro/webrtc-*` actions: custom signaling via wasm libraries, multi-track
+  and simulcast layouts, file sources and recording sinks, ICE restart, the
+  jitter buffer, and the full metric list.
+- [Shared variables](/docs/oss/core/shared-variables) — the rendezvous
+  mechanism behind `pro/webrtc-call@v1` pairing, including the Redis driver
+  for multi-agent tests.

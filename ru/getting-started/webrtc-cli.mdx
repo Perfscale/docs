@@ -1,0 +1,152 @@
+---
+title: WebRTC из CLI
+description: Пишем и запускаем WebRTC нагрузочный тест через perfscale CLI — WHIP-публикация, P2P-звонки между VU и сводка WebRTC-метрик
+section: Начало работы
+sectionOrder: 1
+order: 11
+---
+
+## Обзор
+
+Движок perfscale гоняет WebRTC нагрузочные тесты через настоящий медиа-путь —
+каждый виртуальный пользователь выполняет ICE/DTLS-SRTP рукопожатия и передаёт
+настоящий RTP. Эта страница проведёт WHIP-тест публикации от YAML до сводки
+метрик; [страница WebRTC в pro-фичах](/docs/pro-features/webrtc) — полный
+справочник по actions и параметрам.
+
+WebRTC-действия (`pro/webrtc-*`) — **платная возможность**: требуется план
+Scale или Enterprise, и в CLI, и под управлением controlplane.
+
+![Дашборд WebRTC нагрузочного теста — перцентили TTFF, виртуальные пользователи стримят RTP на SFU и счётчик ICE-рестартов](/docs-assets/getting-started/webrtc-cli.webp)
+
+## 1. Установите CLI
+
+```sh
+npm install -g @perfscale/exe
+```
+
+Или скачайте бинарник под свою платформу со страницы
+[GitHub Releases](https://github.com/Perfscale/perfscale/releases). У
+бинарника нет runtime-зависимостей — WebRTC работает на встроенном нативном
+движке, внешних бинарников не нужно.
+
+## 2. Напишите тест
+
+`webrtc.test.yaml` — публикуем синтетические аудио/видео в WHIP-endpoint,
+снимаем статистику, закрываем:
+
+```yaml
+steps:
+  - name: publish camera
+    use: pro/webrtc-connect@v1
+    with:
+      signal: whip
+      url: https://stream.example.com/whip/cam-${vu}
+      bearer: ${WHIP_TOKEN}
+    outputs: cam
+
+  - name: send media
+    use: pro/webrtc-publish@v1
+    with:
+      id: ${cam.id}
+      tracks:
+        - kind: video
+          codec: av1
+          source: synthetic
+          bitrate: 1500kbps
+          resolution: 1280x720
+        - kind: audio
+          codec: opus
+          source: synthetic
+          bitrate: 64kbps
+
+  - name: measure
+    use: pro/webrtc-stats@v1
+    with: { id: ${cam.id} }
+
+  - name: hang up
+    use: pro/webrtc-close@v1
+    with: { id: ${cam.id} }
+```
+
+`webrtc.config.yaml` — форма нагрузки:
+
+```yaml
+vus: 5
+duration: 30s
+```
+
+Для локального запуска нужен WHIP-target — подойдёт любой сервер,
+соответствующий стандарту (локальный LiveKit, mediasoup или WHIP-пример из
+Pion). Если его нет, проверьте файлы через `perfscale lint` (ниже) или
+направьте тест на P2P-звонок между VU (`pro/webrtc-call@v1`) — ему сервер
+вообще не нужен:
+
+```yaml
+steps:
+  - name: p2p call
+    use: pro/webrtc-call@v1
+    with:
+      pairing:
+        key: webrtc-room-1      # memory-драйвер — одного движка достаточно
+      media: bidirectional
+      hold: 10s
+```
+
+## 3. Запустите
+
+```sh
+perfscale run -f webrtc.test.yaml -c webrtc.config.yaml
+```
+
+`-f` выбирает встроенный нативный движок и требует `-c`. Проверить файлы без
+выполнения:
+
+```sh
+perfscale lint webrtc.test.yaml webrtc.config.yaml
+```
+
+Lint — это также место, где всплывают ошибки с capabilities: pro-действия
+требуют capability плана, и сценарий без нужной записи `capabilities:` падает
+на валидации до отправки первого пакета.
+
+## 4. Читайте вывод
+
+WebRTC-запуск печатает свои строки рядом с общими HTTP-метриками:
+
+```text
+vus....................: 5 min=1 max=5
+iterations.............: 48 1.60/s
+webrtc_setup_ms........: avg=412.30 p(50)=398.10 p(90)=520.40 p(95)=561.00 p(99)=640.20
+webrtc_ttff_ms.........: avg=255.80 p(50)=241.00 p(90)=330.50 p(95)=370.10 p(99)=402.00
+webrtc_audio_rtt_ms....: avg=18.40 p(95)=42.10
+webrtc_video_bitrate_bps: avg=1482.0k
+webrtc_video_packets_lost_total: 3
+webrtc_calls_total.....: 24
+```
+
+- `webrtc_ice_duration_ms` / `webrtc_dtls_duration_ms` / `webrtc_setup_ms` —
+  задержки фазы подключения, один сэмпл на успешный connect.
+- `webrtc_ttff_ms` — время до первого кадра на стороне подписчика.
+- `webrtc_{audio,video}_*` — качество медиа от фонового сэмплера `getStats`,
+  пока соединения открыты; мультитрек добавляет per-track и per-layer серии
+  (`webrtc_video1_f_bitrate_bps`).
+- `webrtc_call_errors_<stage>` — счётчики ошибок по стадиям для композитных
+  P2P-звонков (`ice`, `dtls`, `signaling`, `publish`, `subscribe`, `hold`).
+
+Чтобы гейтить CI на числах, экспортируйте сводку и проверяйте файл:
+
+```sh
+perfscale run -f webrtc.test.yaml -c webrtc.config.yaml --summary-export result.json
+jq -e '.summary.error_rate < 0.01' result.json
+```
+
+## Дальше
+
+- [WebRTC (pro)](/docs/pro-features/webrtc) — все параметры действий
+  `pro/webrtc-*`: кастомный сигналинг через wasm-библиотеки, мультитрек и
+  симулькаст, файловые источники и запись потоков, ICE-рестарт,
+  джиттер-буфер и полный список метрик.
+- [Разделяемые переменные](/docs/oss/core/shared-variables) — механизм
+  рандеву за пейрингом `pro/webrtc-call@v1`, включая Redis-драйвер для
+  мультиагентных тестов.
