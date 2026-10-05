@@ -1,0 +1,109 @@
+---
+title: WebRTC
+description: Load-test WebRTC through the real media path — ICE/DTLS-SRTP handshakes and RTP flows, WHIP/WHEP, custom signaling, P2P calls between VUs
+section: Pro Features
+sectionOrder: 3
+order: 6
+---
+
+## Overview
+
+HTTP/WS/gRPC tools stop at the signaling layer — the expensive part of a
+WebRTC system (DTLS crypto, RTP forwarding, jitter buffers on your SFU or
+media server) is never actually stressed. perfscale drives the **full media
+path**: every virtual user runs real ICE/DTLS-SRTP handshakes and real RTP
+media flows against the target, or against another VU.
+
+WebRTC is a **paid** capability (Scale and Enterprise plans). Tests that use
+the `pro/webrtc-*` actions are rejected at creation time for Starter tenants.
+
+Three usage shapes, composable in one scenario:
+
+- **WHIP/WHEP** — the standardized ingest/playback endpoints: publish
+  synthetic or file-based AV into a WHIP endpoint, watch a WHEP stream and
+  measure it.
+- **Custom signaling** — LiveKit, mediasoup, Janus, proprietary protocols:
+  a [wasm library](/docs/oss/core/libraries) (`signal: library`) receives the
+  SDP offer and returns the answer, so vendor drift lives in versioned
+  libraries, not in the engine.
+- **P2P calls between VU pairs** — one composite step,
+  `pro/webrtc-call@v1`, runs an entire call: pairing → connect → media both
+  ways → hold → stats → close.
+
+## Configuration
+
+An optional top-level `webrtc:` block in `config.yaml`:
+
+```yaml
+webrtc:
+  ice_servers:                # STUN/TURN; default: Google's public STUN
+    - urls: ["turn:turn.example.com:3478"]
+      username: ${TURN_USER}
+      credential: ${TURN_PASS}
+  max_peer_connections: 500   # optional guardrail; absent = unlimited
+```
+
+## Actions
+
+| Action | Purpose |
+|---|---|
+| `pro/webrtc-connect@v1` | Create the peer connection and complete signaling (`signal: whip` / `whep` / `library`). Returns a handle for the other steps |
+| `pro/webrtc-publish@v1` | Attach tracks and start sending: `source: synthetic` (Opus tone / test video at the requested bitrate) or `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, looped) |
+| `pro/webrtc-subscribe@v1` | Receive remote tracks; `sink: measure` counts frames/packets, `sink: record` also persists each track per VU (`.ogg` / `.ivf` / `.h264`) |
+| `pro/webrtc-stats@v1` | Immediate `getStats` snapshot into step outputs for `check:` assertions |
+| `pro/webrtc-close@v1` | Graceful close with a final stats flush |
+| `pro/webrtc-call@v1` | Composite P2P call between VU pairs (rendezvous over [shared variables](/docs/oss/core/shared-variables), no signaling server needed) |
+
+## Example: P2P calls
+
+```yaml
+steps:
+  - name: p2p call
+    use: pro/webrtc-call@v1
+    with:
+      pairing:
+        driver: redis          # memory (default) for one agent; redis spans instances
+        key: webrtc-room-1
+        strategy: adjacent     # vu 2k-1 calls vu 2k; 'custom' for your own rule
+      media: bidirectional
+      hold: 30s
+```
+
+## Example: WHIP ingest
+
+```yaml
+steps:
+  - name: publish camera
+    use: pro/webrtc-connect@v1
+    with:
+      signal: whip
+      url: https://stream.example.com/whip/cam-${vu}
+      bearer: ${WHIP_TOKEN}
+    outputs: cam
+  - name: send media
+    use: pro/webrtc-publish@v1
+    with:
+      id: ${cam.id}
+      tracks:
+        - kind: video
+          codec: h264
+          bitrate: 1500kbps
+        - kind: audio
+          codec: opus
+          bitrate: 64kbps
+```
+
+## Metrics
+
+Setup: `webrtc_ice_duration_ms`, `webrtc_dtls_duration_ms`,
+`webrtc_setup_ms`, `webrtc_ttff_ms`. Media quality, per track kind:
+`webrtc_{audio,video}_rtt_ms`, `webrtc_{audio,video}_jitter_ms`,
+`webrtc_{audio,video}_packets_lost_total`,
+`webrtc_{audio,video}_bitrate_bps`. Composite calls:
+`webrtc_calls_total`, `webrtc_call_duration_ms`, and per-stage failure
+counters `webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}`.
+
+## Full reference
+
+Parameter tables, failure model, and codec/container details:
+[WebRTC (pro) in the OSS docs](/docs/oss/core/webrtc).

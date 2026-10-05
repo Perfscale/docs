@@ -1,0 +1,110 @@
+---
+title: WebRTC
+description: Нагрузочное тестирование WebRTC через настоящий медиа-путь — ICE/DTLS-SRTP рукопожатия и RTP-потоки, WHIP/WHEP, кастомная сигнализация, P2P-звонки между VU
+section: Pro Features
+sectionOrder: 3
+order: 6
+---
+
+## Обзор
+
+Инструменты для HTTP/WS/gRPC останавливаются на уровне сигнализации — самая
+дорогая часть WebRTC-системы (DTLS-криптография, RTP-форвардинг, джиттер-
+буферы на вашем SFU или медиасервере) остаётся ненагруженной. perfscale
+гоняет **полный медиа-путь**: каждый виртуальный пользователь выполняет
+настоящие ICE/DTLS-SRTP рукопожатия и реальные RTP-потоки — против цели или
+против другого VU.
+
+WebRTC — **платная** возможность (тарифы Scale и Enterprise). Тесты с
+действиями `pro/webrtc-*` отклоняются при создании для тарифа Starter.
+
+Три формы использования, комбинируемые в одном сценарии:
+
+- **WHIP/WHEP** — стандартизованные точки ingest/playback: публикуйте
+  синтетическое или файловое AV в WHIP-эндпоинт, смотрите WHEP-поток и
+  измеряйте его.
+- **Кастомная сигнализация** — LiveKit, mediasoup, Janus, проприетарные
+  протоколы: [wasm-библиотека](/docs/oss/core/libraries)
+  (`signal: library`) получает SDP-оффер и возвращает ответ, поэтому
+  вендорская специфика живёт в версионируемых библиотеках, а не в движке.
+- **P2P-звонки между парами VU** — один композитный шаг,
+  `pro/webrtc-call@v1`, выполняет весь звонок: парность → connect → медиа в
+  обе стороны → hold → stats → close.
+
+## Конфигурация
+
+Опциональный верхнеуровневый блок `webrtc:` в `config.yaml`:
+
+```yaml
+webrtc:
+  ice_servers:                # STUN/TURN; по умолчанию: публичный STUN Google
+    - urls: ["turn:turn.example.com:3478"]
+      username: ${TURN_USER}
+      credential: ${TURN_PASS}
+  max_peer_connections: 500   # опциональный предохранитель; без ключа — без лимита
+```
+
+## Действия
+
+| Действие | Назначение |
+|---|---|
+| `pro/webrtc-connect@v1` | Создать peer connection и завершить сигнализацию (`signal: whip` / `whep` / `library`). Возвращает хендл для остальных шагов |
+| `pro/webrtc-publish@v1` | Прикрепить треки и начать отправку: `source: synthetic` (тон Opus / тестовое видео с заданным битрейтом) или `source: file` (IVF, Opus-in-Ogg, Annex-B H.264, по кругу) |
+| `pro/webrtc-subscribe@v1` | Принимать удалённые треки; `sink: measure` считает кадры/пакеты, `sink: record` дополнительно сохраняет каждый трек per-VU (`.ogg` / `.ivf` / `.h264`) |
+| `pro/webrtc-stats@v1` | Мгновенный снимок `getStats` в outputs шага для проверок `check:` |
+| `pro/webrtc-close@v1` | Корректное закрытие с финальным сбросом статистики |
+| `pro/webrtc-call@v1` | Композитный P2P-звонок между парами VU (рандеву через [общие переменные](/docs/oss/core/shared-variables), сигнальный сервер не нужен) |
+
+## Пример: P2P-звонки
+
+```yaml
+steps:
+  - name: p2p call
+    use: pro/webrtc-call@v1
+    with:
+      pairing:
+        driver: redis          # memory (по умолчанию) для одного агента; redis — между инстансами
+        key: webrtc-room-1
+        strategy: adjacent     # vu 2k-1 звонит vu 2k; 'custom' — своё правило
+      media: bidirectional
+      hold: 30s
+```
+
+## Пример: WHIP ingest
+
+```yaml
+steps:
+  - name: publish camera
+    use: pro/webrtc-connect@v1
+    with:
+      signal: whip
+      url: https://stream.example.com/whip/cam-${vu}
+      bearer: ${WHIP_TOKEN}
+    outputs: cam
+  - name: send media
+    use: pro/webrtc-publish@v1
+    with:
+      id: ${cam.id}
+      tracks:
+        - kind: video
+          codec: h264
+          bitrate: 1500kbps
+        - kind: audio
+          codec: opus
+          bitrate: 64kbps
+```
+
+## Метрики
+
+Сетап: `webrtc_ice_duration_ms`, `webrtc_dtls_duration_ms`,
+`webrtc_setup_ms`, `webrtc_ttff_ms`. Качество медиа, по типу трека:
+`webrtc_{audio,video}_rtt_ms`, `webrtc_{audio,video}_jitter_ms`,
+`webrtc_{audio,video}_packets_lost_total`,
+`webrtc_{audio,video}_bitrate_bps`. Композитные звонки:
+`webrtc_calls_total`, `webrtc_call_duration_ms` и счётчики ошибок по стадиям
+`webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}`.
+
+## Полный справочник
+
+Таблицы параметров, модель ошибок, детали кодеков и контейнеров:
+[WebRTC (pro) в OSS-документации](/docs/oss/core/webrtc).
