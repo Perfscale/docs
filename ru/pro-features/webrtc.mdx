@@ -96,15 +96,37 @@ steps:
 
 ## Метрики
 
-Сетап: `webrtc_ice_duration_ms`, `webrtc_dtls_duration_ms`,
-`webrtc_setup_ms`, `webrtc_ttff_ms`, `webrtc_ice_restarts_total`. Качество
-медиа, по типу трека: `webrtc_{audio,video}_rtt_ms`,
-`webrtc_{audio,video}_jitter_ms`,
-`webrtc_{audio,video}_packets_lost_total`,
-`webrtc_{audio,video}_bitrate_bps`; мультитрек/simulcast добавляет серии по
-трекам и слоям (`webrtc_video0_*`, `webrtc_video1_f_*`). Композитные звонки:
-`webrtc_calls_total`, `webrtc_call_duration_ms` и счётчики ошибок по стадиям
-`webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}`.
+Эмитируются шагами (один сэмпл на вызов, сворачиваются в сводку прогона;
+для каждой выводится производная rate `*_failed`):
+
+- `webrtc_ice_duration_ms` / `webrtc_dtls_duration_ms` /
+  `webrtc_setup_ms` — задержки фазы подключения, один сэмпл на успешный
+  connect.
+- `webrtc_ttff_ms` — время до первого кадра на стороне подписчика
+  (задержка `jitter_buffer_ms` включена).
+- `webrtc_connect_total` / `webrtc_connect_errors` — 1/0 или 1/1 на
+  попытку подключения, поэтому гейты `count==0` разрешаются и на здоровых
+  прогонах.
+
+Фоновый `getStats`-сэмплер (раз в тик, пока соединение открыто — без
+`*_failed`, нет вызова, который мог бы упасть):
+
+- `webrtc_{audio,video}_rtt_ms` / `_jitter_ms` / `_bitrate_bps` /
+  `_packets_lost_total` — качество медиа по типу трека; мультитрек и
+  simulcast добавляют серии по трекам и слоям (`webrtc_video0_*`,
+  `webrtc_video1_f_*`).
+- `webrtc_ice_restarts_total` / `webrtc_frames_decoded_total` /
+  `webrtc_packets_{sent,received}_total` — счётчики соединения, также
+  сбрасываются шагами stats/close.
+
+Композитные P2P-звонки:
+
+- `webrtc_calls_total` / `webrtc_call_duration_ms` — по единице на шаг
+  звонка; длительность — только успешные звонки.
+- `webrtc_call_errors_{ice,dtls,signaling,publish,subscribe,hold}` —
+  счётчики причин ошибок, называющие стадию, на которой погиб звонок;
+  гейтьте вместе с rate (`webrtc_setup_ms_failed: ["rate<0.05"]`,
+  `webrtc_call_errors_ice: ["count==0"]`).
 
 ## Полный справочник
 
