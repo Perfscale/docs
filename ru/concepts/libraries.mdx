@@ -18,6 +18,7 @@ payload как `${alias.fn(...)}`:
 ```yaml
 libraries:
   - use: '@std/random@v1'        # встроенная, файлы не нужны
+    capabilities: []             # обязательный ключ — [] означает «без разрешений»
 
 steps:
   - use: std/db-query@v1
@@ -43,12 +44,17 @@ steps:
 ```yaml
 libraries:
   - use: '@std/random@v1'        # встроенная; алиас по умолчанию: random
+    capabilities: []
   - use: '@std/random@v1'
     as: ids                      # второй экземпляр, токены: ${ids.fn(...)}
+    capabilities: []
   - use: ./libs/fixer-ids.wasm   # локальный WASM-компонент, путь относительно этого файла
+    capabilities: []
   - use: 'https://vendor.example.com/faker-1.2.0.wasm'
     sha256: '9f2c…64 hex…'       # обязателен для HTTPS-источников
+    capabilities: []
   - use: 'git+https://github.com/org/repo.git@v1.2.3#libs/fixer-ids.wasm'
+    capabilities: []
 ```
 
 - `use:` — встроенная ссылка `@ns/name@vN` (кавычки обязательны: `@` —

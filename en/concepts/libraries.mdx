@@ -18,6 +18,7 @@ contributes its own functions, callable from any payload as
 ```yaml
 libraries:
   - use: '@std/random@v1'        # built-in, no files needed
+    capabilities: []             # required key — [] means "no grants"
 
 steps:
   - use: std/db-query@v1
@@ -43,12 +44,17 @@ validation error):
 ```yaml
 libraries:
   - use: '@std/random@v1'        # built-in; default alias: random
+    capabilities: []
   - use: '@std/random@v1'
     as: ids                      # second instance, tokens: ${ids.fn(...)}
+    capabilities: []
   - use: ./libs/fixer-ids.wasm   # local WASM component, path relative to this file
+    capabilities: []
   - use: 'https://vendor.example.com/faker-1.2.0.wasm'
     sha256: '9f2c…64 hex…'       # required for HTTPS sources
+    capabilities: []
   - use: 'git+https://github.com/org/repo.git@v1.2.3#libs/fixer-ids.wasm'
+    capabilities: []
 ```
 
 - `use:` — a built-in `@ns/name@vN` reference (quotes required: `@` is a
