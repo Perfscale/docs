@@ -56,6 +56,17 @@ used as labels.
   are not allowed on per-query connections.
 - `pool_size` — persistent-mode pool size, default `1`.
 - `timeout_ms` — connect timeout, default `30000`.
+- `scope` — `iteration` (default; behavior as before: the connection is
+  dropped at iteration end) or `vu`: the connection lives for the VU's
+  whole lifetime. Re-running `db-connect` with an identical config returns
+  the already-parked id (reuse, ~0 ms), so a scenario can safely call
+  connect on every iteration — the "one warm connection per VU" shape
+  known from k6/Locust. `std/db-close@v1` on a vu-scoped connection
+  closes it early.
+- `prepared` — `false` (default): cache prepared statements on the
+  connection, so repeated queries cost one network round trip. WARNING:
+  incompatible with transaction-mode poolers (PgBouncer, Supabase
+  Supavisor) — that is why it is opt-in; the default works everywhere.
 
 **`std/db-query@v1`** — runs one parameterized statement on a connection:
 
@@ -68,6 +79,9 @@ used as labels.
   arrays and objects are rejected.
 - `max_rows` — safety cap on rows read into memory, default `10000`;
   hitting it only sets `truncated: true` in the output.
+- `store_rows` — `true` (default): at `false` rows are still counted
+  (`rows`) but not materialized into `data` — saves allocations when the
+  scenario does not need the result rows.
 - `timeout_ms` — query timeout (in per-query mode: connect + query),
   default `30000`.
 
@@ -82,7 +96,8 @@ commit run inside the transaction, and the whole unit feeds
 `db_query_duration`.
 
 **`std/db-close@v1`** — `id` parameter; closes the connection and releases
-its id. Whatever a scenario leaves open is dropped at iteration end.
+its id. Whatever a scenario leaves open is dropped at iteration end (or at
+VU teardown for `scope: vu` connections).
 
 SQLite in-memory note: `sqlite::memory:` needs `mode: persistent` and
 `pool_size: 1` (the defaults) — a per-query connection, or a second pooled
@@ -409,6 +424,37 @@ steps:
       duration_ms_lt: 250
 ```
 
+### Warm per-VU connections (`scope: vu`)
+
+The fastest shape: one connection parked for the VU's whole lifetime,
+prepared statements cached on it, and no row materialization when the
+payload is irrelevant. The connect step still runs on every iteration, but
+an identical config returns the already-parked id in ~0 ms — so the
+scenario stays iteration-shaped while paying for a single connect. In our
+bench this combination reaches up to **9× the QPS** of the default mode,
+with a tuning ceiling of ~20k QPS on `SELECT 1`:
+
+```yaml
+steps:
+  - name: connect (warm, once per VU)
+    uses: std/db-connect@v1
+    with:
+      driver: postgres
+      dsn: "${{ vars.db_dsn }}"
+      scope: vu            # connection survives iteration end
+      prepared: true       # no transaction-mode pooler in front!
+    outputs: conn
+
+  - name: point lookup
+    uses: std/db-query@v1
+    with:
+      id: "${{ conn.id }}"
+      query: SELECT 1
+      store_rows: false    # count rows, don't materialize them
+    check:
+      duration_ms_lt: 10
+```
+
 ### MySQL / MariaDB variant
 
 The analytics recipe with two changes: `driver: mysql` (covers MariaDB)
@@ -559,6 +605,7 @@ done
 | Task | Use |
 |------|-----|
 | Measure connect latency | `mode: per-query` — connect + query land in one `db_query_duration` sample |
+| Max query throughput | `scope: vu` + `prepared: true` + `store_rows: false` (no pooler in front) |
 | Test a transaction | `std/db-tx-begin@v1` → queries → `std/db-tx-commit@v1` (or `std/db-tx-rollback@v1`) |
 | Avoid SQL injection | Bind every value via `params` — SQL text is never interpolated |
 | Test without a server | SQLite file (`sqlite:///tmp/x.db?mode=rwc`) or `sqlite::memory:` |

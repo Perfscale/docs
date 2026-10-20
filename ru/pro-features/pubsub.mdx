@@ -189,6 +189,7 @@ Apache Kafka через `rdkafka` (встроенный librdkafka). `subject` �
 | `options.group_id` | `perfscale-<uuid>` | Клиентский `group.id` (клиент требует его наличия; коммитов не бывает никогда) |
 | `options.auto_offset_reset` | `latest` | `latest` — каждая партиция стартует с watermark на момент начала обмена (подходит subscribe-first roundtrip); `earliest` проигрывает топик с начала |
 | `options.message_timeout_ms` | `5000` | Таймаут доставки одного сообщения |
+| `options.create_topic` | `true` | `false` отключает admin-пробу создания топика на каждый обмен (см. ниже) |
 | `options.key` | — | Ключ записи для каждого публикуемого сообщения |
 | `options.security_protocol` | — | `plaintext`, `ssl`, `sasl_plaintext`, `sasl_ssl` |
 | `options.sasl_mechanism` | — | `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512` |
@@ -278,9 +279,13 @@ steps:
   `enable.auto.commit` всегда выключен — нагрузочный прогон никогда не двигает
   offset'ы реальной consumer-группы.
 - **Топики создаются best-effort** (replication factor 1) перед чтением,
-  чтобы у roundtrip'а на свежем топике было что назначать. Ошибки по топику
-  (уже существует, нет прав) игнорируются; кластеры с автосозданием или
-  заранее созданными топиками ведут себя так же.
+  чтобы у roundtrip'а на свежем топике было что назначать. Результат
+  кэшируется per `(brokers, topic)` на процесс, поэтому повторных
+  admin-вызовов в рамках прогона больше нет; ошибки по топику (уже
+  существует, нет прав) игнорируются; кластеры с автосозданием или заранее
+  созданными топиками ведут себя так же. `options.create_topic: false`
+  отключает пробу целиком — например, когда у нагрузочного пользователя
+  нет admin-прав и топики provision'ятся заранее.
 
 ## Thresholds
 

@@ -186,6 +186,7 @@ Apache Kafka via `rdkafka` (bundled librdkafka). `subject` is the topic.
 | `options.group_id` | `perfscale-<uuid>` | Client `group.id` (the client requires one; nothing is ever committed) |
 | `options.auto_offset_reset` | `latest` | `latest` — each partition starts at the watermark at exchange start (fits the subscribe-first roundtrip); `earliest` replays the topic from the beginning |
 | `options.message_timeout_ms` | `5000` | Per-message delivery timeout |
+| `options.create_topic` | `true` | `false` disables the admin topic-creation probe on every exchange (see below) |
 | `options.key` | — | Record key for every published message |
 | `options.security_protocol` | — | `plaintext`, `ssl`, `sasl_plaintext`, `sasl_ssl` |
 | `options.sasl_mechanism` | — | `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512` |
@@ -272,8 +273,12 @@ Two Kafka specifics worth knowing:
   off — a load run never moves a real consumer group's offsets.
 - **Topics are best-effort auto-created** (replication factor 1) before
   consuming, so a same-step roundtrip on a fresh topic has something to
-  assign. Per-topic errors (already exists, authorization) are ignored;
-  clusters with auto-creation or pre-provisioned topics behave the same.
+  assign. The result is cached per `(brokers, topic)` for the process, so
+  repeat exchanges in one run issue no further admin calls; per-topic
+  errors (already exists, authorization) are ignored; clusters with
+  auto-creation or pre-provisioned topics behave the same. Set
+  `options.create_topic: false` to skip the probe entirely — e.g. when the
+  load user has no admin rights and the topics are provisioned upfront.
 
 ## Thresholds
 

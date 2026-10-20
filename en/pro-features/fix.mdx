@@ -126,6 +126,9 @@ before:
       schema: "${{ dict.body }}"
 ```
 
+The URL form is fetched **once per process** (cached) — not on every FIX
+session, no matter how many sessions the run opens.
+
 Inline JSON also works, for a few custom fields layered on the session base:
 
 ```yaml
