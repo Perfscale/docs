@@ -1,0 +1,121 @@
+---
+title: Свой репортер
+description: Собственный репортер конца прогона как WASM-компонент — контракт perfscale:reporter@0.1.0, TypeScript SDK, сборка и подключение
+section: Концепции
+sectionOrder: 2
+order: 20
+---
+
+## Обзор
+
+Встроенные [репортеры](/docs/concepts/reports) покрывают JSON, JUnit и
+HTML. Когда нужно что-то ещё — каталог результатов Allure2, сводка для
+Slack, проприетарный формат — напишите свой репортер: **WASM-компонент**,
+реализующий контракт `perfscale:reporter@0.1.0`
+([`wit/reporter/reporter.wit`](https://github.com/Perfscale/perfscale/blob/main/wit/reporter/reporter.wit)).
+
+В конце прогона движок передаёт компоненту канонический документ
+`report@v1` плюс собственный блок `with.config` репортера, а гость рендерит
+что угодно, записывая файлы **исключительно** через host-вызов `emit-file`.
+
+Доступно с perfscale **v0.27.0**. TypeScript SDK —
+[`@perfscale/library-sdk`](https://www.npmjs.com/package/@perfscale/library-sdk)
+(v0.3.0+); production-пример —
+[Perfscale/allure2-reporter](https://github.com/Perfscale/allure2-reporter),
+чей CI на каждый push собирает живой Allure-отчёт через
+[Perfscale/github-action](https://github.com/Perfscale/github-action) и
+публикует его на [GitHub Pages](https://perfscale.github.io/allure2-reporter/).
+
+## 1. Инициализация проекта
+
+```bash
+mkdir my-reporter && cd my-reporter
+npm init -y
+npm install --save-dev @perfscale/library-sdk typescript
+```
+
+## 2. Код репортера
+
+`defineReporter` даёт типизированный документ `report@v1`, ваш конфиг и
+функцию `emit` — единственный канал вывода. Верните однострочную сводку —
+движок её залогирует.
+
+```ts
+// reporter.ts
+import { defineReporter } from "@perfscale/library-sdk";
+
+export default defineReporter({
+  name: "my-reporter",
+  onReport(report, config, emit) {
+    const failed = report.steps.filter((s) => s.failed > 0);
+    const lines = [
+      `run ${report.run.run_id} (${report.run.engine}, ${report.run.duration_s}s)`,
+      `steps: ${report.steps.length}, failed: ${failed.length}`,
+      ...failed.map((s) => `  FAIL ${s.name}: ${s.failed}/${s.count}`),
+    ];
+    emit("summary.txt", lines.join("\n") + "\n");
+    return `${report.steps.length} steps summarized`;
+  },
+});
+```
+
+## 3. Сборка в WASM
+
+```bash
+npx perfscale-library-build --kind reporter reporter.ts -o reporter.wasm
+```
+
+(под капотом jco componentize — на выходе самодостаточный
+WASM-компонент.)
+
+## 4. Подключение к прогону
+
+```yaml
+# config.yaml
+report:
+  reporters:
+    - use: wasm:./reporter.wasm      # относительные пути привязаны к этому файлу
+      with:
+        output: ./reports            # куда попадают записи emit-file
+        config: { style: short }     # free-form, передаётся в onReport как есть
+```
+
+- `with.output` — каталог, в который пишет `emit-file` гостя (по умолчанию
+  `./perfscale-report-<module>`).
+- `with.config` — free-form JSON, передаётся вторым аргументом `onReport`
+  (`{}`, если не задан).
+
+## 5. Запуск
+
+```bash
+perfscale run -f test.yaml -c config.yaml
+cat reports/summary.txt
+```
+
+Файлы появляются в `with.output`; возвращённая строка сводки видна в логе
+прогона.
+
+## Песочница и ограничения
+
+- **`emit-file` — единственный выход.** У гостя нет WASI-доступа к
+  файловой системе и сети — ни чтения диска, ни HTTP. Имена файлов должны
+  быть относительными, безопасными путями (без абсолютных путей, без `..`,
+  без drive-префиксов); нарушения возвращают ошибку гостю.
+- **Ошибки гостя не роняют прогон.** Паникующий или возвращающий ошибку
+  репортер логируется и считается в `engine_report_errors`; exit code
+  прогона не меняется. (Незагружаемый модуль, напротив, падает на lint —
+  до начала прогона.)
+- Сборки jco могут импортировать `wasi:filesystem`/`wasi:clocks` как
+  toolchain-шум; хост линкует эти интерфейсы, но не выдаёт preopens, так
+  что реальный доступ к файлам падает в рантайме.
+
+## Production-пример
+
+[Perfscale/allure2-reporter](https://github.com/Perfscale/allure2-reporter)
+рендерит `report@v1` в каталог результатов Allure2 — test case на каждый
+шаг и на каждый verdict threshold — а его
+[demo-workflow](https://github.com/Perfscale/allure2-reporter/actions/workflows/demo.yml)
+запускает perfscale в CI через
+[Perfscale/github-action](https://github.com/Perfscale/github-action) и
+публикует живой отчёт на GitHub Pages. Клонируйте его как отправную точку
+для репортера с реальной структурой.

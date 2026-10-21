@@ -1,0 +1,187 @@
+---
+title: Reports
+description: End-of-run reports (report@v1) — built-in JSON/JUnit/HTML reporters, file and HTTP-push destinations, multiple reports per run, and the report@v1 schema reference
+section: Concepts
+sectionOrder: 2
+order: 19
+---
+
+## Overview
+
+Every perfscale run ends with a canonical in-memory document —
+**`report@v1`** — covering the run identity, per-step aggregates, threshold
+verdicts, and every registered metric family. **Reporters** render that
+document to a destination: a file on disk, an HTTP endpoint, or both.
+Reporters run once, after the run completes, and never affect the run
+itself.
+
+Reporters are an **open-source engine** feature. Available since perfscale
+**v0.27.0**.
+
+## Built-in reporters
+
+| Reporter | Output | Availability |
+|---|---|---|
+| `std/report/json@v1` | The canonical `report@v1` document as pretty-printed JSON | v0.27.0+ |
+| `std/report/junit@v1` | JUnit XML for CI: the testsuite is the run, one testcase per step, and every failed threshold verdict adds a failing `threshold: …` testcase — so a CI gate reads the file alone | v0.27.0+ |
+| `std/report/html@v1` | A single self-contained HTML page (dark theme, run identity, verdicts, per-step table with samples sparklines, metric families; all CSS/JS inlined, opens offline, archives as a CI artifact) | **next release** |
+| `wasm:./path.wasm` | A custom WASM reporter component — see [Custom reporters](/docs/concepts/custom-reporters) | v0.27.0+ |
+
+## Configuring reporters
+
+Reporters follow the step-style `use:`/`with:` pattern, declared under
+`report.reporters` in the config file:
+
+```yaml
+report:
+  labels:
+    testid: smoke              # stamped on the report's run identity
+  reporters:
+    - use: std/report/json@v1
+      with: { path: report.json }
+    - use: std/report/junit@v1
+      with: { path: junit.xml }
+    - use: std/report/json@v1
+      with:
+        url: https://collector.example.com/reports   # HTTP push
+        headers:
+          Authorization: "Bearer ${REPORT_TOKEN}"    # ${VAR} resolved host-side, never logged
+        max_samples: 10000     # raw per-step samples to include
+```
+
+Each reporter needs **exactly one destination**:
+
+- `with.path` — write to a file. Relative paths anchor to the declaring
+  file.
+- `with.url` — HTTP push: the report body is POSTed to the URL. Header
+  values in `with.headers` may embed `${VAR}` environment references; they
+  are resolved host-side and **never logged**.
+
+Common options:
+
+| Option | Default | Description |
+|---|---|---|
+| `with.path` / `with.url` | — | Destination — exactly one of the two |
+| `with.headers` | — | Headers for the HTTP push (`${VAR}` env references allowed) |
+| `with.max_samples` | `100000` | Cap on raw per-step samples; `0` omits them. A step that recorded more is flagged `truncated: true` |
+
+### CLI equivalent
+
+The `--report` flag is the shorthand — repeatable, so one run can emit
+several reports:
+
+```bash
+perfscale run -f test.yaml -c config.yaml \
+  --report json:report.json \
+  --report junit:junit.xml
+```
+
+`--report html:report.html` joins them in the next release. When a
+`perfscale serve` target is connected (`--report http://…` or `report.url`),
+the `report@v1` artifact is also POSTed to `<url>/api/v1/report`.
+
+## Failure policy
+
+- **Config errors fail fast**: an unknown reporter, a missing destination,
+  an unset `${VAR}`, or an unloadable WASM module fails at lint/validate —
+  before the run starts.
+- **Delivery errors are best-effort**: a push that fails at the end of the
+  run is logged and counted in the `engine_report_errors` metric, but the
+  run still completes and keeps its exit code.
+
+## The `report@v1` schema
+
+The JSON document every reporter consumes (`std/report/json@v1` writes it
+verbatim; WASM reporters receive it as `report-json`). The contract is
+stable and evolves **additively only** within the major version.
+
+**Units**: the engine measures in milliseconds, but the wire unit is
+**seconds** (the Prometheus convention) — every duration, quantile, and raw
+sample in the document is seconds. One exception: `verdicts[].observed`
+speaks the threshold's own language — milliseconds for duration metrics,
+a fraction for `rate`, an absolute number for `count`.
+
+### Top level
+
+| Field | Type | Description |
+|---|---|---|
+| `schemaVersion` | string | Always `"report@v1"` |
+| `run` | object | Run identity (below) |
+| `steps` | array | Per-step aggregates, in the test's declaration order |
+| `verdicts` | array | Every evaluated threshold expression, pass or fail |
+| `metrics` | array | Every registered metric family (built-in + custom), recorded or not |
+| `seq` | null | Reserved for future streaming snapshots; always `null` in end-of-run documents |
+| `samples` | array | Reserved for future streaming snapshots; always empty |
+
+### `run`
+
+| Field | Type | Description |
+|---|---|---|
+| `run_id` | string | Engine-generated run identifier |
+| `engine` | string | `"native"`, `"k6"`, `"locust"`, or `"jmeter"` |
+| `perfscale_version` | string | perfscale version that produced the report |
+| `vus` | number \| null | Virtual users; `null` where the load shape lives outside the CLI's knowledge (k6 scripts, staged/arrival runs) |
+| `started_at` | string | Run start, UTC ISO 8601 |
+| `duration_s` | number | Wall-clock run length, seconds |
+| `labels` | object | User labels (config `report.labels` / CLI `--label`), interpolated |
+
+### `steps[]`
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | The step's `name:`, or the action id when unnamed |
+| `action` | string | Action id, e.g. `std/http@v1` |
+| `count` | number | Invocations over the whole run |
+| `failed` | number | Failed invocations |
+| `rate` | number | Invocations per second of wall-clock run time |
+| `duration` | object | Quantile block — `avg`, `min`, `p50`, `p90`, `p95`, `p99`, `max` — all seconds |
+| `samples` | object \| absent | Raw duration samples, present when the reporter opted in via `max_samples` |
+
+`samples` carries:
+
+| Field | Type | Description |
+|---|---|---|
+| `values` | number[] | Included duration samples (seconds), in record order |
+| `truncated` | boolean | `true` when the step recorded more samples than `values` holds |
+| `recorded` | number | Total samples recorded, including any dropped past the cap |
+
+### `verdicts[]`
+
+| Field | Type | Description |
+|---|---|---|
+| `threshold` | string | The metric the expression evaluated over, e.g. `http_req_duration` |
+| `expression` | string | The expression as written, e.g. `p95<500` |
+| `pass` | boolean | The outcome |
+| `observed` | number | The aggregate's actual value — ms for duration metrics, fraction for `rate`, absolute for `count` |
+
+### `metrics[]`
+
+Self-describing metric families: each entry carries the registry metadata
+plus its recorded series. Registered families appear first, in registration
+order; recorded-but-unregistered names follow under the `custom` family.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | Metric name, e.g. `http_req_duration` |
+| `family` | string | Owning family (`http`, `llm`, …); `custom` for unregistered names |
+| `kind` | string | `sample` \| `counter` \| `rate` \| `gauge` |
+| `unit` | string | Registry unit |
+| `description` | string | Registry description |
+| `recorded` | boolean | `false` when the family was declared but nothing was recorded — the entry then carries no series |
+| `series` | array | The recorded series |
+
+Which value fields a series sets depends on the family kind:
+
+| Kind | Series fields |
+|---|---|
+| `sample` | `quantiles` (map of `"0.5"`/`"0.9"`/`"0.95"`/`"0.99"` → seconds), `count`, `sum` (seconds) |
+| `counter` | `value` |
+| `rate` | `total` (invocations), `failed` |
+| `gauge` | `value` plus `ts` (point-in-time, RFC3339); series keep their labels, e.g. `gpu="0"` |
+
+## Next steps
+
+- [Custom reporters](/docs/concepts/custom-reporters) — write your own WASM
+  reporter in TypeScript.
+- [Runs & live metrics](/docs/concepts/runs) — during-run streaming vs the
+  end-of-run report.

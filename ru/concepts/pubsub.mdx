@@ -59,6 +59,7 @@ steps:
 | `subscribe.count` | `1` | Сколько сообщений ждать |
 | `subscribe.until_contains` | — | Подстрока, которую должно содержать каждое засчитанное сообщение |
 | `subscribe.timeout_ms` | `5000` | Через столько миллисекунд шаг падает |
+| `scope` | `exchange` | Connection posture (v0.27.0+): `exchange` — полный цикл connect → publish → collect → drop на каждый обмен; `vu` — одно соединение с брокером на VU, переиспользуется между обменами этого VU |
 | `options` | — | Настройки драйвера, передаются как есть (встроенные игнорируют; pro-драйверы берут отсюда QoS, consumer group, auth) |
 
 Шаг падает при ошибке подключения, ошибке публикации или таймауте подписки —
@@ -111,9 +112,13 @@ payloads, склеенные переводом строки) для следу�
 ## Метрики и thresholds
 
 Каждый обмен попадает в итоговую сводку как custom-метрики: counters
-`pubsub_msgs_published` / `pubsub_msgs_received` и trend `pubsub_e2e_ms`
-(по сэмплу на matched-сообщение: начало фазы publish → доставлено).
-Гейтайте прогон через `std/thresholds@v1`:
+`pubsub_msgs_published` / `pubsub_msgs_received`, trend `pubsub_e2e_ms`
+(по сэмплу на matched-сообщение: начало фазы publish → доставлено) и — с
+v0.27.0 — trend `pubsub_publish_ms` (latency вызова publish в транспорте,
+по сэмплу на опубликованное сообщение) и `pubsub_connect_ms` (время
+подключения к брокеру, по сэмплу на обмен, реально открывший соединение —
+каждый обмен при `scope: exchange`, только первый обмен каждого VU при
+`scope: vu`). Гейтайте прогон через `std/thresholds@v1`:
 
 ```yaml
   - use: std/thresholds@v1
@@ -123,6 +128,35 @@ payloads, склеенные переводом строки) для следу�
       pubsub_e2e_ms_failed:
         - "rate<0.01"             # меньше 1% таймаутов/ошибок обмена
 ```
+
+## Connection posture
+
+С v0.27.0 брокерные драйверы принимают `scope`:
+
+- `scope: exchange` (по умолчанию) — каждый обмен это полный цикл:
+  connect → subscribe → publish → collect → drop. Стоимость подключения
+  входит в измерение (видна отдельно в `pubsub_connect_ms`), и под нагрузкой
+  брокер видит реальный churn соединений — планируйте rate теста с учётом
+  этого.
+- `scope: vu` — тёплый режим: одно соединение на VU, переиспользуется
+  между обменами этого VU. Connect платит только первый обмен VU, так что
+  `pubsub_connect_ms` сэмплирует ровно эти обмены.
+
+```yaml
+steps:
+  - name: produce order events
+    use: std/pubsub@v1
+    with:
+      driver: nats
+      url: nats://nats.internal:4222
+      subject: orders.created
+      scope: vu                # одно nats-соединение на VU, переиспользуется
+      publish: '{"id":"ord-${seq}"}'
+```
+
+Используйте `scope: vu` для измерения устоявшегося throughput и
+`scope: exchange` по умолчанию, когда вы измеряете именно стоимость
+подключения.
 
 Под нагрузкой memory-драйвер показывает «потолок» движка (loopback, без
 брокера), а тот же тест против `nats` добавляет реальный round trip брокера —

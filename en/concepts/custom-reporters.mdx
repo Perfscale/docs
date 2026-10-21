@@ -1,0 +1,122 @@
+---
+title: Custom reporters
+description: Write your own end-of-run reporter as a WASM component — the perfscale:reporter@0.1.0 contract, the TypeScript SDK, build, and wiring
+section: Concepts
+sectionOrder: 2
+order: 20
+---
+
+## Overview
+
+Built-in [reports](/docs/concepts/reports) cover JSON, JUnit, and HTML.
+When you need anything else — an Allure2 results directory, a Slack payload
+summary, a proprietary format — write your own reporter: a **WASM
+component** implementing the `perfscale:reporter@0.1.0` contract
+([`wit/reporter/reporter.wit`](https://github.com/Perfscale/perfscale/blob/main/wit/reporter/reporter.wit)).
+
+At the end of the run the engine hands the component the canonical
+`report@v1` document plus the reporter's own `with.config` block, and the
+guest renders whatever it likes, writing output files **exclusively**
+through the host's `emit-file` call.
+
+Available since perfscale **v0.27.0**. The TypeScript SDK is
+[`@perfscale/library-sdk`](https://www.npmjs.com/package/@perfscale/library-sdk)
+(v0.3.0+); a production-grade example is
+[Perfscale/allure2-reporter](https://github.com/Perfscale/allure2-reporter),
+whose CI builds a live Allure report on every push via
+[Perfscale/github-action](https://github.com/Perfscale/github-action) and
+publishes it to [GitHub Pages](https://perfscale.github.io/allure2-reporter/).
+
+## 1. Set up the project
+
+```bash
+mkdir my-reporter && cd my-reporter
+npm init -y
+npm install --save-dev @perfscale/library-sdk typescript
+```
+
+## 2. Write the reporter
+
+`defineReporter` gives you the typed `report@v1` document, your config, and
+the `emit` function — the only output channel. Return a one-line summary
+string; the engine logs it.
+
+```ts
+// reporter.ts
+import { defineReporter } from "@perfscale/library-sdk";
+
+export default defineReporter({
+  name: "my-reporter",
+  onReport(report, config, emit) {
+    const failed = report.steps.filter((s) => s.failed > 0);
+    const lines = [
+      `run ${report.run.run_id} (${report.run.engine}, ${report.run.duration_s}s)`,
+      `steps: ${report.steps.length}, failed: ${failed.length}`,
+      ...failed.map((s) => `  FAIL ${s.name}: ${s.failed}/${s.count}`),
+    ];
+    emit("summary.txt", lines.join("\n") + "\n");
+    return `${report.steps.length} steps summarized`;
+  },
+});
+```
+
+## 3. Build to WASM
+
+```bash
+npx perfscale-library-build --kind reporter reporter.ts -o reporter.wasm
+```
+
+(jco componentize under the hood — the output is a standalone WASM
+component.)
+
+## 4. Wire it into the run
+
+```yaml
+# config.yaml
+report:
+  reporters:
+    - use: wasm:./reporter.wasm      # relative paths anchor to this file
+      with:
+        output: ./reports            # where emit-file writes land
+        config: { style: short }     # free-form, handed to onReport verbatim
+```
+
+- `with.output` — the directory the guest's `emit-file` writes into
+  (default `./perfscale-report-<module>`).
+- `with.config` — free-form JSON, passed to `onReport` as the second
+  argument (`{}` when unset).
+
+## 5. Run
+
+```bash
+perfscale run -f test.yaml -c config.yaml
+cat reports/summary.txt
+```
+
+Files land under `with.output`; the returned summary line appears in the
+run log.
+
+## Sandbox and limits
+
+- **`emit-file` is the only way out.** Guests get no WASI filesystem or
+  network access — no reading the disk, no HTTP. File names must be
+  relative, traversal-safe paths (no absolute paths, no `..`, no drive
+  prefixes); violations return an error to the guest.
+- **Guest errors never fail the run.** A panicking or error-returning
+  reporter is logged and counted in `engine_report_errors`; the run's exit
+  code is unaffected. (An unloadable module, on the other hand, fails at
+  lint time, before the run.)
+- Toolchain imports of `wasi:filesystem`/`wasi:clocks` may appear in jco
+  builds as noise; the host links them but attaches no preopens, so actual
+  file access fails at runtime.
+
+## Production example
+
+[Perfscale/allure2-reporter](https://github.com/Perfscale/allure2-reporter)
+renders `report@v1` as an Allure2 results directory — one test case per
+step, one per threshold verdict — and its
+[demo workflow](https://github.com/Perfscale/allure2-reporter/actions/workflows/demo.yml)
+runs perfscale in CI with
+[Perfscale/github-action](https://github.com/Perfscale/github-action) and
+publishes the live report to GitHub Pages. Clone it as a starting point for
+a reporter with real structure.

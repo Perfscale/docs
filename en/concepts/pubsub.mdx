@@ -59,6 +59,7 @@ steps:
 | `subscribe.count` | `1` | Messages to wait for |
 | `subscribe.until_contains` | — | Substring each counted message must contain |
 | `subscribe.timeout_ms` | `5000` | Give up (and fail the step) after this |
+| `scope` | `exchange` | Connection posture (v0.27.0+): `exchange` — a full connect → publish → collect → drop cycle per exchange; `vu` — one broker connection per VU, reused across that VU's exchanges |
 | `options` | — | Driver-specific tuning passed through verbatim (ignored by the built-ins; the pro drivers take QoS, consumer-group, and auth knobs from it) |
 
 The step fails on connect failure, publish error, or subscribe timeout — the
@@ -110,9 +111,14 @@ newline-joined matched payloads) to later steps.
 ## Metrics and thresholds
 
 Every exchange folds into the run summary as custom metrics:
-`pubsub_msgs_published` / `pubsub_msgs_received` counters and the
+`pubsub_msgs_published` / `pubsub_msgs_received` counters, the
 `pubsub_e2e_ms` trend (one sample per matched message: start of the publish
-phase → consumed). Gate a run on them with `std/thresholds@v1`:
+phase → consumed) and — since v0.27.0 — the `pubsub_publish_ms` trend (the
+transport's publish-call latency, one sample per published message) and
+`pubsub_connect_ms` (broker connect time, one sample per exchange that
+actually opened a connection — every exchange under the default
+`scope: exchange`, only each VU's first under `scope: vu`). Gate a run on
+them with `std/thresholds@v1`:
 
 ```yaml
   - use: std/thresholds@v1
@@ -122,6 +128,33 @@ phase → consumed). Gate a run on them with `std/thresholds@v1`:
       pubsub_e2e_ms_failed:
         - "rate<0.01"             # fewer than 1% timed-out/failed exchanges
 ```
+
+## Connection posture
+
+Since v0.27.0, broker drivers take a `scope`:
+
+- `scope: exchange` (default) — every exchange is a full cycle:
+  connect → subscribe → publish → collect → drop. The connect cost is part
+  of the measurement (visible separately in `pubsub_connect_ms`), and under
+  load the broker sees real connection churn — size test rates accordingly.
+- `scope: vu` — warm posture: one connection per VU, reused across that
+  VU's exchanges. Only the VU's first exchange pays the connect, so
+  `pubsub_connect_ms` samples exactly those.
+
+```yaml
+steps:
+  - name: produce order events
+    use: std/pubsub@v1
+    with:
+      driver: nats
+      url: nats://nats.internal:4222
+      subject: orders.created
+      scope: vu                # one nats connection per VU, reused
+      publish: '{"id":"ord-${seq}"}'
+```
+
+Use `scope: vu` for sustained-throughput measurement and the default
+`scope: exchange` when the connect cost is what you are measuring.
 
 Under load the memory driver shows the engine's raw ceiling (loopback, no
 broker), while the same test against `nats` adds the real broker round trip —
