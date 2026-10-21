@@ -60,6 +60,7 @@ steps:
 | `subscribe.until_contains` | — | Substring each counted message must contain |
 | `subscribe.timeout_ms` | `5000` | Give up (and fail the step) after this |
 | `scope` | `exchange` | Connection posture (v0.27.0+): `exchange` — a full connect → publish → collect → drop cycle per exchange; `vu` — one broker connection per VU, reused across that VU's exchanges |
+| `flush` | `message` | Publish ack mode (v0.28.0+): `message` — flush + await the broker ack after publishing (`pubsub_publish_ms` = the full round trip); `none` — fire-and-forget (`pubsub_publish_ms` = the enqueue only). Pairs with `scope: vu`; with `scope: exchange` one unsampled flush still runs before the connection drops, so queued messages are not lost |
 | `options` | — | Driver-specific tuning passed through verbatim (ignored by the built-ins; the pro drivers take QoS, consumer-group, and auth knobs from it) |
 
 The step fails on connect failure, publish error, or subscribe timeout — the
@@ -155,6 +156,19 @@ steps:
 
 Use `scope: vu` for sustained-throughput measurement and the default
 `scope: exchange` when the connect cost is what you are measuring.
+
+## Flush semantics
+
+Since v0.28.0, the publish acknowledgement mode is configurable: the default
+`flush: message` flushes the connection after each exchange's publishes and
+awaits the broker's ack — `pubsub_publish_ms` is the full publish round trip.
+`flush: none` is fire-and-forget: publishes enqueue onto the client's writer
+and the samples measure the enqueue only, so per-iteration latency no longer
+includes a broker round trip. Pair `flush: none` with `scope: vu` (a warm
+connection keeps its writer alive); with `scope: exchange` the driver still
+flushes once — unsampled — before dropping the connection. Delivery under
+`flush: none` is best-effort by design: a crashed process can lose queued
+messages the broker never saw.
 
 Under load the memory driver shows the engine's raw ceiling (loopback, no
 broker), while the same test against `nats` adds the real broker round trip —
