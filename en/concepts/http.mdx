@@ -1,0 +1,64 @@
+---
+title: HTTP
+description: HTTP load generation with the native engine — connection pooling, keep-alive sharding, and multi-source-IP traffic
+section: Concepts
+sectionOrder: 2
+order: 21
+---
+
+## Overview
+
+The native engine's `std/http@v1` step performs one HTTP request per
+iteration: any method, headers, body, multipart uploads, per-request timeout,
+and optional TLS verification skip (`insecure: true`). Statuses ≥ 400,
+transport errors, and timeouts count as failed requests in
+`http_req_failed`.
+
+## Connection pooling
+
+`pool: per-vu` (default) pins every VU to one HTTP client shard (one per
+available CPU, capped at 16), so a VU keeps a warm keep-alive pool across
+iterations without pool-lock contention. `pool: shared` puts every VU on one
+process-global client: maximal connection reuse against a single endpoint,
+at the cost of pool-lock contention under very high VU counts.
+
+## Source IPs
+
+A single (source IP, destination IP, destination port) tuple has only the
+ephemeral source-port range (~28k ports), so one machine talking to one
+endpoint over one address caps out below ~64k concurrent connections.
+`source_ips` multiplies that budget by binding outgoing connections to
+several local addresses — bare IPs or CIDR prefixes, IPv4 and IPv6:
+
+```yaml
+steps:
+  - name: api
+    use: std/http@v1
+    with:
+      url: http://target:8080/api
+      source_ips: ["10.0.0.2", "10.0.0.16/28", "fd00::/120"]
+```
+
+Semantics:
+
+- A CIDR expands to every address of the prefix; the expanded list is capped
+  at 4096 addresses — over the cap, lint and run validation fail with a
+  "narrow the prefix" error.
+- Virtual user `i` is pinned to `ips[(i-1) % n]`, stable across iterations,
+  so each VU keeps one warm keep-alive pool on its (shard, source IP)
+  client.
+- Clients are built lazily per (shard, address) pair actually used — a large
+  list does not pre-allocate thousands of connection pools.
+- The first request of a run logs how many source addresses are active.
+
+The addresses must exist on the load generator's interfaces. Linux routes
+all of 127/8 to loopback by default; on macOS add aliases explicitly
+(`sudo ifconfig lo0 alias 127.0.0.2 up`). For real multi-IP generation,
+assign the addresses to a NIC (or use several machines).
+
+## Next steps
+
+- [Actions reference](https://github.com/Perfscale/perfscale/blob/main/docs/core/actions.md)
+  — the full `std/http@v1` parameter list in the OSS repo.
+- [Protocol metrics](/docs/concepts/protocol-metrics) — `http_reqs`,
+  `http_req_failed`, and per-step timings.
