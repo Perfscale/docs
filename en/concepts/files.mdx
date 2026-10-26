@@ -1,0 +1,201 @@
+---
+title: File steps
+description: File steps for fixtures and payloads — file-read, file-write, read-json, the shared jq-style query grammar, and walking into JSON bodies in interpolation
+section: Concepts
+sectionOrder: 2
+order: 21
+---
+
+## Overview
+
+Native tests can read fixture files, extract subvalues from JSON documents,
+and persist responses to disk. Three **file steps** cover this:
+
+| Step | Purpose |
+|---|---|
+| `std/file-read@v1` | Read a file (text or base64) into a step output, optionally extracting a JSON subvalue with `query` |
+| `std/file-write@v1` | Write content to a file; with `query` — a read-modify-write set-at-path inside a JSON document |
+| `std/read-json@v1` | Read and parse a JSON file; the **parsed document** is cached, not just the bytes |
+
+All file steps are **fail-closed**: the run must opt in with
+`allow_file_actions: true` in the config, and paths honour `fs_root`
+confinement.
+
+Reads are served from a **process-wide cache** revalidated against the
+file's `(mtime, size)` on each access — the first iteration pays the disk
+read (and, for `read-json`, the parse); every later iteration across all
+VUs hits RAM, and a file edited between runs of a long-lived agent is
+picked up automatically. `std/read-json@v1` and the `@std/json@v1` library
+share the same cache.
+
+**Availability:** `std/read-json@v1` and the `query` parameter are
+**v0.28.0+**; the base `file-read` / `file-write` steps ship in earlier
+releases.
+
+## `std/file-read@v1`
+
+Read a file and expose its content to later steps:
+
+```yaml
+steps:
+  - name: load payload
+    use: std/file-read@v1
+    with: { path: ./fixtures/payload.json }
+    outputs: payload
+
+  - name: send it
+    use: std/http@v1
+    with:
+      method: POST
+      url: "https://api.example.com/items"
+      headers: { content-type: application/json }
+      body: "${{ payload.content }}"
+    check:
+      status: 201
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `path` | string | **required** | File to read |
+| `encoding` | string | `text` | `text` (file must be valid UTF-8) or `base64` (binary content) |
+| `query` | string | — | jq-style path (v0.28.0+, see below); the content is parsed as JSON and the subvalue at the path becomes the whole step output |
+
+**Output** (available via `outputs` / `__last__`):
+
+```json
+{ "content": "...", "size": 1024, "path": "./fixtures/payload.json" }
+```
+
+With `query` set, the output is the extracted JSON subvalue directly —
+`${{ payload }}` *is* the value at the path.
+
+Notes:
+
+- A non-UTF-8 file with `encoding: text` fails the step — use
+  `encoding: base64` for binary content.
+- With `query`, content that is not valid JSON fails the step; a missing
+  path fails it too and names the failing segment — unless the segment
+  carries a `?` suffix, which resolves a miss to `null`.
+- Referencing `${{ payload.content }}` copies the content into the request —
+  the cache saves disk reads, not the per-request copy. Keep fixtures small
+  under high RPS.
+- For file *uploads*, prefer `std/http@v1`'s `multipart` parameter.
+
+## `std/file-write@v1`
+
+Write content to a file — typically to persist a previous step's response:
+
+```yaml
+steps:
+  - name: fetch report
+    use: std/http@v1
+    with: { url: "https://api.example.com/report" }
+    outputs: resp
+
+  - name: save it
+    use: std/file-write@v1
+    with:
+      path: ./out/report.json
+      content: "${{ resp.body }}"
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `path` | string | **required** | File to write (parent directory must exist) |
+| `content` | string | **required** | Data to write; `${{ ... }}` placeholders make `${{ resp.body }}` the typical payload |
+| `encoding` | string | `text` | `text` writes the string as-is; `base64` decodes it first |
+| `append` | boolean | `false` | Append instead of overwrite |
+| `query` | string | — | jq-style path (v0.28.0+): read-modify-write — load the JSON file, set `content` at the path, write the document back |
+
+**Output**: `{ "path": <string>, "size": <bytes written> }`
+
+Notes:
+
+- Writing a path that `std/file-read@v1` has cached invalidates that cache
+  entry automatically.
+- With `append: true` each call is a single `O_APPEND` write, so concurrent
+  VUs do not interleave mid-content; ordering between VUs is unspecified.
+- With `query` (a set-at-path edit): `content` that parses as JSON is stored
+  as JSON (anything else as a string); intermediate objects/arrays are
+  created like jq; an array index must be within bounds or exactly the
+  array length (**append** — a further out-of-bounds index fails the step);
+  a missing file starts from an empty document; non-JSON existing content
+  fails the step. `query` does not combine with `append` or
+  `encoding: base64`.
+
+## `std/read-json@v1`
+
+Read and parse a JSON file — the structured sibling of `std/file-read@v1`
+(**v0.28.0+**). The parsed document is cached process-wide, so iterations
+past the first skip both the disk read and the parse:
+
+```yaml
+steps:
+  - name: users fixture
+    use: std/read-json@v1
+    with: { file: ./fixtures/users.json, query: ".users[0]" }
+    outputs: user
+
+  - name: log in
+    use: std/http@v1
+    with:
+      method: POST
+      url: "https://api.example.com/login"
+      body: '{"token": "${{ user.token }}"}'
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `file` | string | **required** | JSON file to read |
+| `query` | string | — | jq-style path selecting a subvalue |
+
+**Output**: the parsed JSON document, or the subvalue at `query`.
+
+Invalid JSON fails the step with a clear message; so does a missing `query`
+path (the error names the failing segment) unless the segment carries `?`.
+
+## The jq-style `query` grammar
+
+One grammar drives `std/read-json@v1`'s `query`, the `query` parameter of
+`std/file-read@v1` / `std/file-write@v1`, and body paths inside
+`${{ ... }}` interpolation (all v0.28.0+). It is a jq *path* subset — no
+pipes, filters, or functions:
+
+- An optional leading `.`, then segments of `.key`, `["key"]`, or `[0]`.
+- A dot segment that is all digits also indexes an array, so `posts.0.id` ≡
+  `.posts[0].id`.
+- A `?` suffix on a segment makes it **tolerant** — a miss resolves to
+  `null` instead of failing the step (e.g. `.users?[0]`).
+
+## Body paths in interpolation
+
+The same grammar extends `${{ }}` placeholders (v0.28.0+): a path that
+continues past a *string* leaf — an HTTP response `body`, a file step's
+`content` — parses it as JSON on demand and walks into the document:
+
+```yaml
+steps:
+  - use: std/http@v1
+    with: { url: "https://api.example.com/feed" }
+    outputs: feed                       # output: { status, body, headers, ... } — body is a string
+
+  - use: std/http@v1
+    with:
+      url: "https://api.example.com/posts/${{ feed.body.posts[0].id }}"
+```
+
+The engine parses `feed.body` as JSON on demand and walks into it.
+
+`${{ feed.body.posts[0].id }}` and the dotted `${{ feed.body.posts.0.id }}`
+are interchangeable. As with any placeholder, a miss resolves to an **empty
+string** — the run does not fail; gate on the value with `check:` when
+absence should be an error.
+
+## Next steps
+
+- [Libraries](/docs/concepts/libraries) — the `@std/json@v1` built-in
+  exposes the same cached reads as `${json.read(...)}` / `${json.pick(...)}`
+  generator tokens.
+- The engine's
+  [YAML reference](https://github.com/Perfscale/perfscale/blob/main/docs/yaml-reference.md)
+  — the full `${{ ... }}` interpolation contract.
