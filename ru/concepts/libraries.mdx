@@ -275,7 +275,9 @@ PRNG (бит-в-бит совпадающий между SDK и движком),
 - **Rust** — [`perfscale-library-sdk`](https://github.com/Perfscale/perfscale/tree/main/crates/perfscale-library-sdk),
   собирается в `wasm32-wasip2` без дополнительного тулчейна. Репозиторий
   [library-random](https://github.com/Perfscale/library-random) — WASM-порт
-  `@std/random` — служит шаблоном для авторов.
+  `@std/random` — служит шаблоном для авторов. Сфокусированный реальный
+  компонент — [Faker](/docs/concepts/faker): детерминированные email,
+  адреса и тестовые платёжные данные в чистой Rust-библиотеке.
 - **TypeScript / JavaScript** —
   [`@perfscale/library-sdk`](https://github.com/Perfscale/sdk-libraries):
   `defineLibrary({...})`, затем `npx perfscale-library-build mylib.ts -o

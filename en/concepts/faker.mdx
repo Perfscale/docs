@@ -1,0 +1,131 @@
+---
+title: Faker
+description: Deterministic fake emails, addresses, and test payment data with the Perfscale/faker WASM library
+section: Concepts
+sectionOrder: 2
+order: 23
+---
+
+## Overview
+
+[Perfscale/faker](https://github.com/Perfscale/faker) is a small Rust/WASM
+library for synthetic load-test data. It registers a library named `faker`
+through the stable Library SDK and adds `internet`, `address`, and `payment`
+functions to ordinary `${faker...}` generator tokens. It does not require a
+custom-step engine or any changes to Perfscale itself.
+
+Version 0.1.0 is tested with Perfscale v0.28.0. The component has no network,
+filesystem, WASI clock, or WASI random dependency, so its `capabilities:` list
+is empty.
+
+## Register the library
+
+Download `faker.wasm` and its SHA-256 checksum from the
+[v0.1.0 release](https://github.com/Perfscale/faker/releases/tag/v0.1.0), or
+build the component from the project README. Declare it in the test or config
+YAML; relative paths resolve against the declaring file:
+
+```yaml
+libraries:
+  - use: ./faker.wasm
+    as: faker                    # optional: faker is the manifest default
+    capabilities: []             # required; no grants are needed
+    with:
+      language: en               # optional, default: en
+      encoding: plain            # optional, default: plain
+```
+
+The `with:` block is passed to the component's `init` function. Both options
+are optional; unknown keys, unsupported languages, and unknown encodings fail
+before traffic starts.
+
+## Functions
+
+| Call | Result |
+|---|---|
+| `internet("email")` | ASCII `first.lastN@example.com/net/org` address |
+| `address("street_address")` | Street number and name |
+| `address("zip_code")` | Five-digit postal code |
+| `address("city")` | City |
+| `address("state_abbr")` | Two-letter US state abbreviation |
+| `address("country")` | Country |
+| `payment("credit_card_number")` | Visa test number `4111111111111111` |
+| `payment("credit_card_expiration_month")` | Month `1` through `12` |
+| `payment("credit_card_expiration_year")` | Uniform year from current UTC year +1 through +71, inclusive |
+| `payment("credit_card_cvv")` | Number `100` through `999` |
+
+Each call returns a fresh value. There is no optional memo-key argument in
+v0.1.0. An unknown function, kind, or argument count fails the enclosing step
+instead of sending malformed data.
+
+## Options
+
+| Option | Values | Default |
+|---|---|---|
+| `language` | `en`, currently the only embedded corpus | `en` |
+| `encoding` | `plain`, `url` | `plain` |
+
+`encoding: url` percent-encodes the UTF-8 bytes of every result: `@` becomes
+`%40`, spaces become `%20`, and URL-reserved punctuation is escaped. Use it
+for values inserted into an HTML form or URL query, not for ordinary JSON
+values.
+
+## Example: Online Boutique checkout
+
+The following fragment keeps `application/x-www-form-urlencoded` semantics
+while using generated values. The complete migration is in
+[GoogleCloudPlatform/microservices-demo#3588](https://github.com/GoogleCloudPlatform/microservices-demo/pull/3588).
+
+```yaml
+libraries:
+  - use: /loadgen/faker.wasm
+    as: faker
+    capabilities: []
+    with: { language: en, encoding: url }
+
+steps:
+  - name: checkout
+    use: std/http@v1
+    with:
+      method: POST
+      url: "${{ env.BASE_URL }}/cart/checkout"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+        Cookie: "shop_session-id=perfscale-${{ __vu__ }}"
+      body: 'email=${faker.internet("email")}&street_address=${faker.address("street_address")}&zip_code=${faker.address("zip_code")}&city=${faker.address("city")}&state=${faker.address("state_abbr")}&country=${faker.address("country")}&credit_card_number=${faker.payment("credit_card_number")}&credit_card_expiration_month=${faker.payment("credit_card_expiration_month")}&credit_card_expiration_year=${faker.payment("credit_card_expiration_year")}&credit_card_cvv=${faker.payment("credit_card_cvv")}'
+    check: { status: 200 }
+```
+
+## Determinism and test-data safety
+
+All random choices use the Perfscale SDK's seeded PRNG. A run with `seed: 42`
+replays the same sequence for the same VUs, calls, and inputs. Expiration
+years also use `ctx.time_ms`, so their range advances with the UTC year; no
+WASI clock import is needed.
+
+Emails use only reserved example domains. The payment number is a standard
+Visa test value. The component does not send email, process payments, or
+retrieve real personal data.
+
+Version 0.1.0 intentionally has a small English corpus and only the functions
+listed above; it is not a complete port of Python Faker or a multi-locale data
+set.
+
+## Docker and project links
+
+Each release publishes `faker.wasm`, `faker.wasm.sha256`, and an artifact-only
+multi-arch GHCR image. The image exists for `COPY --from`, not for execution:
+
+```dockerfile
+FROM ghcr.io/perfscale/faker:0.1.0 AS faker
+FROM ghcr.io/perfscale/perfscale:0.28.0
+WORKDIR /loadgen
+COPY --from=faker /faker.wasm ./
+COPY test.yaml config.yaml ./
+```
+
+Pin the GHCR multi-arch digest in production builds. No Rust toolchain or
+source checkout is required in the consuming image.
+
+- [Project README, build, and test instructions](https://github.com/Perfscale/faker)
+- [General library concepts](/docs/concepts/libraries)
