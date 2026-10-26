@@ -269,7 +269,9 @@ per-message reuse, argument helpers, and a runtime-free test harness:
 - **Rust** — [`perfscale-library-sdk`](https://github.com/Perfscale/perfscale/tree/main/crates/perfscale-library-sdk),
   builds to `wasm32-wasip2` with no extra toolchain. The
   [library-random](https://github.com/Perfscale/library-random) repo — the
-  WASM port of `@std/random` — doubles as the author template.
+  WASM port of `@std/random` — doubles as the author template. For a focused
+  real-world component, see [Faker](/docs/concepts/faker): deterministic
+  emails, addresses, and payment test data in a pure Rust library.
 - **TypeScript / JavaScript** —
   [`@perfscale/library-sdk`](https://github.com/Perfscale/sdk-libraries):
   `defineLibrary({...})`, then `npx perfscale-library-build mylib.ts -o
