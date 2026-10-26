@@ -191,8 +191,16 @@ are interchangeable. As with any placeholder, a miss resolves to an **empty
 string** — the run does not fail; gate on the value with `check:` when
 absence should be an error.
 
+Path indices are **literals** — `[0]` is fixed at authoring time and cannot
+come from a variable. When the index is dynamic (a per-VU id, a random roll,
+a value computed by an earlier step), select the element with the
+`std/pick@v1` step and walk into its output — see
+[Data-driven steps](/docs/concepts/data-driven-steps).
+
 ## Next steps
 
+- [Data-driven steps](/docs/concepts/data-driven-steps) — `std/pick@v1` for
+  dynamic selection from arrays, `std/random@v1`, and conditional steps.
 - [Libraries](/docs/concepts/libraries) — the `@std/json@v1` built-in
   exposes the same cached reads as `${json.read(...)}` / `${json.pick(...)}`
   generator tokens.

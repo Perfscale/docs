@@ -1,0 +1,222 @@
+---
+title: Data-driven steps
+description: Conditional steps with if/when, the std/random and std/pick value steps, per-VU variables, and dynamic sleeps — driving scenario flow from data instead of fixed scripts
+section: Concepts
+sectionOrder: 2
+order: 22
+---
+
+## Overview
+
+A realistic scenario does not execute the same steps with the same values on
+every iteration: it logs in once, likes some posts but not all, picks a
+different user per virtual user, and pauses for a human-like think time.
+Perfscale covers this with a small set of step-level primitives — **no
+scripting required**:
+
+| Primitive | What it does |
+|---|---|
+| `if:` / `when:` | Run a step only when a condition holds |
+| `std/random@v1` | Generate one number (integer or float) into a step output |
+| `std/pick@v1` | Pick one element of a JSON array — from a file or a response |
+| `${{ __vu__ }}` / `${{ __iter__ }}` | The current VU's 1-based id and its 0-based iteration |
+
+Because these are ordinary steps, their outputs flow through the same
+`${{ ... }}` interpolation as everything else — a random number can become a
+sleep duration, an index, or a probability roll.
+
+A complete example — staggered start, per-VU user, probabilistic like, random
+think time:
+
+```yaml
+steps:
+  - use: std/random@v1
+    when: "${{ __iter__ }} == 0"                 # stagger: first iteration only
+    with: { type: float, min: 0, max: 5 }
+    outputs: startup_delay
+
+  - use: std/sleep@v1
+    when: "${{ __iter__ }} == 0"
+    with: { seconds: "${{ startup_delay }}" }    # dynamic sleep from a random output
+
+  - use: std/pick@v1
+    with: { file: fixtures/users.json, index: "${{ __vu__ }}", index_offset: -1 }
+    outputs: user                                # one fixture user per VU
+
+  - use: std/http@v1
+    with: { url: "https://api.example.com/feed" }
+    outputs: feed
+
+  - use: std/random@v1
+    with: { type: integer, min: 0, max: 19 }
+    outputs: post_index
+
+  - use: std/pick@v1
+    with: { from: "${{ feed.body.posts }}", index: "${{ post_index }}" }
+    outputs: post                                # a random post from the response
+
+  - use: std/random@v1
+    with: { type: float, min: 0, max: 1 }
+    outputs: like_roll
+
+  - use: std/http@v1
+    when: "${{ feed.status }} == 200 && ${{ like_roll }} < 0.15"
+    with:
+      method: POST
+      url: "https://api.example.com/posts/${{ post.id }}/like"
+      headers: { Authorization: "Bearer ${{ user.token }}" }
+```
+
+## Conditional steps: `if:` / `when:`
+
+Any step accepts an `if:` or `when:` field. The two are **equivalent
+aliases**; declaring both on one step is a **parse error** — pick one name
+and use it consistently.
+
+`${{ ... }}` placeholders and `${...}` generator tokens in the condition
+expand first; the result is evaluated as:
+
+- a **comparison** — `==`, `!=`, `<`, `<=`, `>`, `>=`; numeric when both
+  sides parse as numbers, string comparison otherwise (quote literals with
+  `'…'` if you like);
+- or a **bare value** — false when it is empty, `false`, `0`, or `null`,
+  true otherwise.
+
+Clauses combine with `&&` and `||` (`&&` binds tighter; no parentheses):
+
+```yaml
+  - use: std/http@v1
+    when: "${{ feed.status }} == 200 && ${{ like_roll }} < 0.15"
+    with: { method: POST, url: "https://api.example.com/posts/1/like" }
+```
+
+A **skipped** step produces no output, records no metrics, and leaves
+`__last__` untouched — later steps see the output of the last step that
+actually ran. Conditions that depend on a skipped step's output therefore
+see the previous value; store outputs you test in `when:` under explicit
+`outputs:` names.
+
+Typical uses: `when: "${{ __iter__ }} == 0"` for per-VU setup (log in once,
+then reuse the token), probability rolls like the example above, and
+guarding a follow-up request on a preceding status.
+
+## `std/random@v1`
+
+Generate one numeric value. The output is the number itself, ready for
+`${{ name }}` interpolation in later steps:
+
+```yaml
+steps:
+  - use: std/random@v1
+    with: { type: integer, min: 1, max: 100 }
+    outputs: quantity
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `type` | string | **required** | `integer` (inclusive `[min, max]`) or `float` (`[min, max)`) |
+| `min` | number | **required** | Lower bound; must not exceed `max` |
+| `max` | number | **required** | Upper bound; must not be below `min` |
+
+Equal bounds return that constant. A run `seed:` makes the sequence
+reproducible; each VU gets its own deterministic sequence.
+
+Unlike the `${rand(a,b)}` generator token — which expands inside a single
+message — `std/random@v1` is a **step**: its value lands in a named output,
+so later steps can read it, test it in `when:`, and feed it into parameters
+that interpolation alone cannot reach.
+
+## Dynamic sleeps
+
+`std/sleep@v1` accepts a number or a string for `ms` / `seconds`, and
+`${{ ... }}` values resolve before the action runs — so a `std/random@v1`
+output becomes a think time directly:
+
+```yaml
+steps:
+  - use: std/random@v1
+    with: { type: float, min: 3, max: 7 }
+    outputs: think_time
+  - use: std/sleep@v1
+    with: { seconds: "${{ think_time }}" }
+```
+
+A string that is not a number after expansion fails the step.
+
+## Per-VU variables
+
+Two built-ins expose where a step is running:
+
+- `${{ __vu__ }}` — this VU's **1-based** id;
+- `${{ __iter__ }}` — this VU's **0-based** iteration counter
+
+(the k6 `__VU` / `__ITER` equivalents). A stored output of the same name
+wins, so avoid naming your `outputs:` `__vu__` or `__iter__`.
+
+They are the building blocks for per-VU fixture sharding
+(`index: "${{ __vu__ }}", index_offset: -1` maps VU ids onto zero-based
+array entries, exactly `(VU-1) % length`) and for once-per-VU logic via
+`when: "${{ __iter__ }} == 0"`.
+
+## `std/pick@v1`
+
+Pick one element of a JSON array — a random post from a feed response, or a
+per-VU test user from a fixture file:
+
+```yaml
+steps:
+  - use: std/pick@v1
+    with: { file: fixtures/users.json, index: "${{ __vu__ }}", index_offset: -1 }
+    outputs: user
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `from` | array or string | one of `from`/`file` | The array, or a string holding a JSON array (`"${{ feed.body.posts }}"`) |
+| `file` | string (path) | one of `from`/`file` | A JSON array file, parsed once per process and cached by `(mtime, size)` like `std/file-read@v1`. Requires `allow_file_actions: true`, honours `fs_root` |
+| `index` | integer or string | random | Element index, wrapping modulo the array length. Omitted → uniformly random |
+| `index_offset` | integer or string | `0` | Signed offset applied to `index` **before** wrapping; negative values wrap too |
+
+**Output**: the picked element itself, so `${{ user.token }}` walks into it
+directly.
+
+Notes:
+
+- `file` reads share the **process-wide JSON cache** with
+  `std/read-json@v1` — the first iteration pays the read and parse, later
+  iterations across all VUs hit RAM.
+- Leave `index` out for a uniform random pick (reproducible under a run
+  `seed:`), or generate the index through an explicit `std/random@v1` step
+  when you want the index itself as an output.
+- A document that is not a JSON array, an empty array, or a non-integer
+  `index` fails the step.
+
+## `std/pick` vs `@std/json` vs literal paths
+
+Three mechanisms touch JSON data — they are complementary, not overlapping:
+
+- **Literal body paths** — `${{ feed.body.posts[0].id }}` in `with:` /
+  `check:` — parse a string leaf as JSON on demand and walk a *fixed*
+  jq-style path. The index in `[0]` is a **literal**: it cannot come from a
+  variable. Use these when the position is known at authoring time.
+- **`std/pick@v1`** — the answer when the index is **dynamic**: a per-VU id,
+  a random roll, a value computed by an earlier step. It selects the
+  element and exposes it as a step output for later steps to walk into.
+- **`@std/json@v1`** — a *library* of generator tokens
+  (`${json.read(...)}`, `${json.pick(...)}`) that expand inside payload
+  strings, for file-backed values injected directly into a message without
+  a step. See [Libraries](/docs/concepts/libraries).
+
+Rule of thumb: fixed path into a file → `std/read-json@v1` or
+`${json.read(...)}`; fixed path into a response → literal body path; dynamic
+selection from an array → `std/pick@v1`.
+
+## Next steps
+
+- [File steps](/docs/concepts/files) — `std/read-json@v1`, the shared cache,
+  and the jq-style query grammar.
+- [Libraries](/docs/concepts/libraries) — the `@std/random` and `@std/json`
+  generator tokens for in-payload values.
+- The engine's
+  [YAML reference](https://github.com/Perfscale/perfscale/blob/main/docs/yaml-reference.md)
+  — the full step field and condition grammar.

@@ -160,6 +160,58 @@ Like `@std/random@v1`, `@std/json@v1` is **opt-in**: nothing is
 auto-registered — without the `libraries:` entry above, `${json.*}` tokens
 do not resolve.
 
+## Config extensions: library-owned top-level keys
+
+A WASM library can **claim one top-level config key** and validate its value
+against a JSON Schema the library itself declares (issue #10) — for example
+a connection profile shared by all of the library's functions:
+
+```yaml
+libraries:
+  - use: ./configlib.wasm
+    capabilities: []
+configlib:                    # the key the library's config-schema claims
+  endpoint: https://api.test  # validated against the library's schema
+  pool_size: 4
+```
+
+The library declares the claim with a schema like:
+
+```json
+{ "key": "configlib",
+  "schema": { "type": "object",
+              "properties": { "endpoint": { "type": "string" },
+                              "pool_size": { "type": "integer", "minimum": 1 } },
+              "required": ["endpoint"],
+              "additionalProperties": false } }
+```
+
+Semantics:
+
+- At **lint and run start** the engine loads the declared libraries,
+  registers their claimed keys, and validates each block against the
+  library's schema — fail-fast, with schema errors spelled out.
+- The block is **optional**: when the key is absent from the config, the
+  library's `extensions` simply does not contain it — treat it as
+  "feature off" in `init()`.
+- Every top-level key no loaded library claims is still a **hard error** —
+  the unknown-key typo guard lives in this check.
+- Keys follow the alias grammar `[a-z][a-z0-9_]*`. A key colliding with a
+  built-in config key, or claimed by **two libraries** in one run, is a hard
+  error.
+- The validated block reaches the guest in the run settings' `extensions`
+  object — in the TS SDK,
+  `defineLibrary({ configSchema: { key, schema }, ... })` declares the block
+  and handlers read it as `ctx.settings.extensions["configlib"]`;
+  `perfscale-library-build` picks the `perfscale-library-config` world
+  automatically when `configSchema` is present. In Rust, the main
+  `export_library!` macro currently targets the base world — export
+  `config-schema` directly against the `perfscale-library-config` WIT world
+  to ship a schema.
+
+Not in v1: interpolation inside extension blocks, and schema evolution
+across `perfscale.lock` pins.
+
 ## Capabilities and the sandbox
 
 Custom libraries run in a wasmtime sandbox under a **fail-closed**
