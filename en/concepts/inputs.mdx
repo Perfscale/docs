@@ -1,0 +1,72 @@
+---
+title: Typed inputs
+description: Declare typed run parameters in the config and override them at launch with -i and env files — validated before the run starts
+section: Concepts
+sectionOrder: 2
+order: 25
+---
+
+## Overview
+
+The same scenario usually runs against different environments, user counts,
+and options. Instead of editing YAML or juggling environment variables, a
+config can declare **typed inputs**; steps read them as
+`${{ inputs.<name> }}`, and the CLI sets them at launch:
+
+```yaml
+# config.yaml
+inputs:
+  users: number                                    # short form — required, no default
+  host: { type: string, default: localhost }
+  verbose: { type: bool, default: false }          # accepts 0/1/false/true
+  env: { type: choice, options: [staging, prod], default: staging }
+  pacing_ms: { type: number, min: 1, max: 10000 }  # bounds (number only)
+```
+
+```yaml
+# test.yaml
+steps:
+  - use: std/http@v1
+    with:
+      url: "https://${{ inputs.host }}/api/orders?env=${{ inputs.env }}"
+```
+
+## Setting values
+
+```sh
+perfscale run -f test.yaml -c config.yaml -i users=10 -i env=prod
+perfscale run -f test.yaml -c config.yaml -i users=10,env=prod   # comma form
+perfscale run -f test.yaml -c config.yaml -e staging.env          # KEY=VALUE file
+perfscale lint config.yaml -i users=10    # prints the effective resolved values
+```
+
+A comma inside a value is escaped as `\,` (a literal backslash is `\\`).
+
+## Precedence
+
+Highest wins:
+
+1. `-i key=value` on the command line
+2. `-e file.env` env file — only keys that name a declared input are read,
+   so a shared `.env` with unrelated variables is fine
+3. the declaration's `default:`
+
+## Validation
+
+Everything is checked **before the run starts** — at `perfscale lint` and at
+run start:
+
+- a required input (no `default:`) with no value,
+- an unknown `-i` key,
+- a type mismatch (`users=ten`),
+- a number outside `min`/`max`,
+- a `choice` value outside `options`.
+
+Each is a hard error, so a typo never turns into a half-configured run.
+
+## Limits
+
+- Inputs are fixed for the whole run.
+- They interpolate in step `with:` / `check:` payloads. Load-shape scalars
+  (`vus:`, `duration:`) stay statically typed for now — input-driven load
+  shapes are a follow-up.

@@ -1,0 +1,72 @@
+---
+title: Типизированные inputs
+description: Объявите типизированные параметры прогона в конфиге и переопределяйте их при запуске через -i и env-файлы — с проверкой до старта
+section: Концепции
+sectionOrder: 2
+order: 25
+---
+
+## Обзор
+
+Один и тот же сценарий обычно гоняют на разных окружениях, с разным числом
+пользователей и опциями. Вместо правки YAML и жонглирования переменными
+окружения конфиг может объявить **типизированные inputs**: шаги читают их
+как `${{ inputs.<name> }}`, а CLI задаёт значения при запуске:
+
+```yaml
+# config.yaml
+inputs:
+  users: number                                    # короткая форма — обязательный, без default
+  host: { type: string, default: localhost }
+  verbose: { type: bool, default: false }          # принимает 0/1/false/true
+  env: { type: choice, options: [staging, prod], default: staging }
+  pacing_ms: { type: number, min: 1, max: 10000 }  # границы (только для number)
+```
+
+```yaml
+# test.yaml
+steps:
+  - use: std/http@v1
+    with:
+      url: "https://${{ inputs.host }}/api/orders?env=${{ inputs.env }}"
+```
+
+## Как задать значения
+
+```sh
+perfscale run -f test.yaml -c config.yaml -i users=10 -i env=prod
+perfscale run -f test.yaml -c config.yaml -i users=10,env=prod   # через запятую
+perfscale run -f test.yaml -c config.yaml -e staging.env          # файл KEY=VALUE
+perfscale lint config.yaml -i users=10    # печатает итоговые значения
+```
+
+Запятая внутри значения экранируется как `\,` (обратный слэш — `\\`).
+
+## Приоритет
+
+Побеждает верхний:
+
+1. `-i key=value` в командной строке
+2. env-файл `-e file.env` — читаются только ключи, совпадающие с
+   объявленными inputs, так что общий `.env` с другими переменными подойдёт
+3. `default:` из объявления
+
+## Проверка
+
+Всё проверяется **до старта прогона** — в `perfscale lint` и при запуске:
+
+- обязательный input (без `default:`) без значения,
+- неизвестный ключ `-i`,
+- несоответствие типа (`users=ten`),
+- число вне `min`/`max`,
+- значение `choice` вне `options`.
+
+Каждый случай — жёсткая ошибка, поэтому опечатка не превращается в
+полунастроенный прогон.
+
+## Ограничения
+
+- Inputs фиксированы на весь прогон.
+- Они подставляются в `with:` / `check:` шагов. Скалярные параметры формы
+  нагрузки (`vus:`, `duration:`) пока типизированы статически — формы
+  нагрузки на основе inputs будут позже.
