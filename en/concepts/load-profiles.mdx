@@ -1,0 +1,126 @@
+---
+title: Load profiles
+description: Fixed VUs, ramping stages, and the arrival-rate open model — how to shape load, and how to read dropped iterations and queue wait
+section: Concepts
+sectionOrder: 2
+order: 24
+---
+
+## Overview
+
+The native engine shapes load with one of three profiles, set in the config
+file (`-c config.yaml`):
+
+| Profile | Config | Model | Use it for |
+|---|---|---|---|
+| Fixed | `vus` + `duration` | Closed: N workers loop the steps | Steady load, soak tests |
+| Ramping VUs | `stages:` | Closed: the VU count changes over time | Ramp-up, spike, ramp-down |
+| Arrival-rate | `arrival:` | Open: iterations start on a schedule | "N requests per second", capacity search |
+
+`stages` and `arrival` replace `vus`/`duration` (lint warns when both are
+set) and are mutually exclusive; the run length is the sum of the stage
+durations. Both are native-engine only: with `--locust` they are rejected,
+with `--k6` the config file is ignored.
+
+## Fixed
+
+`vus` workers loop the steps for `duration` — the default.
+
+```yaml
+vus: 10
+duration: 5m
+```
+
+## Ramping VUs (`stages:`)
+
+The target VU count interpolates linearly between stage targets: the first
+stage ramps from 0, each next one from the previous stage's `target`.
+Scale-down is graceful — a VU being ramped away finishes its in-flight step
+and exits at the next step boundary.
+
+```yaml
+stages:
+  - { duration: 30s, target: 10 }  # ramp 0→10 VUs
+  - { duration: 1m,  target: 50 }  # ramp 10→50 VUs
+  - { duration: 30s, target: 0 }   # ramp down, drain to zero
+```
+
+## Arrival-rate (`arrival:`)
+
+In a closed model a slow system *slows the load down*: every VU waits for its
+response before starting the next iteration, so the request rate drops
+exactly when the system struggles. The arrival-rate profile is an **open
+model**: the engine holds an iterations-per-second schedule and scales a
+worker pool to keep up — new iterations start on time even when the system
+under test slows down, the way real users keep arriving.
+
+```yaml
+arrival:
+  max_vus: 100              # worker pool cap — required, ≥ 1
+  pre_allocated_vus: 10     # workers spawned up front (default 1); grows lazily to max_vus
+  stages:
+    - { duration: 30s, rate: 5 }    # ramp 0→5 iterations/sec
+    - { duration: 1m,  rate: 20 }   # ramp 5→20 iterations/sec
+```
+
+`rate` ramps linearly between stages, starting from 0; fractions are allowed
+(`0.5` = one iteration every 2 s). For a **constant** rate, start with a
+very short stage at the target, then hold it:
+
+```yaml
+arrival:
+  max_vus: 256
+  pre_allocated_vus: 256
+  stages:
+    - { duration: 1ms, rate: 1000 }   # jump to 1000/s
+    - { duration: 5m,  rate: 1000 }   # hold
+```
+
+### Dropped iterations
+
+When an iteration is due and all `max_vus` workers are busy (one more may
+wait in line), the iteration is **dropped**: counted in the
+`dropped_iterations` metric, with a warning logged at most once per 5 s.
+Raise `max_vus` or lower the rate when it grows — or treat the rate where
+drops start as the system's capacity.
+
+`dropped_iterations` is always emitted, even at 0, so a gate resolves on
+clean runs:
+
+```yaml
+after:
+  - use: std/thresholds@v1
+    with:
+      dropped_iterations: ["count==0"]
+```
+
+> **Since v0.29.0** drops are counted only when the pool is genuinely busy.
+> Earlier versions also dropped iterations while workers were idle at high
+> rates (the scheduler hands out due iterations in bursts), so a 10 000/s
+> schedule could deliver far less than asked. If an older run showed many
+> drops at low worker utilisation, re-run it on v0.29.0+.
+
+### Reading latency under an open model
+
+`http_req_duration` measures pure server time — only requests that actually
+started. Under saturation it keeps looking healthy while users wait. Arrival
+runs record the hidden half too:
+
+| Metric | What it measures |
+|---|---|
+| `engine_arrival_queue_wait_ms` | Scheduled → actual iteration start: the queueing classic latency metrics omit (coordinated omission) |
+| `engine_arrival_iteration_ms` | Queue wait + iteration body, from the *scheduled* start — the end-to-end latency a user would see |
+| `dropped_iterations` | Iterations no worker could start |
+
+Judge an overloaded arrival run by all three together.
+
+## What the summary shows
+
+For `stages`/`arrival` runs the summary's `vus` line reports the observed
+concurrency (`vus....: <last> min=<min> max=<max>`), the periodic `[stats]`
+line gains a `vus=N` field, and summary exports report `vus: null` with
+`duration` set to the summed stage length.
+
+Stage durations use the `"500ms"` / `"30s"` / `"1m30s"` / `"1h"` grammar and
+are validated strictly: an unparseable or zero stage duration fails the run
+and `perfscale lint`.
