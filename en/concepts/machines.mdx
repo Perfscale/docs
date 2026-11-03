@@ -31,6 +31,28 @@ A **machine** is any host — bare metal server, VM, or container — that runs 
 | `cpuCores` | int? | Number of CPU cores |
 | `memoryGb` | int? | RAM in gigabytes |
 
+## Linux network tuning
+
+Starting with **perfscaled v0.7.0**, Linux agents enable two kernel settings
+by default after a successful heartbeat:
+
+```sh
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_tw_reuse = 1
+```
+
+The wider ephemeral-port range and `TIME_WAIT` reuse allow higher outbound
+connection rates. The agent saves the original values in
+`/etc/perfscale/network-tuning.json` (mode `0600`) before changing them and
+restores them when tuning is disabled. Writing these settings requires
+sufficient privileges; a failure is reported without stopping the agent.
+Non-Linux machines report the feature as unsupported and are not changed.
+
+The **Machines → machine detail** page has a per-machine opt-out. Its status
+shows whether tuning is `pending`, `applied`, `disabled`, `error`, or
+`unsupported`. Disabling takes effect as a restore request on a subsequent
+heartbeat; the saved state also survives agent restarts.
+
 ## Registering a machine
 
 Machines are registered through the API or the admin console. Each machine is associated with a tenant and communicates back over a persistent WebSocket connection (coming in a future release — currently managed manually).

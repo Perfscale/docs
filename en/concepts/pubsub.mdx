@@ -118,8 +118,15 @@ phase → consumed) and — since v0.27.0 — the `pubsub_publish_ms` trend (the
 transport's publish-call latency, one sample per published message) and
 `pubsub_connect_ms` (broker connect time, one sample per exchange that
 actually opened a connection — every exchange under the default
-`scope: exchange`, only each VU's first under `scope: vu`). Gate a run on
-them with `std/thresholds@v1`:
+`scope: exchange`, only each VU's first under `scope: vu`).
+
+`pubsub_errors` is emitted on every exchange and adds the synchronous failure
+flag to driver-reported asynchronous failures — Kafka delivery errors with
+`flush: none`, MQTT ack timeouts, or Redis pipeline error replies. It can
+therefore exceed `1` for one exchange. Asynchronous errors remain visible in
+the counter without failing the step.
+
+Gate a run on them with `std/thresholds@v1`:
 
 ```yaml
   - use: std/thresholds@v1

@@ -173,8 +173,9 @@ steps:
 ```
 
 `mqtts://` uses rustls with webpki roots — the broker certificate must chain
-to a public CA and match the host in the URL. QoS 1/2 publishes count as
-published once handed to the client's event loop, not on PUBACK/PUBCOMP.
+to a public CA and match the host in the URL. With the default `flush: message`,
+QoS 1/2 publish latency includes PUBACK/PUBCOMP; with `flush: none`, it measures
+only the handoff to the client's event loop.
 
 ## `driver: kafka`
 
@@ -298,13 +299,34 @@ percentiles and the failure rate:
 
 ## Connection posture
 
-Like the built-in `nats` driver, every exchange is a full cycle: connect →
-subscribe → publish → collect → drop. Connections are **not** pooled across
-steps or VU iterations — under load each VU opens fresh broker connections
-per iteration. That keeps the e2e measurement honest (connect cost included),
-but brokers see real connection churn; size test rates accordingly, and prefer
-`duration`-bounded runs over unbounded iteration counts when pointing at a
-shared staging broker.
+The default `scope: exchange` is a full connect → subscribe → publish →
+collect → drop cycle per exchange, so `pubsub_connect_ms` includes the real
+connection cost. With `scope: vu`, each VU keeps one broker connection and
+reuses it across exchanges; only its first exchange records a connect sample.
+Use the warm posture for sustained throughput and the default when connection
+churn is part of the measurement.
+
+## Flush and asynchronous errors
+
+The default `flush: message` waits for the transport acknowledgement, so
+`pubsub_publish_ms` measures the full publish round trip. `flush: none`
+measures only the local enqueue:
+
+| Driver | `flush: message` | `flush: none` and exchange cleanup |
+|---|---|---|
+| Kafka | A `FutureProducer` waits for each delivery result | A `BaseProducer` enqueues without awaiting delivery; with `scope: exchange`, one closing flush bounded by `options.message_timeout_ms` runs before the producer drops |
+| Redis | Waits for each PUBLISH subscriber-count reply | Writes the publishes as one non-atomic pipeline; pending replies drain once before an exchange-scoped connection closes |
+| MQTT | QoS 1/2 await PUBACK/PUBCOMP; QoS 0 has no ack to await | Enqueues without awaiting QoS 1/2 acknowledgements; exchange-scoped clients run one bounded ack drain and a graceful disconnect |
+
+Cached `scope: vu` connections and producers are not flushed or drained per
+exchange; delivery continues in the background. With `scope: exchange`, the
+closing flush/drain is not included in the enqueue-only publish samples.
+
+`pubsub_errors` is emitted on every exchange and combines the synchronous
+failure flag with asynchronous driver errors: Kafka delivery-error callbacks,
+Redis pipeline error replies, and MQTT ack timeouts or drain shortfalls. The
+counter can exceed `1` for one exchange. These asynchronous errors are counted
+without failing the step, so `flush: none` does not hide delivery failures.
 
 ## Related
 
