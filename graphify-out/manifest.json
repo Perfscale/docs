@@ -478,5 +478,15 @@
     "mtime": 1793629278.6661859,
     "ast_hash": "b4545663cb5e09b63af2a4de3debad2b",
     "semantic_hash": "b4545663cb5e09b63af2a4de3debad2b"
+  },
+  "/Users/vitaliharadkou/Documents/git/perfscale-org/.worktrees/docs-issue12/en/concepts/coding-agents.mdx": {
+    "mtime": 1793726880.0508611,
+    "ast_hash": "2fab43ce7db90a2444753522586dc083",
+    "semantic_hash": "2fab43ce7db90a2444753522586dc083"
+  },
+  "/Users/vitaliharadkou/Documents/git/perfscale-org/.worktrees/docs-issue12/ru/concepts/coding-agents.mdx": {
+    "mtime": 1793726880.0508614,
+    "ast_hash": "0fd30500ae2c0f2db51b81d03eb0afdc",
+    "semantic_hash": "0fd30500ae2c0f2db51b81d03eb0afdc"
   }
 }

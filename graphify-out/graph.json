@@ -195,6 +195,49 @@
         "confidence": "INFERRED",
         "confidence_score": 0.85,
         "source_file": "en/getting-started/thresholds.mdx"
+      },
+      {
+        "id": "concepts_coding_agents_hyperedge_embedded_skills",
+        "label": "Three embedded skills shipped by init-skills",
+        "nodes": [
+          "concepts_coding_agents_init_skills",
+          "concepts_coding_agents_skill_perfscale_cli",
+          "concepts_coding_agents_skill_library_sdk",
+          "concepts_coding_agents_skill_migration_k6"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "en/concepts/coding-agents.mdx"
+      },
+      {
+        "id": "concepts_coding_agents_hyperedge_three_agents",
+        "label": "Planner \u2192 generator \u2192 healer agent pipeline",
+        "nodes": [
+          "concepts_coding_agents_agent_test_planner",
+          "concepts_coding_agents_agent_test_generator",
+          "concepts_coding_agents_agent_test_healer",
+          "concepts_coding_agents_mcp_server"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "en/concepts/coding-agents.mdx"
+      },
+      {
+        "id": "concepts_coding_agents_hyperedge_safety_rules",
+        "label": "Small-run safety rules baked into agents",
+        "nodes": [
+          "concepts_coding_agents_safety_small_runs",
+          "concepts_coding_agents_safety_healer_thresholds",
+          "concepts_coding_agents_agent_test_generator",
+          "concepts_coding_agents_agent_test_healer",
+          "concepts_coding_agents_threshold_prompt"
+        ],
+        "relation": "implement",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "en/concepts/coding-agents.mdx"
       }
     ]
   },
@@ -209,7 +252,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Self-contained copy of Perfscale/infra's reusable-update-aio.yml because this repo is public and public repos cannot call reusable workflows in private repos; logic must be kept in sync with reusable-update-aio.yml.",
-      "community": 19,
+      "community": 20,
       "norm_label": "update aio github actions workflow",
       "id": "workflows_update_aio_workflow"
     },
@@ -222,7 +265,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 19,
+      "community": 20,
       "norm_label": "perfscale/aio repository (docs gitlink bump target)",
       "id": "workflows_update_aio_aio_repo"
     },
@@ -471,7 +514,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "custom reporters \u2014 wasm reporter components",
       "id": "concepts_custom_reporters_document"
     },
@@ -484,7 +527,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "perfscale:reporter@0.1.0 wit contract",
       "id": "concepts_custom_reporters_wit_contract"
     },
@@ -498,7 +541,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Guests get no WASI filesystem or network access; file names must be relative traversal-safe paths; guest errors never fail the run.",
-      "community": 4,
+      "community": 5,
       "norm_label": "reporter sandbox \u2014 emit-file is the only output channel",
       "id": "concepts_custom_reporters_sandbox"
     },
@@ -511,7 +554,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "@perfscale/library-sdk typescript sdk",
       "id": "concepts_custom_reporters_library_sdk"
     },
@@ -589,7 +632,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "environment variables \u2014 workspace registry with masking",
       "id": "concepts_environment_variables_document"
     },
@@ -603,7 +646,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Masking is value-based, not key-based; it protects logs and the UI but is not an access-control mechanism \u2014 workspace members can still read values over the API.",
-      "community": 4,
+      "community": 5,
       "norm_label": "value-based log masking guarantee (visible vs masked)",
       "id": "concepts_environment_variables_masking"
     },
@@ -616,7 +659,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "machine-side ${{ env.* }} interpolation",
       "id": "concepts_environment_variables_env_interpolation"
     },
@@ -762,7 +805,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "graphql load testing \u2014 std/graphql@v1",
       "id": "concepts_graphql_document"
     },
@@ -775,7 +818,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "schema-aware validation via introspection or schema_file",
       "id": "concepts_graphql_schema_validation"
     },
@@ -788,7 +831,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "graphql failure semantics (errors in 200 ok body)",
       "id": "concepts_graphql_failure_semantics"
     },
@@ -801,7 +844,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "grpc load testing \u2014 std/grpc* steps",
       "id": "concepts_grpc_document"
     },
@@ -814,7 +857,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "dynamic protobuf schemas (descriptor_set or server reflection)",
       "id": "concepts_grpc_dynamic_schema"
     },
@@ -827,7 +870,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "live channel steps (grpc-connect/call/stream-open/send/recv/close)",
       "id": "concepts_grpc_live_channel"
     },
@@ -840,7 +883,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "grpc_* metric families (grpc_req_duration, grpc_msg_rtt, grpc_msgs_*)",
       "id": "concepts_grpc_metrics"
     },
@@ -853,7 +896,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "http load generation \u2014 std/http@v1",
       "id": "concepts_http_document"
     },
@@ -866,7 +909,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "connection pooling modes (per-vu, shared, dedicated)",
       "id": "concepts_http_connection_pooling"
     },
@@ -880,7 +923,7 @@
       "author": null,
       "contributor": null,
       "rationale": "A single (source IP, destination IP, port) tuple caps at ~64k concurrent connections due to the ephemeral port range; binding several local addresses multiplies that budget.",
-      "community": 5,
+      "community": 6,
       "norm_label": "source_ips multi-source-ip traffic",
       "id": "concepts_http_source_ips"
     },
@@ -933,7 +976,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 15,
+      "community": 16,
       "norm_label": "typed inputs \u2014 declared run parameters",
       "id": "concepts_inputs_document"
     },
@@ -946,7 +989,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 15,
+      "community": 16,
       "norm_label": "input validation at lint and run start (types, bounds, choices)",
       "id": "concepts_inputs_validation"
     },
@@ -1025,7 +1068,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "live metrics streaming \u2014 during-run report stream",
       "id": "concepts_live_metrics_document"
     },
@@ -1039,7 +1082,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Generating load always wins over reporting it: snapshots go over a bounded channel and a full channel drops the oldest snapshot; cumulative snapshots mean no information is permanently lost.",
-      "community": 4,
+      "community": 5,
       "norm_label": "load-generator protection (bounded queue, cpu gate, drop-oldest)",
       "id": "concepts_live_metrics_backpressure"
     },
@@ -1052,7 +1095,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "streaming reporters (prometheus-rw, otel, serve)",
       "id": "concepts_live_metrics_streaming_reporters"
     },
@@ -1065,7 +1108,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 13,
       "norm_label": "load profiles \u2014 fixed, stages, arrival-rate",
       "id": "concepts_load_profiles_document"
     },
@@ -1079,7 +1122,7 @@
       "author": null,
       "contributor": null,
       "rationale": "In a closed model a slow system slows the load down; the open model holds an iterations-per-second schedule so new iterations start on time even when the system under test degrades.",
-      "community": 12,
+      "community": 13,
       "norm_label": "arrival-rate open model with dropped_iterations",
       "id": "concepts_load_profiles_arrival_rate"
     },
@@ -1092,7 +1135,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 13,
       "norm_label": "open-model latency metrics (engine_arrival_queue_wait_ms, engine_arrival_iteration_ms)",
       "id": "concepts_load_profiles_queue_metrics"
     },
@@ -1144,7 +1187,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "protocol metrics \u2014 dashboard protocol detection",
       "id": "concepts_protocol_metrics_document"
     },
@@ -1157,7 +1200,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "protocol detection order (fix > grpc > websocket > http > generic)",
       "id": "concepts_protocol_metrics_detection"
     },
@@ -1170,7 +1213,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 13,
+      "community": 14,
       "norm_label": "pub/sub load testing \u2014 std/pubsub@v1",
       "id": "concepts_pubsub_document"
     },
@@ -1183,7 +1226,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 13,
+      "community": 14,
       "norm_label": "pub/sub drivers (memory, nats; pro: kafka/redis/mqtt)",
       "id": "concepts_pubsub_drivers"
     },
@@ -1196,7 +1239,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 13,
+      "community": 14,
       "norm_label": "connection posture (scope) and publish ack mode (flush)",
       "id": "concepts_pubsub_scope_flush"
     },
@@ -1209,7 +1252,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "reports \u2014 end-of-run report@v1 and built-in reporters",
       "id": "concepts_reports_document"
     },
@@ -1222,7 +1265,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "report@v1 canonical document schema",
       "id": "concepts_reports_report_v1"
     },
@@ -1235,7 +1278,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "built-in reporters (json, junit, html, prometheus-rw, otel, serve)",
       "id": "concepts_reports_builtin_reporters"
     },
@@ -1249,7 +1292,7 @@
       "author": null,
       "contributor": null,
       "rationale": "A push that fails at the end of the run is logged and counted in engine_report_errors, but the run still completes and keeps its exit code.",
-      "community": 4,
+      "community": 5,
       "norm_label": "reporter failure policy (config errors fail fast, delivery best-effort)",
       "id": "concepts_reports_failure_policy"
     },
@@ -1511,7 +1554,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "std/ws@v1 one-shot websocket session",
       "id": "concepts_websocket_ws_step"
     },
@@ -1524,7 +1567,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "live ws connection (std/ws-connect/send/recv/ping/close@v1)",
       "id": "concepts_websocket_live_connection"
     },
@@ -1537,7 +1580,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 17,
+      "community": 18,
       "norm_label": "dynamic ${...} message tokens (${seq}, ${uuid}, ${rand}, ${choice}, ...)",
       "id": "concepts_websocket_dynamic_tokens"
     },
@@ -1551,7 +1594,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Waiting on a server-push stream is deliberately not counted as latency \u2014 it would poison the shared percentiles",
-      "community": 3,
+      "community": 4,
       "norm_label": "ws_msg_rtt application-level message rtt metric",
       "id": "concepts_websocket_ws_msg_rtt"
     },
@@ -1564,7 +1607,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "message assertions via std/check@v1 (any quantifier, by-index addressing)",
       "id": "concepts_websocket_assertions"
     },
@@ -1578,7 +1621,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Exit code 0 means the run completed even if requests or checks failed \u2014 a green step is not a green SLA, so pipelines must gate on the summary-json output",
-      "community": 3,
+      "community": 4,
       "norm_label": "perfscale/github-action (run-and-gate workflow step)",
       "id": "getting_started_ci_cd_github_action"
     },
@@ -1591,7 +1634,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "gitlab ci templates (.perfscale:run / .perfscale:gate)",
       "id": "getting_started_ci_cd_gitlab_ci"
     },
@@ -1630,7 +1673,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "database load testing from the cli (postgresql, mysql/mariadb, sqlite)",
       "id": "getting_started_database_cli_database_testing"
     },
@@ -1644,7 +1687,7 @@
       "author": null,
       "contributor": null,
       "rationale": "prepared is opt-in because cached prepared statements are incompatible with transaction-mode poolers such as PgBouncer and Supabase Supavisor",
-      "community": 3,
+      "community": 4,
       "norm_label": "std/db-connect@v1 (persistent/per-query modes, scope iteration|vu, prepared cache)",
       "id": "getting_started_database_cli_db_connect"
     },
@@ -1658,7 +1701,7 @@
       "author": null,
       "contributor": null,
       "rationale": "SQL text is never interpolated \u2014 all values move through params \u2014 so scenarios cannot build injectable SQL",
-      "community": 3,
+      "community": 4,
       "norm_label": "std/db-query@v1 (parameterized sql, bind params, max_rows, store_rows)",
       "id": "getting_started_database_cli_db_query"
     },
@@ -1671,7 +1714,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "std/db-tx-begin/commit/rollback@v1 transaction steps",
       "id": "getting_started_database_cli_db_tx"
     },
@@ -1684,7 +1727,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "db_* metric family (db_connect_duration, db_query_duration, db_rows, db_errors_*)",
       "id": "getting_started_database_cli_db_metrics"
     },
@@ -1697,7 +1740,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "graphql load testing from the cli",
       "id": "getting_started_graphql_cli_graphql_testing"
     },
@@ -1710,7 +1753,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "std/graphql@v1 (schema-aware validation via introspection)",
       "id": "getting_started_graphql_cli_graphql_step"
     },
@@ -1723,7 +1766,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "graphql_* metric family (graphql_req_duration, graphql_op_<name>_duration, graphql_errors)",
       "id": "getting_started_graphql_cli_graphql_metrics"
     },
@@ -1736,7 +1779,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "grpc load testing from the cli (descriptor set or server reflection)",
       "id": "getting_started_grpc_cli_grpc_testing"
     },
@@ -1749,7 +1792,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "std/grpc-* actions (connect, call, stream-open/send/recv/close)",
       "id": "getting_started_grpc_cli_grpc_actions"
     },
@@ -1762,7 +1805,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "grpc_* metric family (grpc_req_duration, grpc_msg_rtt, grpc_msgs_sent/received)",
       "id": "getting_started_grpc_cli_grpc_metrics"
     },
@@ -1775,7 +1818,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "perfscale saas load testing platform",
       "id": "getting_started_index_perfscale"
     },
@@ -1814,7 +1857,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "pnpm dx:init one-time setup (deps, docker services, db schema)",
       "id": "getting_started_installation_dx_init"
     },
@@ -1827,7 +1870,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "dev stack (next.js :3000, rust bff :8090, postgresql, keycloak)",
       "id": "getting_started_installation_dev_stack"
     },
@@ -1866,7 +1909,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "sign-in & sso account linking (yandex, gitflic, google via keycloak)",
       "id": "getting_started_platform_sso"
     },
@@ -1879,7 +1922,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "demo workspace (demo@perfscale.ru, 3 machines, sample k6 test)",
       "id": "getting_started_quick_start_demo_workspace"
     },
@@ -1892,7 +1935,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "first run flow: trigger task, watch live metrics, view runs & logs",
       "id": "getting_started_quick_start_first_run"
     },
@@ -1906,7 +1949,7 @@
       "author": null,
       "contributor": null,
       "rationale": "A gate over an unknown metric name fails the run loudly as a config error \u2014 typos cannot silently pass an SLO",
-      "community": 3,
+      "community": 4,
       "norm_label": "std/thresholds@v1 slo gate (k6-style expressions, severity, exit codes)",
       "id": "getting_started_thresholds_thresholds_step"
     },
@@ -1932,7 +1975,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "webrtc load testing from the cli (whip publish, p2p calls)",
       "id": "getting_started_webrtc_cli_webrtc_testing"
     },
@@ -1945,7 +1988,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "webrtc_* cli metric summary (setup_ms, ttff_ms, rtt, bitrate, call errors)",
       "id": "getting_started_webrtc_cli_webrtc_metrics"
     },
@@ -1958,7 +2001,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "websocket load testing from the cli (live connection + one-shot styles)",
       "id": "getting_started_websocket_cli_websocket_testing"
     },
@@ -1971,7 +2014,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "fix protocol load testing (paid, scale/enterprise)",
       "id": "pro_features_fix_fix_protocol"
     },
@@ -1984,7 +2027,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "pro/fix@v1 session action (logon, messages, logout, timed)",
       "id": "pro_features_fix_fix_action"
     },
@@ -1997,7 +2040,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "pro/fix-config@v1 reusable connection profile",
       "id": "pro_features_fix_fix_config"
     },
@@ -2011,7 +2054,7 @@
       "author": null,
       "contributor": null,
       "rationale": "The dictionary is loaded from the venue's own spec rather than hardcoded, so custom fields resolve by name while a bare logon still works with no schema",
-      "community": 8,
+      "community": 9,
       "norm_label": "fix data dictionary loaded from venue spec (quickfix fix44.xml)",
       "id": "pro_features_fix_data_dictionary"
     },
@@ -2024,7 +2067,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 17,
+      "community": 18,
       "norm_label": "fix message variable tokens & _repeat/_interval_ms directives",
       "id": "pro_features_fix_dynamic_tokens"
     },
@@ -2037,7 +2080,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "coinapi market data fix venue (fix.coinapi.io:3303)",
       "id": "pro_features_fix_coinapi"
     },
@@ -2050,7 +2093,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "pro_llm_* itl/tpot percentile trends on std/llm@v1",
       "id": "pro_features_llm_metrics_itl_tpot"
     },
@@ -2064,7 +2107,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Prices come only from the user's PERFSCALE_LLM_PRICES(_FILE) config \u2014 the agent ships no price tables, and an invalid config warns and disables cost metrics without ever failing a run",
-      "community": 3,
+      "community": 4,
       "norm_label": "llm per-request cost estimates (pro_llm_cost_usd)",
       "id": "pro_features_llm_metrics_cost"
     },
@@ -2078,7 +2121,7 @@
       "author": null,
       "contributor": null,
       "rationale": "A clock drop next to a non-zero throttle bitmask during load is the smoking gun for thermal/power throttling of a local LLM server",
-      "community": 3,
+      "community": 4,
       "norm_label": "nvidia-smi-pro gpu collector (clocks, throttle reasons, per-process apps)",
       "id": "pro_features_llm_metrics_nvidia_smi_pro"
     },
@@ -2091,7 +2134,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "pro pub/sub drivers for std/pubsub@v1 (redis, mqtt, kafka)",
       "id": "pro_features_pubsub_pubsub_drivers"
     },
@@ -2104,7 +2147,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "redis pub/sub driver (fire-and-forget, subscribe-first)",
       "id": "pro_features_pubsub_redis_driver"
     },
@@ -2118,7 +2161,7 @@
       "author": null,
       "contributor": null,
       "rationale": "MQTT v3.1.1 is used deliberately because it is the most widely supported version; v5 is intentionally not used",
-      "community": 6,
+      "community": 7,
       "norm_label": "mqtt driver (v3.1.1, qos 0-2, rustls tls)",
       "id": "pro_features_pubsub_mqtt_driver"
     },
@@ -2132,7 +2175,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Manual partition assignment with watermarks pinned at exchange start makes the subscribe-first rule exact \u2014 a consumer-group join cannot be awaited deterministically and the lazy latest reset could skip a roundtrip's own messages",
-      "community": 6,
+      "community": 7,
       "norm_label": "kafka driver via rdkafka (manual partition assignment, sasl)",
       "id": "pro_features_pubsub_kafka_driver"
     },
@@ -2145,7 +2188,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "shared variables redis driver (cross-agent shared state)",
       "id": "pro_features_shared_redis_redis_driver"
     },
@@ -2159,7 +2202,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Every op maps to a single server-side atomic command so there is no read-modify-write pair to race and no lock primitive to deadlock",
-      "community": 6,
+      "community": 7,
       "norm_label": "one redis atomic command per op (incrby/rpush/lpop/set/get)",
       "id": "pro_features_shared_redis_atomic_ops"
     },
@@ -2172,7 +2215,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "run lifecycle: key seeding at perfscale:shared:<name>, no cross-run carry-over",
       "id": "pro_features_shared_redis_run_lifecycle"
     },
@@ -2185,7 +2228,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "soap load testing (paid, scale/enterprise)",
       "id": "pro_features_soap_soap_protocol"
     },
@@ -2198,7 +2241,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "pro/soap@v1 single-operation call",
       "id": "pro_features_soap_soap_action"
     },
@@ -2211,7 +2254,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "pro/soap-config@v1 wsdl-derived profile",
       "id": "pro_features_soap_soap_config"
     },
@@ -2225,7 +2268,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Servers send SOAP Faults with both 200 and 500 statuses, so raw HTTP success counting is a trap \u2014 the step always parses the body",
-      "community": 6,
+      "community": 7,
       "norm_label": "soap fault semantics (fault fails the step even on http 200)",
       "id": "pro_features_soap_fault_semantics"
     },
@@ -2238,7 +2281,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "webrtc pro module (full media path: ice/dtls-srtp, rtp)",
       "id": "pro_features_webrtc_webrtc_module"
     },
@@ -2251,7 +2294,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "pro/webrtc-connect@v1 (signal whip|whep|library, ice restart)",
       "id": "pro_features_webrtc_connect"
     },
@@ -2265,7 +2308,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Only AV1 is really encoded (pure-Rust rav1e) at the requested resolution/bitrate; VP8/H.264 replay a fixed 320x240 asset, so resolution is validated and warned about rather than silently faked",
-      "community": 6,
+      "community": 7,
       "norm_label": "pro/webrtc-publish@v1 (multi-track, simulcast layers, synthetic/file sources)",
       "id": "pro_features_webrtc_publish"
     },
@@ -2278,7 +2321,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "pro/webrtc-call@v1 composite p2p call between vu pairs",
       "id": "pro_features_webrtc_call"
     },
@@ -2292,7 +2335,7 @@
       "author": null,
       "contributor": null,
       "rationale": "The engine never grows per-vendor signaling code \u2014 vendor drift (LiveKit, mediasoup, Janus) lives in versioned wasm libraries",
-      "community": 6,
+      "community": 7,
       "norm_label": "custom signaling delegated to wasm libraries (signal: library)",
       "id": "pro_features_webrtc_wasm_signaling"
     },
@@ -2305,7 +2348,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "webrtc_* metrics (setup/ttff histograms, media-quality sampler, per-stage call errors)",
       "id": "pro_features_webrtc_metrics"
     },
@@ -2318,7 +2361,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "rfc 007 \u2014 webrtc design document",
       "id": "pro_features_webrtc_rfc007"
     },
@@ -2331,7 +2374,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "perfscale privacy policy (effective 2026-04-03)",
       "id": "docs_issue12_privacy_privacy_policy"
     },
@@ -2344,7 +2387,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "stripe (payment processor; raw card numbers not stored)",
       "id": "docs_issue12_privacy_stripe"
     },
@@ -2357,7 +2400,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "data retention (30-day purge after deletion; 7-year financial records)",
       "id": "docs_issue12_privacy_data_retention"
     },
@@ -2370,7 +2413,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 4,
       "norm_label": "user data rights (access, correction, deletion, portability, objection; gdpr/eu servers)",
       "id": "docs_issue12_privacy_user_rights"
     },
@@ -2552,7 +2595,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0441\u0432\u043e\u0438 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440 \u2014 wasm-\u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 perfscale:reporter@0.1.0",
       "id": "concepts_custom_reporters_doc"
     },
@@ -2565,7 +2608,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 perfscale:reporter@0.1.0 (wit, emit-file, report@v1)",
       "id": "concepts_custom_reporters_contract"
     },
@@ -2578,7 +2621,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "perfscale/allure2-reporter \u2014 production-\u043f\u0440\u0438\u043c\u0435\u0440 wasm-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u0430",
       "id": "concepts_custom_reporters_allure2"
     },
@@ -2591,7 +2634,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "perfscale/github-action",
       "id": "concepts_custom_reporters_github_action"
     },
@@ -2643,7 +2686,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f (visible vs masked, env.*)",
       "id": "concepts_environment_variables_doc"
     },
@@ -2656,7 +2699,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "${{ env.* }} \u2014 \u0447\u0442\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u043d\u043e\u0433\u043e \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f \u043c\u0430\u0448\u0438\u043d\u044b",
       "id": "concepts_environment_variables_env_interp"
     },
@@ -2786,7 +2829,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "graphql \u2014 std/graphql@v1 \u0441 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0435\u0438 \u043f\u043e \u0441\u0445\u0435\u043c\u0435",
       "id": "concepts_graphql_doc"
     },
@@ -2799,7 +2842,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "std/graphql@v1 (\u0438\u043d\u0442\u0440\u043e\u0441\u043f\u0435\u043a\u0446\u0438\u044f, schema_file, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 graphql_*)",
       "id": "concepts_graphql_action"
     },
@@ -2812,7 +2855,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "grpc \u2014 unary \u0438 client/server/bidi-\u0441\u0442\u0440\u0438\u043c\u044b, \u0434\u0438\u043d\u0430\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0445\u0435\u043c\u044b",
       "id": "concepts_grpc_doc"
     },
@@ -2825,7 +2868,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u0448\u0430\u0433\u0438 std/grpc*@v1 (grpc, grpc-connect, grpc-call, grpc-stream-*)",
       "id": "concepts_grpc_actions"
     },
@@ -2838,7 +2881,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438 \u0441\u0445\u0435\u043c\u044b: descriptor_set / server reflection",
       "id": "concepts_grpc_schema"
     },
@@ -2851,7 +2894,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "http \u2014 std/http@v1, \u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438, source_ips",
       "id": "concepts_http_doc"
     },
@@ -2864,7 +2907,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438: per-vu / shared / dedicated",
       "id": "concepts_http_pools"
     },
@@ -2903,7 +2946,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0442\u0438\u043f\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 inputs (\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d\u0438\u0435, -i, env-\u0444\u0430\u0438\u043b\u044b, \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0434\u043e \u0441\u0442\u0430\u0440\u0442\u0430)",
       "id": "concepts_inputs_doc"
     },
@@ -2981,7 +3024,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433 \u0436\u0438\u0432\u044b\u0445 \u043c\u0435\u0442\u0440\u0438\u043a (during_run, shipper, cpu-\u0433\u0435\u0438\u0442)",
       "id": "concepts_live_metrics_doc"
     },
@@ -2994,7 +3037,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "shipper during-run \u0441\u043d\u0430\u043f\u0448\u043e\u0442\u043e\u0432 (batch, dedup \u043f\u043e (task_id, seq), drop-oldest)",
       "id": "concepts_live_metrics_shipper"
     },
@@ -3007,7 +3050,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b prometheus-rw / otel / serve",
       "id": "concepts_live_metrics_exporters"
     },
@@ -3046,7 +3089,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u043c\u0430\u0448\u0438\u043d\u044b \u2014 \u0443\u0437\u043b\u044b \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438",
       "id": "concepts_machines_doc"
     },
@@ -3059,7 +3102,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u0441\u0435\u0442\u0435\u0432\u0430\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0438\u043a\u0430 linux (ip_local_port_range, tcp_tw_reuse, perfscaled v0.7.0)",
       "id": "concepts_machines_tuning"
     },
@@ -3072,7 +3115,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u044c\u043d\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0430\u0432\u0442\u043e\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u043e\u043c metrics",
       "id": "concepts_protocol_metrics_doc"
     },
@@ -3085,7 +3128,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 17,
       "norm_label": "pub/sub \u2014 std/pubsub@v1 (nats, memory; pro: kafka/redis/mqtt)",
       "id": "concepts_pubsub_doc"
     },
@@ -3098,7 +3141,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 17,
       "norm_label": "std/pubsub@v1 (publish/subscribe, scope, flush, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 pubsub_*)",
       "id": "concepts_pubsub_action"
     },
@@ -3111,7 +3154,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0441\u0445\u0435\u043c\u0430 report@v1",
       "id": "concepts_reports_doc"
     },
@@ -3124,7 +3167,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "\u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0435 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b json / junit / html / prometheus-rw / otel / serve",
       "id": "concepts_reports_builtin"
     },
@@ -3137,7 +3180,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u043f\u0440\u043e\u0433\u043e\u043d\u044b \u0438 \u0436\u0438\u0432\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438",
       "id": "concepts_runs_doc"
     },
@@ -3150,7 +3193,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "\u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438 pending \u2192 running \u2192 passed/failed/cancelled/timeout",
       "id": "concepts_runs_lifecycle"
     },
@@ -3163,7 +3206,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 6,
       "norm_label": "post/delete/get /api/v1/tasks",
       "id": "concepts_runs_api"
     },
@@ -3202,7 +3245,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "\u0442\u0435\u0441\u0442\u044b \u0438 \u0437\u0430\u0434\u0430\u0447\u0438",
       "id": "concepts_tests_doc"
     },
@@ -3215,7 +3258,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "supported load tools (k6, jmeter, locust, artillery, gatling, custom)",
       "id": "concepts_tests_tools"
     },
@@ -3254,7 +3297,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "websocket",
       "id": "concepts_websocket_doc"
     },
@@ -3268,7 +3311,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Waiting on server-push streams is deliberately NOT counted as latency because it would corrupt shared percentiles; handshakes and one-shot sessions go into http_req_duration so WS percentiles stay comparable with HTTP/TCP/UDP; connection ids are per-VU and per-iteration.",
-      "community": 9,
+      "community": 1,
       "norm_label": "std/ws* action family",
       "id": "concepts_websocket_actions"
     },
@@ -3307,7 +3350,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "\u0431\u0430\u0437\u044b \u0434\u0430\u043d\u043d\u044b\u0445 \u0438\u0437 cli",
       "id": "getting_started_database_cli_doc"
     },
@@ -3321,7 +3364,7 @@
       "author": null,
       "contributor": null,
       "rationale": "SQL text is never interpolated \u2014 values only via params \u2014 to prevent SQL injection; prepared-statement caching is opt-in because it is incompatible with transaction-mode poolers (PgBouncer, Supabase Supavisor); identical db-connect config returns a parked id (~0ms) enabling one warm connection per VU like k6/Locust.",
-      "community": 9,
+      "community": 1,
       "norm_label": "std/db-* action family",
       "id": "getting_started_database_cli_db_steps"
     },
@@ -3334,7 +3377,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "graphql \u0438\u0437 cli",
       "id": "getting_started_graphql_cli_doc"
     },
@@ -3348,7 +3391,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Each document is validated against the endpoint's introspected schema before sending so a typo fails the step before any request leaves; introspection round paid once per run (process-wide cache).",
-      "community": 9,
+      "community": 1,
       "norm_label": "std/graphql@v1",
       "id": "getting_started_graphql_cli_action"
     },
@@ -3361,7 +3404,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "grpc \u0438\u0437 cli",
       "id": "getting_started_grpc_cli_doc"
     },
@@ -3375,7 +3418,7 @@
       "author": null,
       "contributor": null,
       "rationale": "No protobuf codegen: schema comes from a base64 descriptor set or server reflection (cached per URL for the run); payloads are plain JSON per protobuf-JSON mapping.",
-      "community": 9,
+      "community": 1,
       "norm_label": "std/grpc-* action family",
       "id": "getting_started_grpc_cli_actions"
     },
@@ -3388,7 +3431,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "\u0432\u0432\u0435\u0434\u0435\u043d\u0438\u0435",
       "id": "getting_started_index_doc"
     },
@@ -3401,7 +3444,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 19,
       "norm_label": "\u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430",
       "id": "getting_started_installation_doc"
     },
@@ -3414,7 +3457,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 19,
       "norm_label": "dev stack (next.js, rust bff, postgresql, keycloak)",
       "id": "getting_started_installation_stack"
     },
@@ -3427,7 +3470,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "\u0440\u0430\u0431\u043e\u0442\u0430 \u0441 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u043e\u0438",
       "id": "getting_started_platform_doc"
     },
@@ -3440,7 +3483,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "admin console (machines, configurations, tests, runs & logs)",
       "id": "getting_started_platform_console"
     },
@@ -3453,7 +3496,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 1,
+      "community": 11,
       "norm_label": "\u0431\u044b\u0441\u0442\u0440\u044b\u0438 \u0441\u0442\u0430\u0440\u0442",
       "id": "getting_started_quick_start_doc"
     },
@@ -3466,7 +3509,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "thresholds \u2014 slo-\u043f\u043e\u0440\u043e\u0433\u0438",
       "id": "getting_started_thresholds_doc"
     },
@@ -3480,7 +3523,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Thresholds read the same HDR histogram aggregates as the text summary so numbers match; a threshold on a nonexistent metric fails the run with a config error so a typo cannot silently skip the SLO; severity fail exits CLI with code 1 for CI gating.",
-      "community": 9,
+      "community": 1,
       "norm_label": "std/thresholds@v1",
       "id": "getting_started_thresholds_step"
     },
@@ -3493,7 +3536,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "webrtc \u0438\u0437 cli",
       "id": "getting_started_webrtc_cli_doc"
     },
@@ -3506,7 +3549,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 1,
       "norm_label": "websocket \u0438\u0437 cli",
       "id": "getting_started_websocket_cli_doc"
     },
@@ -3519,7 +3562,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 11,
+      "community": 12,
       "norm_label": "\u043f\u043e\u043b\u0438\u0442\u0438\u043a\u0430 \u043a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u0438 (ru)",
       "id": "ru_privacy_doc"
     },
@@ -3532,7 +3575,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 11,
+      "community": 12,
       "norm_label": "stripe (payment processor)",
       "id": "ru_privacy_stripe"
     },
@@ -3545,7 +3588,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 11,
+      "community": 12,
       "norm_label": "infrastructure providers (aws, hetzner)",
       "id": "ru_privacy_infra_providers"
     },
@@ -3558,7 +3601,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b fix",
       "id": "pro_features_fix_doc"
     },
@@ -3572,7 +3615,7 @@
       "author": null,
       "contributor": null,
       "rationale": "FIX data dictionary is loaded from the venue's spec (QuickFIX FIX44.xml) rather than hardcoded \u2014 only the session layer is built in, so a bare logon works schema-free; URL-form schema downloads once per process, not per session.",
-      "community": 8,
+      "community": 9,
       "norm_label": "pro/fix* actions",
       "id": "pro_features_fix_actions"
     },
@@ -3585,7 +3628,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 14,
+      "community": 15,
       "norm_label": "llm \u0438 gpu \u043c\u0435\u0442\u0440\u0438\u043a\u0438",
       "id": "pro_features_llm_metrics_doc"
     },
@@ -3599,7 +3642,7 @@
       "author": null,
       "contributor": null,
       "rationale": "The agent ships no built-in price tables \u2014 users supply their own price list via PERFSCALE_LLM_PRICES(_FILE); a model without a matching price simply gets no cost metric, and a bad config warns once and disables cost metrics without failing the run.",
-      "community": 14,
+      "community": 15,
       "norm_label": "pro_llm_* metrics (itl/tpot percentiles, cost)",
       "id": "pro_features_llm_metrics_pro_llm"
     },
@@ -3613,7 +3656,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Compute-process query runs best-effort (old drivers, WSL) \u2014 GPU rows still arrive without pro_gpu_process_* fields; per-process utilization is unavailable via nvidia-smi (needs NVML).",
-      "community": 14,
+      "community": 15,
       "norm_label": "nvidia-smi-pro gpu collector",
       "id": "pro_features_llm_metrics_gpu_pro"
     },
@@ -3626,7 +3669,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "pub/sub \u2014 redis, mqtt, kafka",
       "id": "pro_features_pubsub_doc"
     },
@@ -3640,7 +3683,7 @@
       "author": null,
       "contributor": null,
       "rationale": "subscribe-first ordering makes same-subject roundtrips always see their own messages; Kafka uses manual partition assignment with watermarks fixed at exchange start instead of consumer-group join because group join cannot be deterministically awaited and lazy latest-reset could miss the roundtrip's own messages; enable.auto.commit always off so a load run never moves real consumer-group offsets; unknown option keys are rejected with the supported list so a typo fails loudly.",
-      "community": 8,
+      "community": 9,
       "norm_label": "std/pubsub@v1 pro drivers (redis, mqtt, kafka)",
       "id": "pro_features_pubsub_drivers"
     },
@@ -3653,7 +3696,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "\u043e\u0431\u0449\u0438\u0435 \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u2014 redis",
       "id": "pro_features_shared_redis_doc"
     },
@@ -3667,7 +3710,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Each operation maps to a single atomic server-side Redis command (INCRBY/RPUSH/LPOP/...) \u2014 same contract the memory driver gives with one lock acquisition \u2014 so there is no read-modify-write race and no lock primitive to hang on; each agent re-seeds keys at its own start, so state never carries between runs and pre-warmed storage cannot be relied upon until all agents connected.",
-      "community": 8,
+      "community": 9,
       "norm_label": "shared variables redis driver",
       "id": "pro_features_shared_redis_driver"
     },
@@ -3680,7 +3723,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "soap",
       "id": "pro_features_soap_doc"
     },
@@ -3694,7 +3737,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Raw HTTP treats 200 OK as success, a trap for SOAP since servers send Fault with both 200 and 500 \u2014 pro/soap@v1 always parses the body and fails the step on any Fault regardless of status; WSDL parser is namespace-tolerant (prefixes resolved via xmlns declarations) so nonstandard-prefix WSDLs parse correctly.",
-      "community": 8,
+      "community": 9,
       "norm_label": "pro/soap* actions",
       "id": "pro_features_soap_actions"
     },
@@ -3707,7 +3750,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 8,
+      "community": 9,
       "norm_label": "webrtc (pro)",
       "id": "pro_features_webrtc_doc"
     },
@@ -3721,7 +3764,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Engine owns the media plane (real ICE/DTLS-SRTP handshakes and RTP) while vendor-specific signaling is delegated to versioned wasm libraries so the engine does not accrete per-vendor code; only AV1 has a pure-Rust encoder (rav1e) so synthetic VP8/H.264 play a fixed 320x240 asset and true AV1 SVC is rejected with an error pointing at simulcast layers instead of silent substitution; WebRTC requires Scale/Enterprise because media-plane load is the expensive part other tools never exercise.",
-      "community": 8,
+      "community": 9,
       "norm_label": "pro/webrtc-* actions",
       "id": "pro_features_webrtc_actions"
     },
@@ -3734,7 +3777,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 11,
+      "community": 12,
       "norm_label": "\u0443\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f (ru)",
       "id": "ru_terms_doc"
     },
@@ -3747,7 +3790,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 11,
+      "community": 12,
       "norm_label": "terms of service (en)",
       "id": "docs_terms_doc"
     },
@@ -3767,9 +3810,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_slo_gate",
-      "community": 7,
-      "norm_label": "thresholds as slo gates (std/thresholds@v1 in the after: block)"
+      "community": 8,
+      "norm_label": "thresholds as slo gates (std/thresholds@v1 in the after: block)",
+      "id": "en_getting_started_thresholds_slo_gate"
     },
     {
       "label": "abort_on_fail: true on a severity: fail gate stops load early",
@@ -3787,9 +3830,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_abort_on_fail",
-      "community": 7,
-      "norm_label": "abort_on_fail: true on a severity: fail gate stops load early"
+      "community": 8,
+      "norm_label": "abort_on_fail: true on a severity: fail gate stops load early",
+      "id": "en_getting_started_thresholds_abort_on_fail"
     },
     {
       "label": "Gate evaluated every 250 ms during the VU phase; stops between steps",
@@ -3807,9 +3850,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_monitor_250ms",
-      "community": 7,
-      "norm_label": "gate evaluated every 250 ms during the vu phase; stops between steps"
+      "community": 8,
+      "norm_label": "gate evaluated every 250 ms during the vu phase; stops between steps",
+      "id": "en_getting_started_thresholds_monitor_250ms"
     },
     {
       "label": "after: teardown, reporters, and the final summary still run after an abort",
@@ -3827,9 +3870,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_after_summary_guaranteed",
-      "community": 7,
-      "norm_label": "after: teardown, reporters, and the final summary still run after an abort"
+      "community": 8,
+      "norm_label": "after: teardown, reporters, and the final summary still run after an abort",
+      "id": "en_getting_started_thresholds_after_summary_guaranteed"
     },
     {
       "label": "A gate whose metric has no samples yet waits for data instead of aborting",
@@ -3847,9 +3890,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_unknown_metric_warmup",
-      "community": 7,
-      "norm_label": "a gate whose metric has no samples yet waits for data instead of aborting"
+      "community": 8,
+      "norm_label": "a gate whose metric has no samples yet waits for data instead of aborting",
+      "id": "en_getting_started_thresholds_unknown_metric_warmup"
     },
     {
       "label": "http_debug: error \u2014 one secret-masked JSON line per failed action/check with request/response payloads; success emits nothing",
@@ -3867,9 +3910,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_http_debug_error",
-      "community": 7,
-      "norm_label": "http_debug: error \u2014 one secret-masked json line per failed action/check with request/response payloads; success emits nothing"
+      "community": 8,
+      "norm_label": "http_debug: error \u2014 one secret-masked json line per failed action/check with request/response payloads; success emits nothing",
+      "id": "en_getting_started_thresholds_http_debug_error"
     },
     {
       "label": "run.threshold_failed webhook event on the platform",
@@ -3887,9 +3930,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_run_threshold_failed_webhook",
-      "community": 7,
-      "norm_label": "run.threshold_failed webhook event on the platform"
+      "community": 8,
+      "norm_label": "run.threshold_failed webhook event on the platform",
+      "id": "en_getting_started_thresholds_run_threshold_failed_webhook"
     },
     {
       "label": "std/thresholds@v1 action",
@@ -3907,9 +3950,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "en_getting_started_thresholds_std_thresholds_v1",
-      "community": 7,
-      "norm_label": "std/thresholds@v1 action"
+      "community": 8,
+      "norm_label": "std/thresholds@v1 action",
+      "id": "en_getting_started_thresholds_std_thresholds_v1"
     },
     {
       "label": "Thresholds \u043a\u0430\u043a SLO-\u043f\u043e\u0440\u043e\u0433\u0438 (std/thresholds@v1 \u0432 after:-\u0431\u043b\u043e\u043a\u0435)",
@@ -3927,9 +3970,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_slo_gate",
-      "community": 7,
-      "norm_label": "thresholds \u043a\u0430\u043a slo-\u043f\u043e\u0440\u043e\u0433\u0438 (std/thresholds@v1 \u0432 after:-\u0431\u043b\u043e\u043a\u0435)"
+      "community": 8,
+      "norm_label": "thresholds \u043a\u0430\u043a slo-\u043f\u043e\u0440\u043e\u0433\u0438 (std/thresholds@v1 \u0432 after:-\u0431\u043b\u043e\u043a\u0435)",
+      "id": "ru_getting_started_thresholds_slo_gate"
     },
     {
       "label": "abort_on_fail: true \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435 \u0441 severity: fail \u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0443 \u0434\u043e\u0441\u0440\u043e\u0447\u043d\u043e",
@@ -3947,9 +3990,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_abort_on_fail",
-      "community": 7,
-      "norm_label": "abort_on_fail: true \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435 \u0441 severity: fail \u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0443 \u0434\u043e\u0441\u0440\u043e\u0447\u043d\u043e"
+      "community": 8,
+      "norm_label": "abort_on_fail: true \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435 \u0441 severity: fail \u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0443 \u0434\u043e\u0441\u0440\u043e\u0447\u043d\u043e",
+      "id": "ru_getting_started_thresholds_abort_on_fail"
     },
     {
       "label": "\u041f\u043e\u0440\u043e\u0433 \u0432\u044b\u0447\u0438\u0441\u043b\u044f\u0435\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 250 \u043c\u0441 \u0432\u043e \u0432\u0440\u0435\u043c\u044f VU-\u0444\u0430\u0437\u044b; \u043e\u0441\u0442\u0430\u043d\u043e\u0432 \u043c\u0435\u0436\u0434\u0443 \u0448\u0430\u0433\u0430\u043c\u0438",
@@ -3967,9 +4010,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_monitor_250ms",
-      "community": 7,
-      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u0432\u044b\u0447\u0438\u0441\u043b\u044f\u0435\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 250 \u043c\u0441 \u0432\u043e \u0432\u0440\u0435\u043c\u044f vu-\u0444\u0430\u0437\u044b; \u043e\u0441\u0442\u0430\u043d\u043e\u0432 \u043c\u0435\u0436\u0434\u0443 \u0448\u0430\u0433\u0430\u043c\u0438"
+      "community": 8,
+      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u0432\u044b\u0447\u0438\u0441\u043b\u044f\u0435\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 250 \u043c\u0441 \u0432\u043e \u0432\u0440\u0435\u043c\u044f vu-\u0444\u0430\u0437\u044b; \u043e\u0441\u0442\u0430\u043d\u043e\u0432 \u043c\u0435\u0436\u0434\u0443 \u0448\u0430\u0433\u0430\u043c\u0438",
+      "id": "ru_getting_started_thresholds_monitor_250ms"
     },
     {
       "label": "after:-teardown, \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u0430\u044f \u0441\u0432\u043e\u0434\u043a\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e \u043f\u043e\u0441\u043b\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0430",
@@ -3987,9 +4030,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_after_summary_guaranteed",
-      "community": 7,
-      "norm_label": "after:-teardown, \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u0430\u044f \u0441\u0432\u043e\u0434\u043a\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e \u043f\u043e\u0441\u043b\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0430"
+      "community": 8,
+      "norm_label": "after:-teardown, \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u0430\u044f \u0441\u0432\u043e\u0434\u043a\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e \u043f\u043e\u0441\u043b\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0430",
+      "id": "ru_getting_started_thresholds_after_summary_guaranteed"
     },
     {
       "label": "\u041f\u043e\u0440\u043e\u0433 \u043f\u043e \u043c\u0435\u0442\u0440\u0438\u043a\u0435 \u0431\u0435\u0437 \u0441\u044d\u043c\u043f\u043b\u043e\u0432 \u0436\u0434\u0451\u0442 \u0434\u0430\u043d\u043d\u044b\u0435, \u0430 \u043d\u0435 \u043f\u0440\u0435\u0440\u044b\u0432\u0430\u0435\u0442 \u043f\u0440\u043e\u0433\u043e\u043d",
@@ -4007,9 +4050,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_unknown_metric_warmup",
-      "community": 7,
-      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u043f\u043e \u043c\u0435\u0442\u0440\u0438\u043a\u0435 \u0431\u0435\u0437 \u0441\u044d\u043c\u043f\u043b\u043e\u0432 \u0436\u0434\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0435, \u0430 \u043d\u0435 \u043f\u0440\u0435\u0440\u044b\u0432\u0430\u0435\u0442 \u043f\u0440\u043e\u0433\u043e\u043d"
+      "community": 8,
+      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u043f\u043e \u043c\u0435\u0442\u0440\u0438\u043a\u0435 \u0431\u0435\u0437 \u0441\u044d\u043c\u043f\u043b\u043e\u0432 \u0436\u0434\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0435, \u0430 \u043d\u0435 \u043f\u0440\u0435\u0440\u044b\u0432\u0430\u0435\u0442 \u043f\u0440\u043e\u0433\u043e\u043d",
+      "id": "ru_getting_started_thresholds_unknown_metric_warmup"
     },
     {
       "label": "http_debug: error \u2014 \u043e\u0434\u043d\u0430 \u043c\u0430\u0441\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f JSON-\u0441\u0442\u0440\u043e\u043a\u0430 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0435 \u0443\u043f\u0430\u0432\u0448\u0435\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435/check \u0441 payload \u0437\u0430\u043f\u0440\u043e\u0441\u0430/\u043e\u0442\u0432\u0435\u0442\u0430; \u0443\u0441\u043f\u0435\u0445 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0438\u0442",
@@ -4027,9 +4070,9 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_http_debug_error",
-      "community": 7,
-      "norm_label": "http_debug: error \u2014 \u043e\u0434\u043d\u0430 \u043c\u0430\u0441\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f json-\u0441\u0442\u0440\u043e\u043a\u0430 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0435 \u0443\u043f\u0430\u0432\u0448\u0435\u0435 \u0434\u0435\u0438\u0441\u0442\u0432\u0438\u0435/check \u0441 payload \u0437\u0430\u043f\u0440\u043e\u0441\u0430/\u043e\u0442\u0432\u0435\u0442\u0430; \u0443\u0441\u043f\u0435\u0445 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0438\u0442"
+      "community": 8,
+      "norm_label": "http_debug: error \u2014 \u043e\u0434\u043d\u0430 \u043c\u0430\u0441\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f json-\u0441\u0442\u0440\u043e\u043a\u0430 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0435 \u0443\u043f\u0430\u0432\u0448\u0435\u0435 \u0434\u0435\u0438\u0441\u0442\u0432\u0438\u0435/check \u0441 payload \u0437\u0430\u043f\u0440\u043e\u0441\u0430/\u043e\u0442\u0432\u0435\u0442\u0430; \u0443\u0441\u043f\u0435\u0445 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0438\u0442",
+      "id": "ru_getting_started_thresholds_http_debug_error"
     },
     {
       "label": "Webhook-\u0441\u043e\u0431\u044b\u0442\u0438\u0435 run.threshold_failed \u043d\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435",
@@ -4047,9 +4090,399 @@
         "sectionOrder": 1,
         "order": 9
       },
-      "id": "ru_getting_started_thresholds_run_threshold_failed_webhook",
-      "community": 7,
-      "norm_label": "webhook-\u0441\u043e\u0431\u044b\u0442\u0438\u0435 run.threshold_failed \u043d\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435"
+      "community": 8,
+      "norm_label": "webhook-\u0441\u043e\u0431\u044b\u0442\u0438\u0435 run.threshold_failed \u043d\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435",
+      "id": "ru_getting_started_thresholds_run_threshold_failed_webhook"
+    },
+    {
+      "label": "Coding agents (concepts page, EN)",
+      "file_type": "document",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_en",
+      "community": 3,
+      "norm_label": "coding agents (concepts page, en)"
+    },
+    {
+      "label": "\u0410\u0433\u0435\u043d\u0442\u044b \u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f (concepts page, RU)",
+      "file_type": "document",
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_ru",
+      "community": 3,
+      "norm_label": "\u0430\u0433\u0435\u043d\u0442\u044b \u043a\u043e\u0434\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f (concepts page, ru)"
+    },
+    {
+      "label": "perfscale init-skills command",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_init_skills",
+      "community": 3,
+      "norm_label": "perfscale init-skills command"
+    },
+    {
+      "label": "perfscale init-agents command",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_init_agents",
+      "community": 3,
+      "norm_label": "perfscale init-agents command"
+    },
+    {
+      "label": "perfscale-cli skill",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_skill_perfscale_cli",
+      "community": 3,
+      "norm_label": "perfscale-cli skill"
+    },
+    {
+      "label": "perfscale-library-sdk skill",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_skill_library_sdk",
+      "community": 3,
+      "norm_label": "perfscale-library-sdk skill"
+    },
+    {
+      "label": "perfscale-migration-k6 skill",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_skill_migration_k6",
+      "community": 3,
+      "norm_label": "perfscale-migration-k6 skill"
+    },
+    {
+      "label": "perfscale-test-planner agent",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_agent_test_planner",
+      "community": 3,
+      "norm_label": "perfscale-test-planner agent"
+    },
+    {
+      "label": "perfscale-test-generator agent",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_agent_test_generator",
+      "community": 3,
+      "norm_label": "perfscale-test-generator agent"
+    },
+    {
+      "label": "perfscale-test-healer agent",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_agent_test_healer",
+      "community": 3,
+      "norm_label": "perfscale-test-healer agent"
+    },
+    {
+      "label": "claude loop (.claude/agents, .mcp.json)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_claude",
+      "community": 3,
+      "norm_label": "claude loop (.claude/agents, .mcp.json)"
+    },
+    {
+      "label": "codex loop (.codex/agents, .codex/config.toml)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_codex",
+      "community": 3,
+      "norm_label": "codex loop (.codex/agents, .codex/config.toml)"
+    },
+    {
+      "label": "copilot loop (.github/agents, copilot-setup-steps.yml)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_copilot",
+      "community": 3,
+      "norm_label": "copilot loop (.github/agents, copilot-setup-steps.yml)"
+    },
+    {
+      "label": "opencode loop (.opencode/prompts, opencode.json)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_opencode",
+      "community": 3,
+      "norm_label": "opencode loop (.opencode/prompts, opencode.json)"
+    },
+    {
+      "label": "vscode loop (.github/agents, .vscode/mcp.json)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_vscode",
+      "community": 3,
+      "norm_label": "vscode loop (.github/agents, .vscode/mcp.json)"
+    },
+    {
+      "label": "vscode-legacy loop (.github/chatmodes, .vscode/mcp.json)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_vscode_legacy",
+      "community": 3,
+      "norm_label": "vscode-legacy loop (.github/chatmodes, .vscode/mcp.json)"
+    },
+    {
+      "label": "agents loop (./.agents/skills)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_loop_agents",
+      "community": 3,
+      "norm_label": "agents loop (./.agents/skills)"
+    },
+    {
+      "label": "@perfscale/mcp MCP server (npx -y @perfscale/mcp)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": "/docs/api-reference/mcp",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_mcp_server",
+      "community": 3,
+      "norm_label": "@perfscale/mcp mcp server (npx -y @perfscale/mcp)"
+    },
+    {
+      "label": "tests/seed.yaml minimal 1-VU probe test",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_seed_yaml",
+      "community": 3,
+      "norm_label": "tests/seed.yaml minimal 1-vu probe test"
+    },
+    {
+      "label": "Seed idempotency: found-or-created, existing seed never overwritten",
+      "file_type": "rationale",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_seed_idempotency",
+      "community": 3,
+      "norm_label": "seed idempotency: found-or-created, existing seed never overwritten"
+    },
+    {
+      "label": "specs/README.md test plans directory",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_specs_readme",
+      "community": 3,
+      "norm_label": "specs/readme.md test plans directory"
+    },
+    {
+      "label": "config.yaml created only when absent and -c not given",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_config_yaml",
+      "community": 3,
+      "norm_label": "config.yaml created only when absent and -c not given"
+    },
+    {
+      "label": "specs/<name>.md planner output (step flow, load shape, test data, SLO thresholds)",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_specs_plan_output",
+      "community": 3,
+      "norm_label": "specs/<name>.md planner output (step flow, load shape, test data, slo thresholds)"
+    },
+    {
+      "label": "tests/<name>.yaml generator output via MCP write tools",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_tests_yaml_output",
+      "community": 3,
+      "norm_label": "tests/<name>.yaml generator output via mcp write tools"
+    },
+    {
+      "label": "perfscale-{plan,generate,heal,threshold}.prompt.md templates (--prompts)",
+      "file_type": "code",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_prompt_templates",
+      "community": 3,
+      "norm_label": "perfscale-{plan,generate,heal,threshold}.prompt.md templates (--prompts)"
+    },
+    {
+      "label": "threshold prompt: stepped run_test up to target load, HOLD / NOT HOLD verdict per SLO threshold",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_threshold_prompt",
+      "community": 3,
+      "norm_label": "threshold prompt: stepped run_test up to target load, hold / not hold verdict per slo threshold"
+    },
+    {
+      "label": "Safety rule: generator/healer runs default to 1 VU and short duration",
+      "file_type": "rationale",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_safety_small_runs",
+      "community": 3,
+      "norm_label": "safety rule: generator/healer runs default to 1 vu and short duration"
+    },
+    {
+      "label": "Safety rule: healer never edits thresholds: \u2014 loosening an SLO is not a fix",
+      "file_type": "rationale",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_safety_healer_thresholds",
+      "community": 3,
+      "norm_label": "safety rule: healer never edits thresholds: \u2014 loosening an slo is not a fix"
+    },
+    {
+      "label": "Skills embedded in binary; re-running overwrites to stay in sync with perfscale version",
+      "file_type": "rationale",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_skills_embedded_overwrite",
+      "community": 3,
+      "norm_label": "skills embedded in binary; re-running overwrites to stay in sync with perfscale version"
+    },
+    {
+      "label": "Playwright init-skills / init-agents (mirrored precedent; coverage prompt replaced by threshold)",
+      "file_type": "concept",
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concepts_coding_agents_playwright_init",
+      "community": 3,
+      "norm_label": "playwright init-skills / init-agents (mirrored precedent; coverage prompt replaced by threshold)"
     }
   ],
   "links": [
@@ -7512,6 +7945,466 @@
       "weight": 1.0,
       "source": "ru_getting_started_thresholds_abort_on_fail",
       "target": "ru_getting_started_thresholds_unknown_metric_warmup"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_en",
+      "target": "concepts_coding_agents_init_agents"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_en",
+      "target": "concepts_coding_agents_init_skills"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_ru",
+      "target": "concepts_coding_agents_en"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_ru",
+      "target": "concepts_coding_agents_init_agents"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_ru",
+      "target": "concepts_coding_agents_init_skills"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_ru",
+      "target": "concepts_coding_agents_mcp_server"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_ru",
+      "target": "concepts_coding_agents_threshold_prompt"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_skills",
+      "target": "concepts_coding_agents_loop_agents"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.9,
+      "source": "concepts_coding_agents_init_skills",
+      "target": "concepts_coding_agents_playwright_init"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_skills",
+      "target": "concepts_coding_agents_skill_library_sdk"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_skills",
+      "target": "concepts_coding_agents_skill_migration_k6"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_skills",
+      "target": "concepts_coding_agents_skill_perfscale_cli"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_skills_embedded_overwrite",
+      "target": "concepts_coding_agents_init_skills"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_agent_test_generator"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_agent_test_healer"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_agent_test_planner"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_config_yaml"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_claude"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_codex"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_copilot"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_opencode"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_vscode"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_loop_vscode_legacy"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_mcp_server"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.9,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_playwright_init"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_prompt_templates"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_seed_yaml"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_init_agents",
+      "target": "concepts_coding_agents_specs_readme"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.6,
+      "source": "concepts_coding_agents_skill_migration_k6",
+      "target": "concepts_coding_agents_skill_perfscale_cli"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.9,
+      "source": "concepts_coding_agents_agent_test_planner",
+      "target": "concepts_coding_agents_seed_yaml"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_agent_test_planner",
+      "target": "concepts_coding_agents_specs_plan_output"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_agent_test_generator",
+      "target": "concepts_coding_agents_mcp_server"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_agent_test_generator",
+      "target": "concepts_coding_agents_specs_plan_output"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_agent_test_generator",
+      "target": "concepts_coding_agents_tests_yaml_output"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_safety_small_runs",
+      "target": "concepts_coding_agents_agent_test_generator"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.9,
+      "source": "concepts_coding_agents_agent_test_healer",
+      "target": "concepts_coding_agents_tests_yaml_output"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_safety_healer_thresholds",
+      "target": "concepts_coding_agents_agent_test_healer"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_safety_small_runs",
+      "target": "concepts_coding_agents_agent_test_healer"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_mcp_server",
+      "target": "concepts_coding_agents_loop_claude"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.7,
+      "source": "concepts_coding_agents_loop_copilot",
+      "target": "concepts_coding_agents_loop_vscode_legacy"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.8,
+      "source": "concepts_coding_agents_loop_vscode",
+      "target": "concepts_coding_agents_loop_vscode_legacy"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.8,
+      "source": "concepts_coding_agents_threshold_prompt",
+      "target": "concepts_coding_agents_mcp_server"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_seed_idempotency",
+      "target": "concepts_coding_agents_seed_yaml"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_prompt_templates",
+      "target": "concepts_coding_agents_threshold_prompt"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_coding_agents_safety_small_runs",
+      "target": "concepts_coding_agents_threshold_prompt"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx",
+      "source_location": null,
+      "weight": 0.9,
+      "source": "concepts_coding_agents_threshold_prompt",
+      "target": "concepts_coding_agents_playwright_init"
     }
   ],
   "hyperedges": [
@@ -7707,7 +8600,50 @@
       "confidence": "INFERRED",
       "confidence_score": 0.85,
       "source_file": "en/getting-started/thresholds.mdx"
+    },
+    {
+      "id": "concepts_coding_agents_hyperedge_embedded_skills",
+      "label": "Three embedded skills shipped by init-skills",
+      "nodes": [
+        "concepts_coding_agents_init_skills",
+        "concepts_coding_agents_skill_perfscale_cli",
+        "concepts_coding_agents_skill_library_sdk",
+        "concepts_coding_agents_skill_migration_k6"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx"
+    },
+    {
+      "id": "concepts_coding_agents_hyperedge_three_agents",
+      "label": "Planner \u2192 generator \u2192 healer agent pipeline",
+      "nodes": [
+        "concepts_coding_agents_agent_test_planner",
+        "concepts_coding_agents_agent_test_generator",
+        "concepts_coding_agents_agent_test_healer",
+        "concepts_coding_agents_mcp_server"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx"
+    },
+    {
+      "id": "concepts_coding_agents_hyperedge_safety_rules",
+      "label": "Small-run safety rules baked into agents",
+      "nodes": [
+        "concepts_coding_agents_safety_small_runs",
+        "concepts_coding_agents_safety_healer_thresholds",
+        "concepts_coding_agents_agent_test_generator",
+        "concepts_coding_agents_agent_test_healer",
+        "concepts_coding_agents_threshold_prompt"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/concepts/coding-agents.mdx"
     }
   ],
-  "built_at_commit": "c7978fa23a5cfb8884009d738b67ed9a9bf14f2b"
+  "built_at_commit": "a9aaf9e6e81649615d3cf2619fad2914594c6ae3"
 }
