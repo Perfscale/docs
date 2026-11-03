@@ -25,6 +25,9 @@ Reporters are an **open-source engine** feature. Available since perfscale
 | `std/report/json@v1` | The canonical `report@v1` document as pretty-printed JSON | v0.27.0+ |
 | `std/report/junit@v1` | JUnit XML for CI: the testsuite is the run, one testcase per step, and every failed threshold verdict adds a failing `threshold: …` testcase — so a CI gate reads the file alone | v0.27.0+ |
 | `std/report/html@v1` | A single self-contained HTML page (dark theme, run identity, verdicts, per-step table with samples sparklines, metric families; all CSS/JS inlined, opens offline, archives as a CI artifact) | **next release** |
+| `std/report/prometheus-rw@v1` | **Streaming**: Prometheus remote write (Snappy + protobuf) — live cumulative metrics during the run; classic `_bucket{le}` histograms by default, native histograms opt-in | **next release** |
+| `std/report/otel@v1` | **Streaming**: OTLP/gRPC metrics export — cumulative exponential histograms | **next release** |
+| `std/report/serve@v1` | **Streaming**: the historical `report.url` during-run stream to a `perfscale serve` or the platform, expressed as a reporter | **next release** |
 | `wasm:./path.wasm` | A custom WASM reporter component — see [Custom reporters](/docs/concepts/custom-reporters) | v0.27.0+ |
 
 ## Configuring reporters
@@ -63,7 +66,24 @@ Common options:
 |---|---|---|
 | `with.path` / `with.url` | — | Destination — exactly one of the two |
 | `with.headers` | — | Headers for the HTTP push (`${VAR}` env references allowed) |
-| `with.max_samples` | `100000` | Cap on raw per-step samples; `0` omits them. A step that recorded more is flagged `truncated: true` |
+| `max_samples` | `100000` | Engine-level cap on raw per-step samples; `0` omits them. A step that recorded more is flagged `truncated: true`. The legacy `with.max_samples` spelling still reads when the engine-level key is unset |
+| `labels` | — | Labels stamped on every series the reporter exports; merge **step > reporter > run** (`report.labels`). `run_id` and `worker` are reserved — set by the engine, rejected in user config |
+| `during_run` | `false` | Stream cumulative snapshots while the run executes — streaming reporters (`prometheus-rw`, `otel`, `serve`) only; on a final-only reporter this is a lint/run error |
+| `interval_ms` | `report.interval_ms` (5000) | This reporter's snapshot/flush cadence, clamped to ≥ 100 ms |
+| `max_series` | `10000` | Cardinality guard on the reporter's distinct output series; excess series drop deterministically into `perfscale_report_dropped_series_total{reporter}` |
+
+Streaming reporters additionally take:
+
+| Option | Default | Description |
+|---|---|---|
+| `with.url` / `with.endpoint` | — | Remote-write URL (`prometheus-rw`) / OTLP/gRPC collector endpoint (`otel`), e.g. `http://otel-collector:4317` |
+| `with.histogram` | `classic` | `prometheus-rw` only: `classic` (`_bucket{le}` + `_sum` + `_count`) or `native` Prometheus histograms |
+| `with.batch_size` | `report.batch_size` (500) | Seal and send a batch at this many items |
+| `with.max_pending` | `24` | Bounded queue depth; overflow drops the OLDEST snapshot (`perfscale_report_dropped_snapshots_total{reporter}`) — the next cumulative snapshot restores the values |
+| `with.retry` | `{ max_attempts: 5, backoff: "1s..30s" }` | Retry policy for transient failures (network, 429, 5xx, transient gRPC statuses; `Retry-After` honored). Other 4xx batches are poisoned — dropped, never retried |
+| `with.final_timeout` | `30s` | Bound on the synchronous final flush of the terminal cumulative snapshot; a timeout warns but never fails the run |
+
+See [Live metrics streaming](/docs/concepts/live-metrics#streaming-to-your-own-observability-backends) for a full streaming example, label merge rules, and the PromQL histogram query.
 
 ### CLI equivalent
 
