@@ -72,7 +72,37 @@ On the platform, the run page shows a thresholds card with the status and
 violations, and a **`run.threshold_failed`** webhook event fires when a run
 fails its gate — point it at your chat or alerting system.
 
-## 3. Notes
+## 3. Stop early and diagnose failures
+
+Add `abort_on_fail: true` to a `severity: fail` gate to stop the load as soon as
+the gate breaks instead of waiting for the full duration. The engine evaluates
+it every 250 ms during the VU phase and stops between steps; `after:` teardown,
+reporters, and the final summary still run. A gate whose metric has not emitted
+any samples yet waits for data instead of aborting.
+
+Add `http_debug: error` to include failure diagnostics while the run is live:
+
+```yaml
+after:
+  - name: slo gate
+    use: std/thresholds@v1
+    with:
+      http_req_failed: ["rate<0.05"]
+      http_req_duration: ["p95<500"]
+    severity: fail
+    abort_on_fail: true
+    http_debug: error
+```
+
+Every failed action and failed `check:` then emits one secret-masked
+`http_debug: {…}` JSON line with the VU id, iteration, request parameters and
+payload, response output and body, and failed-check details. Successful
+requests and checks emit nothing. `http_debug` is valid only together with
+`abort_on_fail: true` on an `after:` `std/thresholds@v1` step. If you need only
+error lines without request/response payloads, the existing `--quiet` flag is
+enough.
+
+## 4. Notes
 
 - Gates read the same HDR-histogram aggregates as the text summary — the
   numbers you see in the run output are the numbers the gate evaluates.

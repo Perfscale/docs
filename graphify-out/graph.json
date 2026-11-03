@@ -167,6 +167,34 @@
         "confidence": "INFERRED",
         "confidence_score": 0.95,
         "source_file": "ru/getting-started/ci-cd.mdx"
+      },
+      {
+        "id": "docs_threshold_abort_he_abort_on_fail",
+        "label": "abort_on_fail early-stop threshold gate",
+        "nodes": [
+          "en_getting_started_thresholds_abort_on_fail",
+          "en_getting_started_thresholds_monitor_250ms",
+          "en_getting_started_thresholds_after_summary_guaranteed",
+          "en_getting_started_thresholds_unknown_metric_warmup",
+          "ru_getting_started_thresholds_abort_on_fail"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "en/getting-started/thresholds.mdx"
+      },
+      {
+        "id": "docs_threshold_abort_he_http_debug",
+        "label": "http_debug masked failure-only diagnostics",
+        "nodes": [
+          "en_getting_started_thresholds_http_debug_error",
+          "en_getting_started_thresholds_abort_on_fail",
+          "ru_getting_started_thresholds_http_debug_error"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "en/getting-started/thresholds.mdx"
       }
     ]
   },
@@ -181,9 +209,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Self-contained copy of Perfscale/infra's reusable-update-aio.yml because this repo is public and public repos cannot call reusable workflows in private repos; logic must be kept in sync with reusable-update-aio.yml.",
-      "id": "workflows_update_aio_workflow",
       "community": 19,
-      "norm_label": "update aio github actions workflow"
+      "norm_label": "update aio github actions workflow",
+      "id": "workflows_update_aio_workflow"
     },
     {
       "label": "Perfscale/aio repository (docs gitlink bump target)",
@@ -194,9 +222,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "workflows_update_aio_aio_repo",
       "community": 19,
-      "norm_label": "perfscale/aio repository (docs gitlink bump target)"
+      "norm_label": "perfscale/aio repository (docs gitlink bump target)",
+      "id": "workflows_update_aio_aio_repo"
     },
     {
       "label": "docs repo README \u2014 documentation content for the PerfScale platform",
@@ -207,9 +235,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_readme_document",
       "community": 0,
-      "norm_label": "docs repo readme \u2014 documentation content for the perfscale platform"
+      "norm_label": "docs repo readme \u2014 documentation content for the perfscale platform",
+      "id": "docs_readme_document"
     },
     {
       "label": "site repo git submodule inclusion (content/)",
@@ -220,9 +248,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_readme_site_submodule",
       "community": 0,
-      "norm_label": "site repo git submodule inclusion (content/)"
+      "norm_label": "site repo git submodule inclusion (content/)",
+      "id": "docs_readme_site_submodule"
     },
     {
       "label": "API Reference \u2014 REST API for the perfscale BFF",
@@ -233,9 +261,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_document",
       "community": 0,
-      "norm_label": "api reference \u2014 rest api for the perfscale bff"
+      "norm_label": "api reference \u2014 rest api for the perfscale bff",
+      "id": "api_reference_index_document"
     },
     {
       "label": "perfscale BFF REST API (/api/v1)",
@@ -246,9 +274,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_rest_api",
       "community": 0,
-      "norm_label": "perfscale bff rest api (/api/v1)"
+      "norm_label": "perfscale bff rest api (/api/v1)",
+      "id": "api_reference_index_rest_api"
     },
     {
       "label": "Personal API tokens (psk_\u2026) with fine-grained scopes",
@@ -259,9 +287,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_personal_api_tokens",
       "community": 0,
-      "norm_label": "personal api tokens (psk_...) with fine-grained scopes"
+      "norm_label": "personal api tokens (psk_...) with fine-grained scopes",
+      "id": "api_reference_index_personal_api_tokens"
     },
     {
       "label": "Keycloak JWT bearer authentication (ROPC grant)",
@@ -272,9 +300,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_keycloak_jwt",
       "community": 0,
-      "norm_label": "keycloak jwt bearer authentication (ropc grant)"
+      "norm_label": "keycloak jwt bearer authentication (ropc grant)",
+      "id": "api_reference_index_keycloak_jwt"
     },
     {
       "label": "Machine tokens (M2M client_credentials) for agents",
@@ -285,9 +313,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_machine_tokens",
       "community": 0,
-      "norm_label": "machine tokens (m2m client_credentials) for agents"
+      "norm_label": "machine tokens (m2m client_credentials) for agents",
+      "id": "api_reference_index_machine_tokens"
     },
     {
       "label": "402 PAYMENT_REQUIRED billing gate on /api/v1",
@@ -298,9 +326,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_billing_gate",
       "community": 0,
-      "norm_label": "402 payment_required billing gate on /api/v1"
+      "norm_label": "402 payment_required billing gate on /api/v1",
+      "id": "api_reference_index_billing_gate"
     },
     {
       "label": "MCP server & API tokens",
@@ -311,9 +339,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_document",
       "community": 0,
-      "norm_label": "mcp server & api tokens"
+      "norm_label": "mcp server & api tokens",
+      "id": "api_reference_mcp_document"
     },
     {
       "label": "@perfscale/controlplane-mcp Model Context Protocol server",
@@ -324,9 +352,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_controlplane_mcp",
       "community": 0,
-      "norm_label": "@perfscale/controlplane-mcp model context protocol server"
+      "norm_label": "@perfscale/controlplane-mcp model context protocol server",
+      "id": "api_reference_mcp_controlplane_mcp"
     },
     {
       "label": "Fine-grained token scopes (tests/runs/machines/metrics read-write)",
@@ -337,9 +365,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_token_scopes",
       "community": 0,
-      "norm_label": "fine-grained token scopes (tests/runs/machines/metrics read-write)"
+      "norm_label": "fine-grained token scopes (tests/runs/machines/metrics read-write)",
+      "id": "api_reference_mcp_token_scopes"
     },
     {
       "label": "Composite mode \u2014 attaching remote MCP servers to the workspace",
@@ -350,9 +378,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_composite_mode",
       "community": 0,
-      "norm_label": "composite mode \u2014 attaching remote mcp servers to the workspace"
+      "norm_label": "composite mode \u2014 attaching remote mcp servers to the workspace",
+      "id": "api_reference_mcp_composite_mode"
     },
     {
       "label": "ASK AI \u2014 built-in AI assistant",
@@ -363,9 +391,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_ask_ai_document",
       "community": 0,
-      "norm_label": "ask ai \u2014 built-in ai assistant"
+      "norm_label": "ask ai \u2014 built-in ai assistant",
+      "id": "concepts_ask_ai_document"
     },
     {
       "label": "Bring-your-own-model LLM endpoint configuration",
@@ -377,9 +405,9 @@
       "author": null,
       "contributor": null,
       "rationale": "perfscale does not operate or proxy an LLM of its own; workspace owner/admin configures an OpenAI- or Anthropic-compatible endpoint and the API key is encrypted at rest with AES-256-GCM.",
-      "id": "concepts_ask_ai_byom",
       "community": 0,
-      "norm_label": "bring-your-own-model llm endpoint configuration"
+      "norm_label": "bring-your-own-model llm endpoint configuration",
+      "id": "concepts_ask_ai_byom"
     },
     {
       "label": "Generative UI \u2014 fixed component vocabulary with run actions",
@@ -390,9 +418,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_ask_ai_generative_ui",
       "community": 0,
-      "norm_label": "generative ui \u2014 fixed component vocabulary with run actions"
+      "norm_label": "generative ui \u2014 fixed component vocabulary with run actions",
+      "id": "concepts_ask_ai_generative_ui"
     },
     {
       "label": "Billing \u2014 self-serve YooKassa checkout on perfscale.ru",
@@ -403,9 +431,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_billing_document",
       "community": 0,
-      "norm_label": "billing \u2014 self-serve yookassa checkout on perfscale.ru"
+      "norm_label": "billing \u2014 self-serve yookassa checkout on perfscale.ru",
+      "id": "concepts_billing_document"
     },
     {
       "label": "Plans: Starter / Growing / Enterprise",
@@ -416,9 +444,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_billing_plans",
       "community": 0,
-      "norm_label": "plans: starter / growing / enterprise"
+      "norm_label": "plans: starter / growing / enterprise",
+      "id": "concepts_billing_plans"
     },
     {
       "label": "Refund policy \u2014 first payment within 3 days, auto-refund on mid-period upgrade",
@@ -430,9 +458,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Refunds are deliberately narrow: only the workspace's first succeeded payment within 3 days; mid-period upgrade triggers an automatic full refund of the superseded lower-tier payment.",
-      "id": "concepts_billing_refund_policy",
       "community": 0,
-      "norm_label": "refund policy \u2014 first payment within 3 days, auto-refund on mid-period upgrade"
+      "norm_label": "refund policy \u2014 first payment within 3 days, auto-refund on mid-period upgrade",
+      "id": "concepts_billing_refund_policy"
     },
     {
       "label": "Custom reporters \u2014 WASM reporter components",
@@ -443,9 +471,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_document",
-      "community": 3,
-      "norm_label": "custom reporters \u2014 wasm reporter components"
+      "community": 4,
+      "norm_label": "custom reporters \u2014 wasm reporter components",
+      "id": "concepts_custom_reporters_document"
     },
     {
       "label": "perfscale:reporter@0.1.0 WIT contract",
@@ -456,9 +484,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_wit_contract",
-      "community": 3,
-      "norm_label": "perfscale:reporter@0.1.0 wit contract"
+      "community": 4,
+      "norm_label": "perfscale:reporter@0.1.0 wit contract",
+      "id": "concepts_custom_reporters_wit_contract"
     },
     {
       "label": "Reporter sandbox \u2014 emit-file is the only output channel",
@@ -470,9 +498,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Guests get no WASI filesystem or network access; file names must be relative traversal-safe paths; guest errors never fail the run.",
-      "id": "concepts_custom_reporters_sandbox",
-      "community": 3,
-      "norm_label": "reporter sandbox \u2014 emit-file is the only output channel"
+      "community": 4,
+      "norm_label": "reporter sandbox \u2014 emit-file is the only output channel",
+      "id": "concepts_custom_reporters_sandbox"
     },
     {
       "label": "@perfscale/library-sdk TypeScript SDK",
@@ -483,9 +511,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_library_sdk",
-      "community": 3,
-      "norm_label": "@perfscale/library-sdk typescript sdk"
+      "community": 4,
+      "norm_label": "@perfscale/library-sdk typescript sdk",
+      "id": "concepts_custom_reporters_library_sdk"
     },
     {
       "label": "Data-driven steps \u2014 conditions, std/random, std/pick, per-VU variables",
@@ -496,9 +524,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_document",
-      "community": 1,
-      "norm_label": "data-driven steps \u2014 conditions, std/random, std/pick, per-vu variables"
+      "community": 2,
+      "norm_label": "data-driven steps \u2014 conditions, std/random, std/pick, per-vu variables",
+      "id": "concepts_data_driven_steps_document"
     },
     {
       "label": "Conditional steps if:/when: (equivalent aliases)",
@@ -509,9 +537,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_conditions",
-      "community": 1,
-      "norm_label": "conditional steps if:/when: (equivalent aliases)"
+      "community": 2,
+      "norm_label": "conditional steps if:/when: (equivalent aliases)",
+      "id": "concepts_data_driven_steps_conditions"
     },
     {
       "label": "std/random@v1 step",
@@ -522,9 +550,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_std_random",
-      "community": 1,
-      "norm_label": "std/random@v1 step"
+      "community": 2,
+      "norm_label": "std/random@v1 step",
+      "id": "concepts_data_driven_steps_std_random"
     },
     {
       "label": "std/pick@v1 step \u2014 dynamic array selection",
@@ -535,9 +563,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_std_pick",
-      "community": 1,
-      "norm_label": "std/pick@v1 step \u2014 dynamic array selection"
+      "community": 2,
+      "norm_label": "std/pick@v1 step \u2014 dynamic array selection",
+      "id": "concepts_data_driven_steps_std_pick"
     },
     {
       "label": "Per-VU variables ${{ __vu__ }} / ${{ __iter__ }}",
@@ -548,9 +576,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_vu_vars",
-      "community": 1,
-      "norm_label": "per-vu variables ${{ __vu__ }} / ${{ __iter__ }}"
+      "community": 2,
+      "norm_label": "per-vu variables ${{ __vu__ }} / ${{ __iter__ }}",
+      "id": "concepts_data_driven_steps_vu_vars"
     },
     {
       "label": "Environment variables \u2014 workspace registry with masking",
@@ -561,9 +589,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_environment_variables_document",
-      "community": 3,
-      "norm_label": "environment variables \u2014 workspace registry with masking"
+      "community": 4,
+      "norm_label": "environment variables \u2014 workspace registry with masking",
+      "id": "concepts_environment_variables_document"
     },
     {
       "label": "Value-based log masking guarantee (visible vs masked)",
@@ -575,9 +603,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Masking is value-based, not key-based; it protects logs and the UI but is not an access-control mechanism \u2014 workspace members can still read values over the API.",
-      "id": "concepts_environment_variables_masking",
-      "community": 3,
-      "norm_label": "value-based log masking guarantee (visible vs masked)"
+      "community": 4,
+      "norm_label": "value-based log masking guarantee (visible vs masked)",
+      "id": "concepts_environment_variables_masking"
     },
     {
       "label": "Machine-side ${{ env.* }} interpolation",
@@ -588,9 +616,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_environment_variables_env_interpolation",
-      "community": 3,
-      "norm_label": "machine-side ${{ env.* }} interpolation"
+      "community": 4,
+      "norm_label": "machine-side ${{ env.* }} interpolation",
+      "id": "concepts_environment_variables_env_interpolation"
     },
     {
       "label": "Faker \u2014 deterministic fake data WASM library",
@@ -601,9 +629,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_faker_document",
-      "community": 1,
-      "norm_label": "faker \u2014 deterministic fake data wasm library"
+      "community": 2,
+      "norm_label": "faker \u2014 deterministic fake data wasm library",
+      "id": "concepts_faker_document"
     },
     {
       "label": "Perfscale/faker Rust/WASM library (internet/address/payment functions)",
@@ -615,9 +643,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Version 0.1.0 intentionally ships a small English corpus and a fixed function set \u2014 not a complete port of Python Faker; no WASI clock/random dependency keeps capabilities empty.",
-      "id": "concepts_faker_wasm_library",
-      "community": 1,
-      "norm_label": "perfscale/faker rust/wasm library (internet/address/payment functions)"
+      "community": 2,
+      "norm_label": "perfscale/faker rust/wasm library (internet/address/payment functions)",
+      "id": "concepts_faker_wasm_library"
     },
     {
       "label": "File steps \u2014 file-read, file-write, read-json",
@@ -628,9 +656,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_document",
-      "community": 1,
-      "norm_label": "file steps \u2014 file-read, file-write, read-json"
+      "community": 2,
+      "norm_label": "file steps \u2014 file-read, file-write, read-json",
+      "id": "concepts_files_document"
     },
     {
       "label": "std/file-read@v1, std/file-write@v1, std/read-json@v1 steps",
@@ -641,9 +669,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_steps",
-      "community": 1,
-      "norm_label": "std/file-read@v1, std/file-write@v1, std/read-json@v1 steps"
+      "community": 2,
+      "norm_label": "std/file-read@v1, std/file-write@v1, std/read-json@v1 steps",
+      "id": "concepts_files_steps"
     },
     {
       "label": "Shared jq-style query grammar (with ? tolerant segments)",
@@ -654,9 +682,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_jq_grammar",
-      "community": 1,
-      "norm_label": "shared jq-style query grammar (with ? tolerant segments)"
+      "community": 2,
+      "norm_label": "shared jq-style query grammar (with ? tolerant segments)",
+      "id": "concepts_files_jq_grammar"
     },
     {
       "label": "Process-wide JSON cache revalidated by (mtime, size)",
@@ -667,9 +695,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_cache",
-      "community": 1,
-      "norm_label": "process-wide json cache revalidated by (mtime, size)"
+      "community": 2,
+      "norm_label": "process-wide json cache revalidated by (mtime, size)",
+      "id": "concepts_files_cache"
     },
     {
       "label": "Git integration \u2014 repository sync and run notifications",
@@ -680,9 +708,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_git_integration_document",
       "community": 0,
-      "norm_label": "git integration \u2014 repository sync and run notifications"
+      "norm_label": "git integration \u2014 repository sync and run notifications",
+      "id": "concepts_git_integration_document"
     },
     {
       "label": "Manual snapshot-based sync (no auto-sync on push)",
@@ -694,9 +722,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Syncing is deliberately manual so a force-push never silently changes what a scheduled run executes; every run executes the snapshot for reproducibility.",
-      "id": "concepts_git_integration_snapshot",
       "community": 0,
-      "norm_label": "manual snapshot-based sync (no auto-sync on push)"
+      "norm_label": "manual snapshot-based sync (no auto-sync on push)",
+      "id": "concepts_git_integration_snapshot"
     },
     {
       "label": "Commit status and PR/MR comment notifications (perfscale/load-test)",
@@ -707,9 +735,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_git_integration_notifications",
       "community": 0,
-      "norm_label": "commit status and pr/mr comment notifications (perfscale/load-test)"
+      "norm_label": "commit status and pr/mr comment notifications (perfscale/load-test)",
+      "id": "concepts_git_integration_notifications"
     },
     {
       "label": "Self-managed security flags (allow_private_net, allow_http, tls_skip_verify)",
@@ -721,9 +749,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Connections are fail-closed against non-public targets by default (SSRF guard); each flag widens what the control plane may reach, so all three default to off with UI warnings.",
-      "id": "concepts_git_integration_security_flags",
       "community": 0,
-      "norm_label": "self-managed security flags (allow_private_net, allow_http, tls_skip_verify)"
+      "norm_label": "self-managed security flags (allow_private_net, allow_http, tls_skip_verify)",
+      "id": "concepts_git_integration_security_flags"
     },
     {
       "label": "GraphQL load testing \u2014 std/graphql@v1",
@@ -734,9 +762,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_graphql_document",
-      "community": 4,
-      "norm_label": "graphql load testing \u2014 std/graphql@v1"
+      "community": 5,
+      "norm_label": "graphql load testing \u2014 std/graphql@v1",
+      "id": "concepts_graphql_document"
     },
     {
       "label": "Schema-aware validation via introspection or schema_file",
@@ -747,9 +775,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_graphql_schema_validation",
-      "community": 4,
-      "norm_label": "schema-aware validation via introspection or schema_file"
+      "community": 5,
+      "norm_label": "schema-aware validation via introspection or schema_file",
+      "id": "concepts_graphql_schema_validation"
     },
     {
       "label": "GraphQL failure semantics (errors in 200 OK body)",
@@ -760,9 +788,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_graphql_failure_semantics",
-      "community": 4,
-      "norm_label": "graphql failure semantics (errors in 200 ok body)"
+      "community": 5,
+      "norm_label": "graphql failure semantics (errors in 200 ok body)",
+      "id": "concepts_graphql_failure_semantics"
     },
     {
       "label": "gRPC load testing \u2014 std/grpc* steps",
@@ -773,9 +801,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_document",
-      "community": 4,
-      "norm_label": "grpc load testing \u2014 std/grpc* steps"
+      "community": 5,
+      "norm_label": "grpc load testing \u2014 std/grpc* steps",
+      "id": "concepts_grpc_document"
     },
     {
       "label": "Dynamic protobuf schemas (descriptor_set or server reflection)",
@@ -786,9 +814,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_dynamic_schema",
-      "community": 4,
-      "norm_label": "dynamic protobuf schemas (descriptor_set or server reflection)"
+      "community": 5,
+      "norm_label": "dynamic protobuf schemas (descriptor_set or server reflection)",
+      "id": "concepts_grpc_dynamic_schema"
     },
     {
       "label": "Live channel steps (grpc-connect/call/stream-open/send/recv/close)",
@@ -799,9 +827,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_live_channel",
-      "community": 4,
-      "norm_label": "live channel steps (grpc-connect/call/stream-open/send/recv/close)"
+      "community": 5,
+      "norm_label": "live channel steps (grpc-connect/call/stream-open/send/recv/close)",
+      "id": "concepts_grpc_live_channel"
     },
     {
       "label": "grpc_* metric families (grpc_req_duration, grpc_msg_rtt, grpc_msgs_*)",
@@ -812,9 +840,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_metrics",
-      "community": 4,
-      "norm_label": "grpc_* metric families (grpc_req_duration, grpc_msg_rtt, grpc_msgs_*)"
+      "community": 5,
+      "norm_label": "grpc_* metric families (grpc_req_duration, grpc_msg_rtt, grpc_msgs_*)",
+      "id": "concepts_grpc_metrics"
     },
     {
       "label": "HTTP load generation \u2014 std/http@v1",
@@ -825,9 +853,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_http_document",
-      "community": 4,
-      "norm_label": "http load generation \u2014 std/http@v1"
+      "community": 5,
+      "norm_label": "http load generation \u2014 std/http@v1",
+      "id": "concepts_http_document"
     },
     {
       "label": "Connection pooling modes (per-vu, shared, dedicated)",
@@ -838,9 +866,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_http_connection_pooling",
-      "community": 4,
-      "norm_label": "connection pooling modes (per-vu, shared, dedicated)"
+      "community": 5,
+      "norm_label": "connection pooling modes (per-vu, shared, dedicated)",
+      "id": "concepts_http_connection_pooling"
     },
     {
       "label": "source_ips multi-source-IP traffic",
@@ -852,9 +880,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A single (source IP, destination IP, port) tuple caps at ~64k concurrent connections due to the ephemeral port range; binding several local addresses multiplies that budget.",
-      "id": "concepts_http_source_ips",
-      "community": 4,
-      "norm_label": "source_ips multi-source-ip traffic"
+      "community": 5,
+      "norm_label": "source_ips multi-source-ip traffic",
+      "id": "concepts_http_source_ips"
     },
     {
       "label": "Document imports \u2014 shared base YAML composition",
@@ -865,9 +893,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_imports_document",
-      "community": 1,
-      "norm_label": "document imports \u2014 shared base yaml composition"
+      "community": 2,
+      "norm_label": "document imports \u2014 shared base yaml composition",
+      "id": "concepts_imports_document"
     },
     {
       "label": "Deep-merge import semantics (objects merge, arrays replaced)",
@@ -878,9 +906,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_imports_deep_merge",
-      "community": 1,
-      "norm_label": "deep-merge import semantics (objects merge, arrays replaced)"
+      "community": 2,
+      "norm_label": "deep-merge import semantics (objects merge, arrays replaced)",
+      "id": "concepts_imports_deep_merge"
     },
     {
       "label": "Remote import security \u2014 --allow-remote-import, origin confinement",
@@ -892,9 +920,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Import resolution happens before allow_file_actions/allow_process_actions gates, so a network import inside an untrusted config would be an SSRF primitive; permission therefore comes from the caller CLI flag, never the document.",
-      "id": "concepts_imports_remote_security",
-      "community": 1,
-      "norm_label": "remote import security \u2014 --allow-remote-import, origin confinement"
+      "community": 2,
+      "norm_label": "remote import security \u2014 --allow-remote-import, origin confinement",
+      "id": "concepts_imports_remote_security"
     },
     {
       "label": "Typed inputs \u2014 declared run parameters",
@@ -905,9 +933,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_inputs_document",
       "community": 15,
-      "norm_label": "typed inputs \u2014 declared run parameters"
+      "norm_label": "typed inputs \u2014 declared run parameters",
+      "id": "concepts_inputs_document"
     },
     {
       "label": "Input validation at lint and run start (types, bounds, choices)",
@@ -918,9 +946,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_inputs_validation",
       "community": 15,
-      "norm_label": "input validation at lint and run start (types, bounds, choices)"
+      "norm_label": "input validation at lint and run start (types, bounds, choices)",
+      "id": "concepts_inputs_validation"
     },
     {
       "label": "Libraries \u2014 WASM value-generator libraries for ${alias.fn(...)} tokens",
@@ -931,9 +959,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_document",
-      "community": 1,
-      "norm_label": "libraries \u2014 wasm value-generator libraries for ${alias.fn(...)} tokens"
+      "community": 2,
+      "norm_label": "libraries \u2014 wasm value-generator libraries for ${alias.fn(...)} tokens",
+      "id": "concepts_libraries_document"
     },
     {
       "label": "@std/random@v1 built-in library",
@@ -944,9 +972,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_std_random",
-      "community": 1,
-      "norm_label": "@std/random@v1 built-in library"
+      "community": 2,
+      "norm_label": "@std/random@v1 built-in library",
+      "id": "concepts_libraries_std_random"
     },
     {
       "label": "@std/json@v1 built-in library",
@@ -957,9 +985,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_std_json",
-      "community": 1,
-      "norm_label": "@std/json@v1 built-in library"
+      "community": 2,
+      "norm_label": "@std/json@v1 built-in library",
+      "id": "concepts_libraries_std_json"
     },
     {
       "label": "Fail-closed capability sandbox (fs, clock grants)",
@@ -971,9 +999,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The host connects exactly the intersection of WASI imports and YAML grants; wasi:random is never provided so libraries draw randomness from the seeded PRNG, keeping seed: runs reproducible.",
-      "id": "concepts_libraries_capability_sandbox",
-      "community": 1,
-      "norm_label": "fail-closed capability sandbox (fs, clock grants)"
+      "community": 2,
+      "norm_label": "fail-closed capability sandbox (fs, clock grants)",
+      "id": "concepts_libraries_capability_sandbox"
     },
     {
       "label": "perfscale install + perfscale.lock offline distribution",
@@ -984,9 +1012,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_install_lockfile",
-      "community": 1,
-      "norm_label": "perfscale install + perfscale.lock offline distribution"
+      "community": 2,
+      "norm_label": "perfscale install + perfscale.lock offline distribution",
+      "id": "concepts_libraries_install_lockfile"
     },
     {
       "label": "Live metrics streaming \u2014 during-run report stream",
@@ -997,9 +1025,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_live_metrics_document",
-      "community": 3,
-      "norm_label": "live metrics streaming \u2014 during-run report stream"
+      "community": 4,
+      "norm_label": "live metrics streaming \u2014 during-run report stream",
+      "id": "concepts_live_metrics_document"
     },
     {
       "label": "Load-generator protection (bounded queue, CPU gate, drop-oldest)",
@@ -1011,9 +1039,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Generating load always wins over reporting it: snapshots go over a bounded channel and a full channel drops the oldest snapshot; cumulative snapshots mean no information is permanently lost.",
-      "id": "concepts_live_metrics_backpressure",
-      "community": 3,
-      "norm_label": "load-generator protection (bounded queue, cpu gate, drop-oldest)"
+      "community": 4,
+      "norm_label": "load-generator protection (bounded queue, cpu gate, drop-oldest)",
+      "id": "concepts_live_metrics_backpressure"
     },
     {
       "label": "Streaming reporters (prometheus-rw, otel, serve)",
@@ -1024,9 +1052,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_live_metrics_streaming_reporters",
-      "community": 3,
-      "norm_label": "streaming reporters (prometheus-rw, otel, serve)"
+      "community": 4,
+      "norm_label": "streaming reporters (prometheus-rw, otel, serve)",
+      "id": "concepts_live_metrics_streaming_reporters"
     },
     {
       "label": "Load profiles \u2014 fixed, stages, arrival-rate",
@@ -1037,9 +1065,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_load_profiles_document",
       "community": 12,
-      "norm_label": "load profiles \u2014 fixed, stages, arrival-rate"
+      "norm_label": "load profiles \u2014 fixed, stages, arrival-rate",
+      "id": "concepts_load_profiles_document"
     },
     {
       "label": "Arrival-rate open model with dropped_iterations",
@@ -1051,9 +1079,9 @@
       "author": null,
       "contributor": null,
       "rationale": "In a closed model a slow system slows the load down; the open model holds an iterations-per-second schedule so new iterations start on time even when the system under test degrades.",
-      "id": "concepts_load_profiles_arrival_rate",
       "community": 12,
-      "norm_label": "arrival-rate open model with dropped_iterations"
+      "norm_label": "arrival-rate open model with dropped_iterations",
+      "id": "concepts_load_profiles_arrival_rate"
     },
     {
       "label": "Open-model latency metrics (engine_arrival_queue_wait_ms, engine_arrival_iteration_ms)",
@@ -1064,9 +1092,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_load_profiles_queue_metrics",
       "community": 12,
-      "norm_label": "open-model latency metrics (engine_arrival_queue_wait_ms, engine_arrival_iteration_ms)"
+      "norm_label": "open-model latency metrics (engine_arrival_queue_wait_ms, engine_arrival_iteration_ms)",
+      "id": "concepts_load_profiles_queue_metrics"
     },
     {
       "label": "Machines \u2014 load generator nodes",
@@ -1077,9 +1105,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_machines_document",
       "community": 0,
-      "norm_label": "machines \u2014 load generator nodes"
+      "norm_label": "machines \u2014 load generator nodes",
+      "id": "concepts_machines_document"
     },
     {
       "label": "perfscale agent (perfscaled) machine registration and statuses",
@@ -1090,9 +1118,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_machines_agent",
       "community": 0,
-      "norm_label": "perfscale agent (perfscaled) machine registration and statuses"
+      "norm_label": "perfscale agent (perfscaled) machine registration and statuses",
+      "id": "concepts_machines_agent"
     },
     {
       "label": "Linux network tuning (ip_local_port_range, tcp_tw_reuse)",
@@ -1103,9 +1131,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_machines_network_tuning",
       "community": 0,
-      "norm_label": "linux network tuning (ip_local_port_range, tcp_tw_reuse)"
+      "norm_label": "linux network tuning (ip_local_port_range, tcp_tw_reuse)",
+      "id": "concepts_machines_network_tuning"
     },
     {
       "label": "Protocol metrics \u2014 dashboard protocol detection",
@@ -1116,9 +1144,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_protocol_metrics_document",
-      "community": 4,
-      "norm_label": "protocol metrics \u2014 dashboard protocol detection"
+      "community": 5,
+      "norm_label": "protocol metrics \u2014 dashboard protocol detection",
+      "id": "concepts_protocol_metrics_document"
     },
     {
       "label": "Protocol detection order (FIX > gRPC > WebSocket > HTTP > Generic)",
@@ -1129,9 +1157,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_protocol_metrics_detection",
-      "community": 4,
-      "norm_label": "protocol detection order (fix > grpc > websocket > http > generic)"
+      "community": 5,
+      "norm_label": "protocol detection order (fix > grpc > websocket > http > generic)",
+      "id": "concepts_protocol_metrics_detection"
     },
     {
       "label": "Pub/Sub load testing \u2014 std/pubsub@v1",
@@ -1142,9 +1170,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_pubsub_document",
       "community": 13,
-      "norm_label": "pub/sub load testing \u2014 std/pubsub@v1"
+      "norm_label": "pub/sub load testing \u2014 std/pubsub@v1",
+      "id": "concepts_pubsub_document"
     },
     {
       "label": "Pub/Sub drivers (memory, nats; pro: kafka/redis/mqtt)",
@@ -1155,9 +1183,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_pubsub_drivers",
       "community": 13,
-      "norm_label": "pub/sub drivers (memory, nats; pro: kafka/redis/mqtt)"
+      "norm_label": "pub/sub drivers (memory, nats; pro: kafka/redis/mqtt)",
+      "id": "concepts_pubsub_drivers"
     },
     {
       "label": "Connection posture (scope) and publish ack mode (flush)",
@@ -1168,9 +1196,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_pubsub_scope_flush",
       "community": 13,
-      "norm_label": "connection posture (scope) and publish ack mode (flush)"
+      "norm_label": "connection posture (scope) and publish ack mode (flush)",
+      "id": "concepts_pubsub_scope_flush"
     },
     {
       "label": "Reports \u2014 end-of-run report@v1 and built-in reporters",
@@ -1181,9 +1209,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_reports_document",
-      "community": 3,
-      "norm_label": "reports \u2014 end-of-run report@v1 and built-in reporters"
+      "community": 4,
+      "norm_label": "reports \u2014 end-of-run report@v1 and built-in reporters",
+      "id": "concepts_reports_document"
     },
     {
       "label": "report@v1 canonical document schema",
@@ -1194,9 +1222,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_reports_report_v1",
-      "community": 3,
-      "norm_label": "report@v1 canonical document schema"
+      "community": 4,
+      "norm_label": "report@v1 canonical document schema",
+      "id": "concepts_reports_report_v1"
     },
     {
       "label": "Built-in reporters (json, junit, html, prometheus-rw, otel, serve)",
@@ -1207,9 +1235,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_reports_builtin_reporters",
-      "community": 3,
-      "norm_label": "built-in reporters (json, junit, html, prometheus-rw, otel, serve)"
+      "community": 4,
+      "norm_label": "built-in reporters (json, junit, html, prometheus-rw, otel, serve)",
+      "id": "concepts_reports_builtin_reporters"
     },
     {
       "label": "Reporter failure policy (config errors fail fast, delivery best-effort)",
@@ -1221,9 +1249,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A push that fails at the end of the run is logged and counted in engine_report_errors, but the run still completes and keeps its exit code.",
-      "id": "concepts_reports_failure_policy",
-      "community": 3,
-      "norm_label": "reporter failure policy (config errors fail fast, delivery best-effort)"
+      "community": 4,
+      "norm_label": "reporter failure policy (config errors fail fast, delivery best-effort)",
+      "id": "concepts_reports_failure_policy"
     },
     {
       "label": "Task run lifecycle (pending\u2192running\u2192passed|failed|cancelled|timeout)",
@@ -1234,9 +1262,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_task",
-      "community": 5,
-      "norm_label": "task run lifecycle (pending\u2192running\u2192passed|failed|cancelled|timeout)"
+      "community": 1,
+      "norm_label": "task run lifecycle (pending\u2192running\u2192passed|failed|cancelled|timeout)",
+      "id": "concepts_runs_task"
     },
     {
       "label": "Live metrics streaming & protocol-detecting Metrics dashboard",
@@ -1247,9 +1275,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_live_metrics",
-      "community": 5,
-      "norm_label": "live metrics streaming & protocol-detecting metrics dashboard"
+      "community": 1,
+      "norm_label": "live metrics streaming & protocol-detecting metrics dashboard",
+      "id": "concepts_runs_live_metrics"
     },
     {
       "label": "Run history with plan-based retention (30/90/365 days)",
@@ -1260,9 +1288,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_run_history",
-      "community": 5,
-      "norm_label": "run history with plan-based retention (30/90/365 days)"
+      "community": 1,
+      "norm_label": "run history with plan-based retention (30/90/365 days)",
+      "id": "concepts_runs_run_history"
     },
     {
       "label": "Tasks REST API (POST/DELETE /api/v1/tasks)",
@@ -1273,9 +1301,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_tasks_api",
-      "community": 5,
-      "norm_label": "tasks rest api (post/delete /api/v1/tasks)"
+      "community": 1,
+      "norm_label": "tasks rest api (post/delete /api/v1/tasks)",
+      "id": "concepts_runs_tasks_api"
     },
     {
       "label": "MCP run tools (run_test, list_runs, get_run, get_run_logs, runs_by_machine)",
@@ -1286,9 +1314,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_mcp_tools",
-      "community": 5,
-      "norm_label": "mcp run tools (run_test, list_runs, get_run, get_run_logs, runs_by_machine)"
+      "community": 1,
+      "norm_label": "mcp run tools (run_test, list_runs, get_run, get_run_logs, runs_by_machine)",
+      "id": "concepts_runs_mcp_tools"
     },
     {
       "label": "before:/after: setup & teardown blocks",
@@ -1300,9 +1328,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A broken setup would make every iteration fail identically, so a failed before: step aborts the run before spawning VUs; teardown is best-effort and always attempted, including on Ctrl-C/SIGTERM",
-      "id": "concepts_setup_teardown_before_after",
-      "community": 9,
-      "norm_label": "before:/after: setup & teardown blocks"
+      "community": 10,
+      "norm_label": "before:/after: setup & teardown blocks",
+      "id": "concepts_setup_teardown_before_after"
     },
     {
       "label": "std/child_process@v1 (spawn sidecar process with readiness gate and restart policy)",
@@ -1313,9 +1341,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_setup_teardown_child_process",
-      "community": 9,
-      "norm_label": "std/child_process@v1 (spawn sidecar process with readiness gate and restart policy)"
+      "community": 10,
+      "norm_label": "std/child_process@v1 (spawn sidecar process with readiness gate and restart policy)",
+      "id": "concepts_setup_teardown_child_process"
     },
     {
       "label": "std/kill_process@v1 (graceful stop by registry name or pid)",
@@ -1326,9 +1354,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_setup_teardown_kill_process",
-      "community": 9,
-      "norm_label": "std/kill_process@v1 (graceful stop by registry name or pid)"
+      "community": 10,
+      "norm_label": "std/kill_process@v1 (graceful stop by registry name or pid)",
+      "id": "concepts_setup_teardown_kill_process"
     },
     {
       "label": "allow_process_actions safety gate",
@@ -1340,9 +1368,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Process actions are fail-closed: a step list from an untrusted source cannot touch OS processes until the config explicitly opts in",
-      "id": "concepts_setup_teardown_allow_process_actions",
-      "community": 9,
-      "norm_label": "allow_process_actions safety gate"
+      "community": 10,
+      "norm_label": "allow_process_actions safety gate",
+      "id": "concepts_setup_teardown_allow_process_actions"
     },
     {
       "label": "Test definition (statuses draft/active/archived)",
@@ -1353,9 +1381,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_test",
-      "community": 5,
-      "norm_label": "test definition (statuses draft/active/archived)"
+      "community": 1,
+      "norm_label": "test definition (statuses draft/active/archived)",
+      "id": "concepts_tests_test"
     },
     {
       "label": "Task (single execution of a test)",
@@ -1366,9 +1394,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_task",
-      "community": 5,
-      "norm_label": "task (single execution of a test)"
+      "community": 1,
+      "norm_label": "task (single execution of a test)",
+      "id": "concepts_tests_task"
     },
     {
       "label": "Supported load tools (k6, JMeter, Locust, Artillery, Gatling, custom)",
@@ -1379,9 +1407,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_supported_tools",
-      "community": 5,
-      "norm_label": "supported load tools (k6, jmeter, locust, artillery, gatling, custom)"
+      "community": 1,
+      "norm_label": "supported load tools (k6, jmeter, locust, artillery, gatling, custom)",
+      "id": "concepts_tests_supported_tools"
     },
     {
       "label": "Result metrics (p50/p95/p99/errorRate/requestsPerSec/totalRequests)",
@@ -1392,9 +1420,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_result_metrics",
-      "community": 5,
-      "norm_label": "result metrics (p50/p95/p99/errorrate/requestspersec/totalrequests)"
+      "community": 1,
+      "norm_label": "result metrics (p50/p95/p99/errorrate/requestspersec/totalrequests)",
+      "id": "concepts_tests_result_metrics"
     },
     {
       "label": "Cron trigger (schedule, machine, timezone, run now)",
@@ -1405,9 +1433,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_triggers_trigger",
-      "community": 5,
-      "norm_label": "cron trigger (schedule, machine, timezone, run now)"
+      "community": 1,
+      "norm_label": "cron trigger (schedule, machine, timezone, run now)",
+      "id": "concepts_triggers_trigger"
     },
     {
       "label": "GitLab-style enable/pause toggle with next-run recomputation",
@@ -1418,9 +1446,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_triggers_enable_toggle",
-      "community": 5,
-      "norm_label": "gitlab-style enable/pause toggle with next-run recomputation"
+      "community": 1,
+      "norm_label": "gitlab-style enable/pause toggle with next-run recomputation",
+      "id": "concepts_triggers_enable_toggle"
     },
     {
       "label": "Outbound webhook (per-workspace, HMAC-signed)",
@@ -1431,9 +1459,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_webhooks_webhook",
-      "community": 5,
-      "norm_label": "outbound webhook (per-workspace, hmac-signed)"
+      "community": 1,
+      "norm_label": "outbound webhook (per-workspace, hmac-signed)",
+      "id": "concepts_webhooks_webhook"
     },
     {
       "label": "Webhook events (test.started/completed/failed/ping)",
@@ -1444,9 +1472,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_webhooks_events",
-      "community": 5,
-      "norm_label": "webhook events (test.started/completed/failed/ping)"
+      "community": 1,
+      "norm_label": "webhook events (test.started/completed/failed/ping)",
+      "id": "concepts_webhooks_events"
     },
     {
       "label": "X-Perfscale-Signature HMAC-SHA256 verification",
@@ -1457,9 +1485,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_webhooks_hmac_signature",
-      "community": 5,
-      "norm_label": "x-perfscale-signature hmac-sha256 verification"
+      "community": 1,
+      "norm_label": "x-perfscale-signature hmac-sha256 verification",
+      "id": "concepts_webhooks_hmac_signature"
     },
     {
       "label": "Durable outbox retries (1m/5m/30m/2h, 5 attempts) & delivery history",
@@ -1470,9 +1498,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_webhooks_retry_backoff",
-      "community": 5,
-      "norm_label": "durable outbox retries (1m/5m/30m/2h, 5 attempts) & delivery history"
+      "community": 1,
+      "norm_label": "durable outbox retries (1m/5m/30m/2h, 5 attempts) & delivery history",
+      "id": "concepts_webhooks_retry_backoff"
     },
     {
       "label": "std/ws@v1 one-shot WebSocket session",
@@ -1483,9 +1511,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_websocket_ws_step",
-      "community": 2,
-      "norm_label": "std/ws@v1 one-shot websocket session"
+      "community": 3,
+      "norm_label": "std/ws@v1 one-shot websocket session",
+      "id": "concepts_websocket_ws_step"
     },
     {
       "label": "Live WS connection (std/ws-connect/send/recv/ping/close@v1)",
@@ -1496,9 +1524,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_websocket_live_connection",
-      "community": 2,
-      "norm_label": "live ws connection (std/ws-connect/send/recv/ping/close@v1)"
+      "community": 3,
+      "norm_label": "live ws connection (std/ws-connect/send/recv/ping/close@v1)",
+      "id": "concepts_websocket_live_connection"
     },
     {
       "label": "Dynamic ${\u2026} message tokens (${seq}, ${uuid}, ${rand}, ${choice}, \u2026)",
@@ -1509,9 +1537,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_websocket_dynamic_tokens",
       "community": 17,
-      "norm_label": "dynamic ${...} message tokens (${seq}, ${uuid}, ${rand}, ${choice}, ...)"
+      "norm_label": "dynamic ${...} message tokens (${seq}, ${uuid}, ${rand}, ${choice}, ...)",
+      "id": "concepts_websocket_dynamic_tokens"
     },
     {
       "label": "ws_msg_rtt application-level message RTT metric",
@@ -1523,9 +1551,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Waiting on a server-push stream is deliberately not counted as latency \u2014 it would poison the shared percentiles",
-      "id": "concepts_websocket_ws_msg_rtt",
-      "community": 2,
-      "norm_label": "ws_msg_rtt application-level message rtt metric"
+      "community": 3,
+      "norm_label": "ws_msg_rtt application-level message rtt metric",
+      "id": "concepts_websocket_ws_msg_rtt"
     },
     {
       "label": "Message assertions via std/check@v1 (any quantifier, by-index addressing)",
@@ -1536,9 +1564,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_websocket_assertions",
-      "community": 2,
-      "norm_label": "message assertions via std/check@v1 (any quantifier, by-index addressing)"
+      "community": 3,
+      "norm_label": "message assertions via std/check@v1 (any quantifier, by-index addressing)",
+      "id": "concepts_websocket_assertions"
     },
     {
       "label": "Perfscale/github-action (run-and-gate workflow step)",
@@ -1550,9 +1578,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Exit code 0 means the run completed even if requests or checks failed \u2014 a green step is not a green SLA, so pipelines must gate on the summary-json output",
-      "id": "getting_started_ci_cd_github_action",
-      "community": 2,
-      "norm_label": "perfscale/github-action (run-and-gate workflow step)"
+      "community": 3,
+      "norm_label": "perfscale/github-action (run-and-gate workflow step)",
+      "id": "getting_started_ci_cd_github_action"
     },
     {
       "label": "GitLab CI templates (.perfscale:run / .perfscale:gate)",
@@ -1563,9 +1591,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_ci_cd_gitlab_ci",
-      "community": 2,
-      "norm_label": "gitlab ci templates (.perfscale:run / .perfscale:gate)"
+      "community": 3,
+      "norm_label": "gitlab ci templates (.perfscale:run / .perfscale:gate)",
+      "id": "getting_started_ci_cd_gitlab_ci"
     },
     {
       "label": "REST API CI integration with personal API tokens (psk_...)",
@@ -1576,9 +1604,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_ci_cd_rest_api",
-      "community": 5,
-      "norm_label": "rest api ci integration with personal api tokens (psk_...)"
+      "community": 1,
+      "norm_label": "rest api ci integration with personal api tokens (psk_...)",
+      "id": "getting_started_ci_cd_rest_api"
     },
     {
       "label": "Webhooks back into CI (test.completed/test.failed)",
@@ -1589,9 +1617,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_ci_cd_webhooks",
-      "community": 5,
-      "norm_label": "webhooks back into ci (test.completed/test.failed)"
+      "community": 1,
+      "norm_label": "webhooks back into ci (test.completed/test.failed)",
+      "id": "getting_started_ci_cd_webhooks"
     },
     {
       "label": "Database load testing from the CLI (PostgreSQL, MySQL/MariaDB, SQLite)",
@@ -1602,9 +1630,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_database_cli_database_testing",
-      "community": 2,
-      "norm_label": "database load testing from the cli (postgresql, mysql/mariadb, sqlite)"
+      "community": 3,
+      "norm_label": "database load testing from the cli (postgresql, mysql/mariadb, sqlite)",
+      "id": "getting_started_database_cli_database_testing"
     },
     {
       "label": "std/db-connect@v1 (persistent/per-query modes, scope iteration|vu, prepared cache)",
@@ -1616,9 +1644,9 @@
       "author": null,
       "contributor": null,
       "rationale": "prepared is opt-in because cached prepared statements are incompatible with transaction-mode poolers such as PgBouncer and Supabase Supavisor",
-      "id": "getting_started_database_cli_db_connect",
-      "community": 2,
-      "norm_label": "std/db-connect@v1 (persistent/per-query modes, scope iteration|vu, prepared cache)"
+      "community": 3,
+      "norm_label": "std/db-connect@v1 (persistent/per-query modes, scope iteration|vu, prepared cache)",
+      "id": "getting_started_database_cli_db_connect"
     },
     {
       "label": "std/db-query@v1 (parameterized SQL, bind params, max_rows, store_rows)",
@@ -1630,9 +1658,9 @@
       "author": null,
       "contributor": null,
       "rationale": "SQL text is never interpolated \u2014 all values move through params \u2014 so scenarios cannot build injectable SQL",
-      "id": "getting_started_database_cli_db_query",
-      "community": 2,
-      "norm_label": "std/db-query@v1 (parameterized sql, bind params, max_rows, store_rows)"
+      "community": 3,
+      "norm_label": "std/db-query@v1 (parameterized sql, bind params, max_rows, store_rows)",
+      "id": "getting_started_database_cli_db_query"
     },
     {
       "label": "std/db-tx-begin/commit/rollback@v1 transaction steps",
@@ -1643,9 +1671,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_database_cli_db_tx",
-      "community": 2,
-      "norm_label": "std/db-tx-begin/commit/rollback@v1 transaction steps"
+      "community": 3,
+      "norm_label": "std/db-tx-begin/commit/rollback@v1 transaction steps",
+      "id": "getting_started_database_cli_db_tx"
     },
     {
       "label": "db_* metric family (db_connect_duration, db_query_duration, db_rows, db_errors_*)",
@@ -1656,9 +1684,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_database_cli_db_metrics",
-      "community": 2,
-      "norm_label": "db_* metric family (db_connect_duration, db_query_duration, db_rows, db_errors_*)"
+      "community": 3,
+      "norm_label": "db_* metric family (db_connect_duration, db_query_duration, db_rows, db_errors_*)",
+      "id": "getting_started_database_cli_db_metrics"
     },
     {
       "label": "GraphQL load testing from the CLI",
@@ -1669,9 +1697,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_graphql_cli_graphql_testing",
-      "community": 2,
-      "norm_label": "graphql load testing from the cli"
+      "community": 3,
+      "norm_label": "graphql load testing from the cli",
+      "id": "getting_started_graphql_cli_graphql_testing"
     },
     {
       "label": "std/graphql@v1 (schema-aware validation via introspection)",
@@ -1682,9 +1710,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_graphql_cli_graphql_step",
-      "community": 2,
-      "norm_label": "std/graphql@v1 (schema-aware validation via introspection)"
+      "community": 3,
+      "norm_label": "std/graphql@v1 (schema-aware validation via introspection)",
+      "id": "getting_started_graphql_cli_graphql_step"
     },
     {
       "label": "graphql_* metric family (graphql_req_duration, graphql_op_<name>_duration, graphql_errors)",
@@ -1695,9 +1723,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_graphql_cli_graphql_metrics",
-      "community": 2,
-      "norm_label": "graphql_* metric family (graphql_req_duration, graphql_op_<name>_duration, graphql_errors)"
+      "community": 3,
+      "norm_label": "graphql_* metric family (graphql_req_duration, graphql_op_<name>_duration, graphql_errors)",
+      "id": "getting_started_graphql_cli_graphql_metrics"
     },
     {
       "label": "gRPC load testing from the CLI (descriptor set or server reflection)",
@@ -1708,9 +1736,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_grpc_cli_grpc_testing",
-      "community": 2,
-      "norm_label": "grpc load testing from the cli (descriptor set or server reflection)"
+      "community": 3,
+      "norm_label": "grpc load testing from the cli (descriptor set or server reflection)",
+      "id": "getting_started_grpc_cli_grpc_testing"
     },
     {
       "label": "std/grpc-* actions (connect, call, stream-open/send/recv/close)",
@@ -1721,9 +1749,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_grpc_cli_grpc_actions",
-      "community": 2,
-      "norm_label": "std/grpc-* actions (connect, call, stream-open/send/recv/close)"
+      "community": 3,
+      "norm_label": "std/grpc-* actions (connect, call, stream-open/send/recv/close)",
+      "id": "getting_started_grpc_cli_grpc_actions"
     },
     {
       "label": "grpc_* metric family (grpc_req_duration, grpc_msg_rtt, grpc_msgs_sent/received)",
@@ -1734,9 +1762,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_grpc_cli_grpc_metrics",
-      "community": 2,
-      "norm_label": "grpc_* metric family (grpc_req_duration, grpc_msg_rtt, grpc_msgs_sent/received)"
+      "community": 3,
+      "norm_label": "grpc_* metric family (grpc_req_duration, grpc_msg_rtt, grpc_msgs_sent/received)",
+      "id": "getting_started_grpc_cli_grpc_metrics"
     },
     {
       "label": "perfscale SaaS load testing platform",
@@ -1747,9 +1775,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_index_perfscale",
-      "community": 2,
-      "norm_label": "perfscale saas load testing platform"
+      "community": 3,
+      "norm_label": "perfscale saas load testing platform",
+      "id": "getting_started_index_perfscale"
     },
     {
       "label": "Machine (registered load-generator node)",
@@ -1760,9 +1788,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_index_machine",
-      "community": 5,
-      "norm_label": "machine (registered load-generator node)"
+      "community": 1,
+      "norm_label": "machine (registered load-generator node)",
+      "id": "getting_started_index_machine"
     },
     {
       "label": "Key concepts: Machine, Test, Task",
@@ -1773,9 +1801,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_index_key_concepts",
-      "community": 5,
-      "norm_label": "key concepts: machine, test, task"
+      "community": 1,
+      "norm_label": "key concepts: machine, test, task",
+      "id": "getting_started_index_key_concepts"
     },
     {
       "label": "pnpm dx:init one-time setup (deps, Docker services, DB schema)",
@@ -1786,9 +1814,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_installation_dx_init",
-      "community": 10,
-      "norm_label": "pnpm dx:init one-time setup (deps, docker services, db schema)"
+      "community": 1,
+      "norm_label": "pnpm dx:init one-time setup (deps, docker services, db schema)",
+      "id": "getting_started_installation_dx_init"
     },
     {
       "label": "Dev stack (Next.js :3000, Rust BFF :8090, PostgreSQL, Keycloak)",
@@ -1799,9 +1827,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_installation_dev_stack",
-      "community": 10,
-      "norm_label": "dev stack (next.js :3000, rust bff :8090, postgresql, keycloak)"
+      "community": 1,
+      "norm_label": "dev stack (next.js :3000, rust bff :8090, postgresql, keycloak)",
+      "id": "getting_started_installation_dev_stack"
     },
     {
       "label": "Admin console (/admin): machines, configurations, tests, runs",
@@ -1812,9 +1840,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_platform_admin_console",
-      "community": 5,
-      "norm_label": "admin console (/admin): machines, configurations, tests, runs"
+      "community": 1,
+      "norm_label": "admin console (/admin): machines, configurations, tests, runs",
+      "id": "getting_started_platform_admin_console"
     },
     {
       "label": "Configurations (load-shape presets) & environment variables registry",
@@ -1825,9 +1853,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_platform_configurations",
-      "community": 5,
-      "norm_label": "configurations (load-shape presets) & environment variables registry"
+      "community": 1,
+      "norm_label": "configurations (load-shape presets) & environment variables registry",
+      "id": "getting_started_platform_configurations"
     },
     {
       "label": "Sign-in & SSO account linking (Yandex, GitFlic, Google via Keycloak)",
@@ -1838,9 +1866,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_platform_sso",
-      "community": 10,
-      "norm_label": "sign-in & sso account linking (yandex, gitflic, google via keycloak)"
+      "community": 1,
+      "norm_label": "sign-in & sso account linking (yandex, gitflic, google via keycloak)",
+      "id": "getting_started_platform_sso"
     },
     {
       "label": "Demo workspace (demo@perfscale.ru, 3 machines, sample k6 test)",
@@ -1851,9 +1879,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_quick_start_demo_workspace",
-      "community": 2,
-      "norm_label": "demo workspace (demo@perfscale.ru, 3 machines, sample k6 test)"
+      "community": 3,
+      "norm_label": "demo workspace (demo@perfscale.ru, 3 machines, sample k6 test)",
+      "id": "getting_started_quick_start_demo_workspace"
     },
     {
       "label": "First run flow: trigger task, watch live metrics, view Runs & logs",
@@ -1864,9 +1892,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_quick_start_first_run",
-      "community": 2,
-      "norm_label": "first run flow: trigger task, watch live metrics, view runs & logs"
+      "community": 3,
+      "norm_label": "first run flow: trigger task, watch live metrics, view runs & logs",
+      "id": "getting_started_quick_start_first_run"
     },
     {
       "label": "std/thresholds@v1 SLO gate (k6-style expressions, severity, exit codes)",
@@ -1878,9 +1906,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A gate over an unknown metric name fails the run loudly as a config error \u2014 typos cannot silently pass an SLO",
-      "id": "getting_started_thresholds_thresholds_step",
-      "community": 2,
-      "norm_label": "std/thresholds@v1 slo gate (k6-style expressions, severity, exit codes)"
+      "community": 3,
+      "norm_label": "std/thresholds@v1 slo gate (k6-style expressions, severity, exit codes)",
+      "id": "getting_started_thresholds_thresholds_step"
     },
     {
       "label": "run.threshold_failed webhook event",
@@ -1891,9 +1919,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_thresholds_threshold_failed_event",
-      "community": 5,
-      "norm_label": "run.threshold_failed webhook event"
+      "community": 1,
+      "norm_label": "run.threshold_failed webhook event",
+      "id": "getting_started_thresholds_threshold_failed_event"
     },
     {
       "label": "WebRTC load testing from the CLI (WHIP publish, P2P calls)",
@@ -1904,9 +1932,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_webrtc_cli_webrtc_testing",
       "community": 6,
-      "norm_label": "webrtc load testing from the cli (whip publish, p2p calls)"
+      "norm_label": "webrtc load testing from the cli (whip publish, p2p calls)",
+      "id": "getting_started_webrtc_cli_webrtc_testing"
     },
     {
       "label": "webrtc_* CLI metric summary (setup_ms, ttff_ms, rtt, bitrate, call errors)",
@@ -1917,9 +1945,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_webrtc_cli_webrtc_metrics",
       "community": 6,
-      "norm_label": "webrtc_* cli metric summary (setup_ms, ttff_ms, rtt, bitrate, call errors)"
+      "norm_label": "webrtc_* cli metric summary (setup_ms, ttff_ms, rtt, bitrate, call errors)",
+      "id": "getting_started_webrtc_cli_webrtc_metrics"
     },
     {
       "label": "WebSocket load testing from the CLI (live connection + one-shot styles)",
@@ -1930,9 +1958,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_websocket_cli_websocket_testing",
-      "community": 2,
-      "norm_label": "websocket load testing from the cli (live connection + one-shot styles)"
+      "community": 3,
+      "norm_label": "websocket load testing from the cli (live connection + one-shot styles)",
+      "id": "getting_started_websocket_cli_websocket_testing"
     },
     {
       "label": "FIX protocol load testing (paid, Scale/Enterprise)",
@@ -1943,9 +1971,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_fix_protocol",
       "community": 6,
-      "norm_label": "fix protocol load testing (paid, scale/enterprise)"
+      "norm_label": "fix protocol load testing (paid, scale/enterprise)",
+      "id": "pro_features_fix_fix_protocol"
     },
     {
       "label": "pro/fix@v1 session action (logon, messages, logout, timed)",
@@ -1956,9 +1984,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_fix_action",
       "community": 8,
-      "norm_label": "pro/fix@v1 session action (logon, messages, logout, timed)"
+      "norm_label": "pro/fix@v1 session action (logon, messages, logout, timed)",
+      "id": "pro_features_fix_fix_action"
     },
     {
       "label": "pro/fix-config@v1 reusable connection profile",
@@ -1969,9 +1997,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_fix_config",
       "community": 8,
-      "norm_label": "pro/fix-config@v1 reusable connection profile"
+      "norm_label": "pro/fix-config@v1 reusable connection profile",
+      "id": "pro_features_fix_fix_config"
     },
     {
       "label": "FIX data dictionary loaded from venue spec (QuickFIX FIX44.xml)",
@@ -1983,9 +2011,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The dictionary is loaded from the venue's own spec rather than hardcoded, so custom fields resolve by name while a bare logon still works with no schema",
-      "id": "pro_features_fix_data_dictionary",
       "community": 8,
-      "norm_label": "fix data dictionary loaded from venue spec (quickfix fix44.xml)"
+      "norm_label": "fix data dictionary loaded from venue spec (quickfix fix44.xml)",
+      "id": "pro_features_fix_data_dictionary"
     },
     {
       "label": "FIX message variable tokens & _repeat/_interval_ms directives",
@@ -1996,9 +2024,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_dynamic_tokens",
       "community": 17,
-      "norm_label": "fix message variable tokens & _repeat/_interval_ms directives"
+      "norm_label": "fix message variable tokens & _repeat/_interval_ms directives",
+      "id": "pro_features_fix_dynamic_tokens"
     },
     {
       "label": "CoinAPI Market Data FIX venue (fix.coinapi.io:3303)",
@@ -2009,9 +2037,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_coinapi",
       "community": 8,
-      "norm_label": "coinapi market data fix venue (fix.coinapi.io:3303)"
+      "norm_label": "coinapi market data fix venue (fix.coinapi.io:3303)",
+      "id": "pro_features_fix_coinapi"
     },
     {
       "label": "pro_llm_* ITL/TPOT percentile trends on std/llm@v1",
@@ -2022,9 +2050,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_llm_metrics_itl_tpot",
-      "community": 2,
-      "norm_label": "pro_llm_* itl/tpot percentile trends on std/llm@v1"
+      "community": 3,
+      "norm_label": "pro_llm_* itl/tpot percentile trends on std/llm@v1",
+      "id": "pro_features_llm_metrics_itl_tpot"
     },
     {
       "label": "LLM per-request cost estimates (pro_llm_cost_usd)",
@@ -2036,9 +2064,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Prices come only from the user's PERFSCALE_LLM_PRICES(_FILE) config \u2014 the agent ships no price tables, and an invalid config warns and disables cost metrics without ever failing a run",
-      "id": "pro_features_llm_metrics_cost",
-      "community": 2,
-      "norm_label": "llm per-request cost estimates (pro_llm_cost_usd)"
+      "community": 3,
+      "norm_label": "llm per-request cost estimates (pro_llm_cost_usd)",
+      "id": "pro_features_llm_metrics_cost"
     },
     {
       "label": "nvidia-smi-pro GPU collector (clocks, throttle reasons, per-process apps)",
@@ -2050,9 +2078,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A clock drop next to a non-zero throttle bitmask during load is the smoking gun for thermal/power throttling of a local LLM server",
-      "id": "pro_features_llm_metrics_nvidia_smi_pro",
-      "community": 2,
-      "norm_label": "nvidia-smi-pro gpu collector (clocks, throttle reasons, per-process apps)"
+      "community": 3,
+      "norm_label": "nvidia-smi-pro gpu collector (clocks, throttle reasons, per-process apps)",
+      "id": "pro_features_llm_metrics_nvidia_smi_pro"
     },
     {
       "label": "Pro pub/sub drivers for std/pubsub@v1 (Redis, MQTT, Kafka)",
@@ -2063,9 +2091,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_pubsub_pubsub_drivers",
       "community": 6,
-      "norm_label": "pro pub/sub drivers for std/pubsub@v1 (redis, mqtt, kafka)"
+      "norm_label": "pro pub/sub drivers for std/pubsub@v1 (redis, mqtt, kafka)",
+      "id": "pro_features_pubsub_pubsub_drivers"
     },
     {
       "label": "Redis Pub/Sub driver (fire-and-forget, subscribe-first)",
@@ -2076,9 +2104,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_pubsub_redis_driver",
       "community": 6,
-      "norm_label": "redis pub/sub driver (fire-and-forget, subscribe-first)"
+      "norm_label": "redis pub/sub driver (fire-and-forget, subscribe-first)",
+      "id": "pro_features_pubsub_redis_driver"
     },
     {
       "label": "MQTT driver (v3.1.1, QoS 0-2, rustls TLS)",
@@ -2090,9 +2118,9 @@
       "author": null,
       "contributor": null,
       "rationale": "MQTT v3.1.1 is used deliberately because it is the most widely supported version; v5 is intentionally not used",
-      "id": "pro_features_pubsub_mqtt_driver",
       "community": 6,
-      "norm_label": "mqtt driver (v3.1.1, qos 0-2, rustls tls)"
+      "norm_label": "mqtt driver (v3.1.1, qos 0-2, rustls tls)",
+      "id": "pro_features_pubsub_mqtt_driver"
     },
     {
       "label": "Kafka driver via rdkafka (manual partition assignment, SASL)",
@@ -2104,9 +2132,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Manual partition assignment with watermarks pinned at exchange start makes the subscribe-first rule exact \u2014 a consumer-group join cannot be awaited deterministically and the lazy latest reset could skip a roundtrip's own messages",
-      "id": "pro_features_pubsub_kafka_driver",
       "community": 6,
-      "norm_label": "kafka driver via rdkafka (manual partition assignment, sasl)"
+      "norm_label": "kafka driver via rdkafka (manual partition assignment, sasl)",
+      "id": "pro_features_pubsub_kafka_driver"
     },
     {
       "label": "Shared variables Redis driver (cross-agent shared state)",
@@ -2117,9 +2145,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_shared_redis_redis_driver",
       "community": 6,
-      "norm_label": "shared variables redis driver (cross-agent shared state)"
+      "norm_label": "shared variables redis driver (cross-agent shared state)",
+      "id": "pro_features_shared_redis_redis_driver"
     },
     {
       "label": "One Redis atomic command per op (INCRBY/RPUSH/LPOP/SET/GET)",
@@ -2131,9 +2159,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Every op maps to a single server-side atomic command so there is no read-modify-write pair to race and no lock primitive to deadlock",
-      "id": "pro_features_shared_redis_atomic_ops",
       "community": 6,
-      "norm_label": "one redis atomic command per op (incrby/rpush/lpop/set/get)"
+      "norm_label": "one redis atomic command per op (incrby/rpush/lpop/set/get)",
+      "id": "pro_features_shared_redis_atomic_ops"
     },
     {
       "label": "Run lifecycle: key seeding at perfscale:shared:<name>, no cross-run carry-over",
@@ -2144,9 +2172,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_shared_redis_run_lifecycle",
       "community": 6,
-      "norm_label": "run lifecycle: key seeding at perfscale:shared:<name>, no cross-run carry-over"
+      "norm_label": "run lifecycle: key seeding at perfscale:shared:<name>, no cross-run carry-over",
+      "id": "pro_features_shared_redis_run_lifecycle"
     },
     {
       "label": "SOAP load testing (paid, Scale/Enterprise)",
@@ -2157,9 +2185,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_soap_soap_protocol",
       "community": 6,
-      "norm_label": "soap load testing (paid, scale/enterprise)"
+      "norm_label": "soap load testing (paid, scale/enterprise)",
+      "id": "pro_features_soap_soap_protocol"
     },
     {
       "label": "pro/soap@v1 single-operation call",
@@ -2170,9 +2198,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_soap_soap_action",
       "community": 6,
-      "norm_label": "pro/soap@v1 single-operation call"
+      "norm_label": "pro/soap@v1 single-operation call",
+      "id": "pro_features_soap_soap_action"
     },
     {
       "label": "pro/soap-config@v1 WSDL-derived profile",
@@ -2183,9 +2211,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_soap_soap_config",
       "community": 6,
-      "norm_label": "pro/soap-config@v1 wsdl-derived profile"
+      "norm_label": "pro/soap-config@v1 wsdl-derived profile",
+      "id": "pro_features_soap_soap_config"
     },
     {
       "label": "SOAP Fault semantics (fault fails the step even on HTTP 200)",
@@ -2197,9 +2225,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Servers send SOAP Faults with both 200 and 500 statuses, so raw HTTP success counting is a trap \u2014 the step always parses the body",
-      "id": "pro_features_soap_fault_semantics",
       "community": 6,
-      "norm_label": "soap fault semantics (fault fails the step even on http 200)"
+      "norm_label": "soap fault semantics (fault fails the step even on http 200)",
+      "id": "pro_features_soap_fault_semantics"
     },
     {
       "label": "WebRTC pro module (full media path: ICE/DTLS-SRTP, RTP)",
@@ -2210,9 +2238,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_webrtc_module",
       "community": 6,
-      "norm_label": "webrtc pro module (full media path: ice/dtls-srtp, rtp)"
+      "norm_label": "webrtc pro module (full media path: ice/dtls-srtp, rtp)",
+      "id": "pro_features_webrtc_webrtc_module"
     },
     {
       "label": "pro/webrtc-connect@v1 (signal whip|whep|library, ICE restart)",
@@ -2223,9 +2251,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_connect",
       "community": 6,
-      "norm_label": "pro/webrtc-connect@v1 (signal whip|whep|library, ice restart)"
+      "norm_label": "pro/webrtc-connect@v1 (signal whip|whep|library, ice restart)",
+      "id": "pro_features_webrtc_connect"
     },
     {
       "label": "pro/webrtc-publish@v1 (multi-track, simulcast layers, synthetic/file sources)",
@@ -2237,9 +2265,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Only AV1 is really encoded (pure-Rust rav1e) at the requested resolution/bitrate; VP8/H.264 replay a fixed 320x240 asset, so resolution is validated and warned about rather than silently faked",
-      "id": "pro_features_webrtc_publish",
       "community": 6,
-      "norm_label": "pro/webrtc-publish@v1 (multi-track, simulcast layers, synthetic/file sources)"
+      "norm_label": "pro/webrtc-publish@v1 (multi-track, simulcast layers, synthetic/file sources)",
+      "id": "pro_features_webrtc_publish"
     },
     {
       "label": "pro/webrtc-call@v1 composite P2P call between VU pairs",
@@ -2250,9 +2278,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_call",
       "community": 6,
-      "norm_label": "pro/webrtc-call@v1 composite p2p call between vu pairs"
+      "norm_label": "pro/webrtc-call@v1 composite p2p call between vu pairs",
+      "id": "pro_features_webrtc_call"
     },
     {
       "label": "Custom signaling delegated to wasm libraries (signal: library)",
@@ -2264,9 +2292,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The engine never grows per-vendor signaling code \u2014 vendor drift (LiveKit, mediasoup, Janus) lives in versioned wasm libraries",
-      "id": "pro_features_webrtc_wasm_signaling",
       "community": 6,
-      "norm_label": "custom signaling delegated to wasm libraries (signal: library)"
+      "norm_label": "custom signaling delegated to wasm libraries (signal: library)",
+      "id": "pro_features_webrtc_wasm_signaling"
     },
     {
       "label": "webrtc_* metrics (setup/TTFF histograms, media-quality sampler, per-stage call errors)",
@@ -2277,9 +2305,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_metrics",
       "community": 6,
-      "norm_label": "webrtc_* metrics (setup/ttff histograms, media-quality sampler, per-stage call errors)"
+      "norm_label": "webrtc_* metrics (setup/ttff histograms, media-quality sampler, per-stage call errors)",
+      "id": "pro_features_webrtc_metrics"
     },
     {
       "label": "RFC 007 \u2014 WebRTC design document",
@@ -2290,9 +2318,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_rfc007",
       "community": 6,
-      "norm_label": "rfc 007 \u2014 webrtc design document"
+      "norm_label": "rfc 007 \u2014 webrtc design document",
+      "id": "pro_features_webrtc_rfc007"
     },
     {
       "label": "perfscale Privacy Policy (effective 2026-04-03)",
@@ -2303,9 +2331,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_issue12_privacy_privacy_policy",
-      "community": 2,
-      "norm_label": "perfscale privacy policy (effective 2026-04-03)"
+      "community": 3,
+      "norm_label": "perfscale privacy policy (effective 2026-04-03)",
+      "id": "docs_issue12_privacy_privacy_policy"
     },
     {
       "label": "Stripe (payment processor; raw card numbers not stored)",
@@ -2316,9 +2344,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_issue12_privacy_stripe",
-      "community": 2,
-      "norm_label": "stripe (payment processor; raw card numbers not stored)"
+      "community": 3,
+      "norm_label": "stripe (payment processor; raw card numbers not stored)",
+      "id": "docs_issue12_privacy_stripe"
     },
     {
       "label": "Data retention (30-day purge after deletion; 7-year financial records)",
@@ -2329,9 +2357,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_issue12_privacy_data_retention",
-      "community": 2,
-      "norm_label": "data retention (30-day purge after deletion; 7-year financial records)"
+      "community": 3,
+      "norm_label": "data retention (30-day purge after deletion; 7-year financial records)",
+      "id": "docs_issue12_privacy_data_retention"
     },
     {
       "label": "User data rights (access, correction, deletion, portability, objection; GDPR/EU servers)",
@@ -2342,9 +2370,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_issue12_privacy_user_rights",
-      "community": 2,
-      "norm_label": "user data rights (access, correction, deletion, portability, objection; gdpr/eu servers)"
+      "community": 3,
+      "norm_label": "user data rights (access, correction, deletion, portability, objection; gdpr/eu servers)",
+      "id": "docs_issue12_privacy_user_rights"
     },
     {
       "label": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a API (REST API \u0434\u043b\u044f BFF \u043d\u0430 Rust)",
@@ -2355,9 +2383,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_doc",
       "community": 0,
-      "norm_label": "\u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a api (rest api \u0434\u043b\u044f bff \u043d\u0430 rust)"
+      "norm_label": "\u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a api (rest api \u0434\u043b\u044f bff \u043d\u0430 rust)",
+      "id": "api_reference_index_doc"
     },
     {
       "label": "openapi.json \u2014 \u043c\u0430\u0448\u0438\u043d\u043e\u0447\u0438\u0442\u0430\u0435\u043c\u044b\u0439 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 OpenAPI",
@@ -2368,9 +2396,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_openapi_json",
       "community": 0,
-      "norm_label": "openapi.json \u2014 \u043c\u0430\u0448\u0438\u043d\u043e\u0447\u0438\u0442\u0430\u0435\u043c\u044b\u0438 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 openapi"
+      "norm_label": "openapi.json \u2014 \u043c\u0430\u0448\u0438\u043d\u043e\u0447\u0438\u0442\u0430\u0435\u043c\u044b\u0438 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 openapi",
+      "id": "api_reference_index_openapi_json"
     },
     {
       "label": "\u041f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0435 API-\u0442\u043e\u043a\u0435\u043d\u044b (psk_\u2026) \u0441\u043e scope'\u0430\u043c\u0438",
@@ -2381,9 +2409,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_psk_tokens",
       "community": 0,
-      "norm_label": "\u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0435 api-\u0442\u043e\u043a\u0435\u043d\u044b (psk_...) \u0441\u043e scope'\u0430\u043c\u0438"
+      "norm_label": "\u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0435 api-\u0442\u043e\u043a\u0435\u043d\u044b (psk_...) \u0441\u043e scope'\u0430\u043c\u0438",
+      "id": "api_reference_index_psk_tokens"
     },
     {
       "label": "ApiError \u2014 \u043e\u0431\u0449\u0438\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 \u043e\u0448\u0438\u0431\u043e\u043a (400/401/402/403/404/409/500/503)",
@@ -2394,9 +2422,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_index_apierror",
       "community": 0,
-      "norm_label": "apierror \u2014 \u043e\u0431\u0449\u0438\u0438 \u0444\u043e\u0440\u043c\u0430\u0442 \u043e\u0448\u0438\u0431\u043e\u043a (400/401/402/403/404/409/500/503)"
+      "norm_label": "apierror \u2014 \u043e\u0431\u0449\u0438\u0438 \u0444\u043e\u0440\u043c\u0430\u0442 \u043e\u0448\u0438\u0431\u043e\u043a (400/401/402/403/404/409/500/503)",
+      "id": "api_reference_index_apierror"
     },
     {
       "label": "MCP-\u0441\u0435\u0440\u0432\u0435\u0440 \u0438 API-\u0442\u043e\u043a\u0435\u043d\u044b (@perfscale/controlplane-mcp)",
@@ -2407,9 +2435,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_doc",
       "community": 0,
-      "norm_label": "mcp-\u0441\u0435\u0440\u0432\u0435\u0440 \u0438 api-\u0442\u043e\u043a\u0435\u043d\u044b (@perfscale/controlplane-mcp)"
+      "norm_label": "mcp-\u0441\u0435\u0440\u0432\u0435\u0440 \u0438 api-\u0442\u043e\u043a\u0435\u043d\u044b (@perfscale/controlplane-mcp)",
+      "id": "api_reference_mcp_doc"
     },
     {
       "label": "Model Context Protocol",
@@ -2420,9 +2448,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_mcp_protocol",
       "community": 0,
-      "norm_label": "model context protocol"
+      "norm_label": "model context protocol",
+      "id": "api_reference_mcp_mcp_protocol"
     },
     {
       "label": "\u041d\u0430\u0431\u043e\u0440 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432 MCP (whoami, limits, list_runs, run_test, sync_git_repo, \u2026)",
@@ -2433,9 +2461,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_tools",
       "community": 0,
-      "norm_label": "\u043d\u0430\u0431\u043e\u0440 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432 mcp (whoami, limits, list_runs, run_test, sync_git_repo, ...)"
+      "norm_label": "\u043d\u0430\u0431\u043e\u0440 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432 mcp (whoami, limits, list_runs, run_test, sync_git_repo, ...)",
+      "id": "api_reference_mcp_tools"
     },
     {
       "label": "Fine-grained \u0441\u043a\u043e\u0443\u043f\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 (tests:read/write, runs:read/write, machines:read/write, metrics:read)",
@@ -2446,9 +2474,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_scopes",
       "community": 0,
-      "norm_label": "fine-grained \u0441\u043a\u043e\u0443\u043f\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 (tests:read/write, runs:read/write, machines:read/write, metrics:read)"
+      "norm_label": "fine-grained \u0441\u043a\u043e\u0443\u043f\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 (tests:read/write, runs:read/write, machines:read/write, metrics:read)",
+      "id": "api_reference_mcp_scopes"
     },
     {
       "label": "HTTP-endpoint /api/mcp (streamable HTTP, stateless)",
@@ -2459,9 +2487,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "api_reference_mcp_http_endpoint",
       "community": 0,
-      "norm_label": "http-endpoint /api/mcp (streamable http, stateless)"
+      "norm_label": "http-endpoint /api/mcp (streamable http, stateless)",
+      "id": "api_reference_mcp_http_endpoint"
     },
     {
       "label": "ASK AI \u2014 \u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0439 \u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",
@@ -2472,9 +2500,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_ask_ai_doc",
       "community": 0,
-      "norm_label": "ask ai \u2014 \u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0438 \u0438\u0438-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442"
+      "norm_label": "ask ai \u2014 \u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0438 \u0438\u0438-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",
+      "id": "concepts_ask_ai_doc"
     },
     {
       "label": "ASK AI (\u0447\u0430\u0442 \u0432 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u0435, \u0433\u0435\u043d\u0435\u0440\u0430\u0442\u0438\u0432\u043d\u044b\u0439 UI, \u0442\u0440\u0435\u0434\u044b)",
@@ -2485,9 +2513,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_ask_ai_ask_ai",
       "community": 0,
-      "norm_label": "ask ai (\u0447\u0430\u0442 \u0432 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u0435, \u0433\u0435\u043d\u0435\u0440\u0430\u0442\u0438\u0432\u043d\u044b\u0438 ui, \u0442\u0440\u0435\u0434\u044b)"
+      "norm_label": "ask ai (\u0447\u0430\u0442 \u0432 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u0435, \u0433\u0435\u043d\u0435\u0440\u0430\u0442\u0438\u0432\u043d\u044b\u0438 ui, \u0442\u0440\u0435\u0434\u044b)",
+      "id": "concepts_ask_ai_ask_ai"
     },
     {
       "label": "\u041e\u043f\u043b\u0430\u0442\u0430 (\u042eKassa, \u043f\u043b\u0430\u043d\u044b, \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430, \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u044b)",
@@ -2498,9 +2526,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_billing_doc",
       "community": 0,
-      "norm_label": "\u043e\u043f\u043b\u0430\u0442\u0430 (\u044ekassa, \u043f\u043b\u0430\u043d\u044b, \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430, \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u044b)"
+      "norm_label": "\u043e\u043f\u043b\u0430\u0442\u0430 (\u044ekassa, \u043f\u043b\u0430\u043d\u044b, \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430, \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u044b)",
+      "id": "concepts_billing_doc"
     },
     {
       "label": "\u042eKassa \u2014 \u043e\u043f\u043b\u0430\u0442\u0430 \u043a\u0430\u0440\u0442\u043e\u0439 / \u0421\u0411\u041f",
@@ -2511,9 +2539,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_billing_yukassa",
       "community": 0,
-      "norm_label": "\u044ekassa \u2014 \u043e\u043f\u043b\u0430\u0442\u0430 \u043a\u0430\u0440\u0442\u043e\u0438 / \u0441\u0431\u043f"
+      "norm_label": "\u044ekassa \u2014 \u043e\u043f\u043b\u0430\u0442\u0430 \u043a\u0430\u0440\u0442\u043e\u0438 / \u0441\u0431\u043f",
+      "id": "concepts_billing_yukassa"
     },
     {
       "label": "\u0421\u0432\u043e\u0439 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440 \u2014 WASM-\u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 perfscale:reporter@0.1.0",
@@ -2524,9 +2552,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_doc",
-      "community": 3,
-      "norm_label": "\u0441\u0432\u043e\u0438 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440 \u2014 wasm-\u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 perfscale:reporter@0.1.0"
+      "community": 4,
+      "norm_label": "\u0441\u0432\u043e\u0438 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440 \u2014 wasm-\u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 perfscale:reporter@0.1.0",
+      "id": "concepts_custom_reporters_doc"
     },
     {
       "label": "\u041a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 perfscale:reporter@0.1.0 (WIT, emit-file, report@v1)",
@@ -2537,9 +2565,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_contract",
-      "community": 3,
-      "norm_label": "\u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 perfscale:reporter@0.1.0 (wit, emit-file, report@v1)"
+      "community": 4,
+      "norm_label": "\u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 perfscale:reporter@0.1.0 (wit, emit-file, report@v1)",
+      "id": "concepts_custom_reporters_contract"
     },
     {
       "label": "Perfscale/allure2-reporter \u2014 production-\u043f\u0440\u0438\u043c\u0435\u0440 WASM-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u0430",
@@ -2550,9 +2578,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_allure2",
-      "community": 3,
-      "norm_label": "perfscale/allure2-reporter \u2014 production-\u043f\u0440\u0438\u043c\u0435\u0440 wasm-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u0430"
+      "community": 4,
+      "norm_label": "perfscale/allure2-reporter \u2014 production-\u043f\u0440\u0438\u043c\u0435\u0440 wasm-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u0430",
+      "id": "concepts_custom_reporters_allure2"
     },
     {
       "label": "Perfscale/github-action",
@@ -2563,9 +2591,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_custom_reporters_github_action",
-      "community": 3,
-      "norm_label": "perfscale/github-action"
+      "community": 4,
+      "norm_label": "perfscale/github-action",
+      "id": "concepts_custom_reporters_github_action"
     },
     {
       "label": "Data-driven \u0448\u0430\u0433\u0438 (if/when, std/random, std/pick, per-VU \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435)",
@@ -2576,9 +2604,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_doc",
-      "community": 1,
-      "norm_label": "data-driven \u0448\u0430\u0433\u0438 (if/when, std/random, std/pick, per-vu \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435)"
+      "community": 2,
+      "norm_label": "data-driven \u0448\u0430\u0433\u0438 (if/when, std/random, std/pick, per-vu \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435)",
+      "id": "concepts_data_driven_steps_doc"
     },
     {
       "label": "std/random@v1 \u2014 \u0448\u0430\u0433 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0447\u0438\u0441\u043b\u0430",
@@ -2589,9 +2617,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_random",
-      "community": 1,
-      "norm_label": "std/random@v1 \u2014 \u0448\u0430\u0433 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0447\u0438\u0441\u043b\u0430"
+      "community": 2,
+      "norm_label": "std/random@v1 \u2014 \u0448\u0430\u0433 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u0447\u0438\u0441\u043b\u0430",
+      "id": "concepts_data_driven_steps_random"
     },
     {
       "label": "std/pick@v1 \u2014 \u0432\u044b\u0431\u043e\u0440 \u044d\u043b\u0435\u043c\u0435\u043d\u0442\u0430 JSON-\u043c\u0430\u0441\u0441\u0438\u0432\u0430",
@@ -2602,9 +2630,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_data_driven_steps_pick",
-      "community": 1,
-      "norm_label": "std/pick@v1 \u2014 \u0432\u044b\u0431\u043e\u0440 \u044d\u043b\u0435\u043c\u0435\u043d\u0442\u0430 json-\u043c\u0430\u0441\u0441\u0438\u0432\u0430"
+      "community": 2,
+      "norm_label": "std/pick@v1 \u2014 \u0432\u044b\u0431\u043e\u0440 \u044d\u043b\u0435\u043c\u0435\u043d\u0442\u0430 json-\u043c\u0430\u0441\u0441\u0438\u0432\u0430",
+      "id": "concepts_data_driven_steps_pick"
     },
     {
       "label": "\u041f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f (visible vs masked, env.*)",
@@ -2615,9 +2643,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_environment_variables_doc",
-      "community": 3,
-      "norm_label": "\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f (visible vs masked, env.*)"
+      "community": 4,
+      "norm_label": "\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f (visible vs masked, env.*)",
+      "id": "concepts_environment_variables_doc"
     },
     {
       "label": "${{ env.* }} \u2014 \u0447\u0442\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u043d\u043e\u0433\u043e \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f \u043c\u0430\u0448\u0438\u043d\u044b",
@@ -2628,9 +2656,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_environment_variables_env_interp",
-      "community": 3,
-      "norm_label": "${{ env.* }} \u2014 \u0447\u0442\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u043d\u043e\u0433\u043e \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f \u043c\u0430\u0448\u0438\u043d\u044b"
+      "community": 4,
+      "norm_label": "${{ env.* }} \u2014 \u0447\u0442\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u043d\u043e\u0433\u043e \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f \u043c\u0430\u0448\u0438\u043d\u044b",
+      "id": "concepts_environment_variables_env_interp"
     },
     {
       "label": "Faker \u2014 Rust/WASM \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 \u0441\u0438\u043d\u0442\u0435\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0445 \u0434\u0430\u043d\u043d\u044b\u0445",
@@ -2641,9 +2669,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_faker_doc",
-      "community": 1,
-      "norm_label": "faker \u2014 rust/wasm \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 \u0441\u0438\u043d\u0442\u0435\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0445 \u0434\u0430\u043d\u043d\u044b\u0445"
+      "community": 2,
+      "norm_label": "faker \u2014 rust/wasm \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 \u0441\u0438\u043d\u0442\u0435\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0445 \u0434\u0430\u043d\u043d\u044b\u0445",
+      "id": "concepts_faker_doc"
     },
     {
       "label": "Perfscale/faker (internet, address, payment; seeded PRNG; GHCR-\u043e\u0431\u0440\u0430\u0437)",
@@ -2654,9 +2682,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_faker_library",
-      "community": 1,
-      "norm_label": "perfscale/faker (internet, address, payment; seeded prng; ghcr-\u043e\u0431\u0440\u0430\u0437)"
+      "community": 2,
+      "norm_label": "perfscale/faker (internet, address, payment; seeded prng; ghcr-\u043e\u0431\u0440\u0430\u0437)",
+      "id": "concepts_faker_library"
     },
     {
       "label": "\u0424\u0430\u0439\u043b\u043e\u0432\u044b\u0435 \u0448\u0430\u0433\u0438 (file-read, file-write, read-json, jq-style query)",
@@ -2667,9 +2695,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_doc",
-      "community": 1,
-      "norm_label": "\u0444\u0430\u0438\u043b\u043e\u0432\u044b\u0435 \u0448\u0430\u0433\u0438 (file-read, file-write, read-json, jq-style query)"
+      "community": 2,
+      "norm_label": "\u0444\u0430\u0438\u043b\u043e\u0432\u044b\u0435 \u0448\u0430\u0433\u0438 (file-read, file-write, read-json, jq-style query)",
+      "id": "concepts_files_doc"
     },
     {
       "label": "std/file-read@v1",
@@ -2680,9 +2708,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_file_read",
-      "community": 1,
-      "norm_label": "std/file-read@v1"
+      "community": 2,
+      "norm_label": "std/file-read@v1",
+      "id": "concepts_files_file_read"
     },
     {
       "label": "std/file-write@v1",
@@ -2693,9 +2721,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_file_write",
-      "community": 1,
-      "norm_label": "std/file-write@v1"
+      "community": 2,
+      "norm_label": "std/file-write@v1",
+      "id": "concepts_files_file_write"
     },
     {
       "label": "std/read-json@v1 + \u043e\u0431\u0449\u0438\u0439 JSON-\u043a\u0435\u0448",
@@ -2706,9 +2734,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_read_json",
-      "community": 1,
-      "norm_label": "std/read-json@v1 + \u043e\u0431\u0449\u0438\u0438 json-\u043a\u0435\u0448"
+      "community": 2,
+      "norm_label": "std/read-json@v1 + \u043e\u0431\u0449\u0438\u0438 json-\u043a\u0435\u0448",
+      "id": "concepts_files_read_json"
     },
     {
       "label": "jq-style \u0433\u0440\u0430\u043c\u043c\u0430\u0442\u0438\u043a\u0430 query / \u043f\u0443\u0442\u0438 \u0432 ${{ }}",
@@ -2719,9 +2747,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_files_jq_query",
-      "community": 1,
-      "norm_label": "jq-style \u0433\u0440\u0430\u043c\u043c\u0430\u0442\u0438\u043a\u0430 query / \u043f\u0443\u0442\u0438 \u0432 ${{ }}"
+      "community": 2,
+      "norm_label": "jq-style \u0433\u0440\u0430\u043c\u043c\u0430\u0442\u0438\u043a\u0430 query / \u043f\u0443\u0442\u0438 \u0432 ${{ }}",
+      "id": "concepts_files_jq_query"
     },
     {
       "label": "\u0418\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 Git (\u0441\u0438\u043d\u043a \u0441\u043d\u0438\u043c\u043a\u043e\u0432, PAT/SSH, commit status, PR-\u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0438)",
@@ -2732,9 +2760,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_git_integration_doc",
       "community": 0,
-      "norm_label": "\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 git (\u0441\u0438\u043d\u043a \u0441\u043d\u0438\u043c\u043a\u043e\u0432, pat/ssh, commit status, pr-\u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0438)"
+      "norm_label": "\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 git (\u0441\u0438\u043d\u043a \u0441\u043d\u0438\u043c\u043a\u043e\u0432, pat/ssh, commit status, pr-\u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0438)",
+      "id": "concepts_git_integration_doc"
     },
     {
       "label": "\u0424\u043b\u0430\u0433\u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438 allow_private_net / allow_http / tls_skip_verify",
@@ -2745,9 +2773,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_git_integration_flags",
       "community": 0,
-      "norm_label": "\u0444\u043b\u0430\u0433\u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438 allow_private_net / allow_http / tls_skip_verify"
+      "norm_label": "\u0444\u043b\u0430\u0433\u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438 allow_private_net / allow_http / tls_skip_verify",
+      "id": "concepts_git_integration_flags"
     },
     {
       "label": "GraphQL \u2014 std/graphql@v1 \u0441 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0435\u0439 \u043f\u043e \u0441\u0445\u0435\u043c\u0435",
@@ -2758,9 +2786,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_graphql_doc",
-      "community": 4,
-      "norm_label": "graphql \u2014 std/graphql@v1 \u0441 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0435\u0438 \u043f\u043e \u0441\u0445\u0435\u043c\u0435"
+      "community": 5,
+      "norm_label": "graphql \u2014 std/graphql@v1 \u0441 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0435\u0438 \u043f\u043e \u0441\u0445\u0435\u043c\u0435",
+      "id": "concepts_graphql_doc"
     },
     {
       "label": "std/graphql@v1 (\u0438\u043d\u0442\u0440\u043e\u0441\u043f\u0435\u043a\u0446\u0438\u044f, schema_file, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 graphql_*)",
@@ -2771,9 +2799,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_graphql_action",
-      "community": 4,
-      "norm_label": "std/graphql@v1 (\u0438\u043d\u0442\u0440\u043e\u0441\u043f\u0435\u043a\u0446\u0438\u044f, schema_file, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 graphql_*)"
+      "community": 5,
+      "norm_label": "std/graphql@v1 (\u0438\u043d\u0442\u0440\u043e\u0441\u043f\u0435\u043a\u0446\u0438\u044f, schema_file, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 graphql_*)",
+      "id": "concepts_graphql_action"
     },
     {
       "label": "gRPC \u2014 unary \u0438 client/server/bidi-\u0441\u0442\u0440\u0438\u043c\u044b, \u0434\u0438\u043d\u0430\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0445\u0435\u043c\u044b",
@@ -2784,9 +2812,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_doc",
-      "community": 4,
-      "norm_label": "grpc \u2014 unary \u0438 client/server/bidi-\u0441\u0442\u0440\u0438\u043c\u044b, \u0434\u0438\u043d\u0430\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0445\u0435\u043c\u044b"
+      "community": 5,
+      "norm_label": "grpc \u2014 unary \u0438 client/server/bidi-\u0441\u0442\u0440\u0438\u043c\u044b, \u0434\u0438\u043d\u0430\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0445\u0435\u043c\u044b",
+      "id": "concepts_grpc_doc"
     },
     {
       "label": "\u0428\u0430\u0433\u0438 std/grpc*@v1 (grpc, grpc-connect, grpc-call, grpc-stream-*)",
@@ -2797,9 +2825,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_actions",
-      "community": 4,
-      "norm_label": "\u0448\u0430\u0433\u0438 std/grpc*@v1 (grpc, grpc-connect, grpc-call, grpc-stream-*)"
+      "community": 5,
+      "norm_label": "\u0448\u0430\u0433\u0438 std/grpc*@v1 (grpc, grpc-connect, grpc-call, grpc-stream-*)",
+      "id": "concepts_grpc_actions"
     },
     {
       "label": "\u0418\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438 \u0441\u0445\u0435\u043c\u044b: descriptor_set / server reflection",
@@ -2810,9 +2838,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_grpc_schema",
-      "community": 4,
-      "norm_label": "\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438 \u0441\u0445\u0435\u043c\u044b: descriptor_set / server reflection"
+      "community": 5,
+      "norm_label": "\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438 \u0441\u0445\u0435\u043c\u044b: descriptor_set / server reflection",
+      "id": "concepts_grpc_schema"
     },
     {
       "label": "HTTP \u2014 std/http@v1, \u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0439, source_ips",
@@ -2823,9 +2851,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_http_doc",
-      "community": 4,
-      "norm_label": "http \u2014 std/http@v1, \u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438, source_ips"
+      "community": 5,
+      "norm_label": "http \u2014 std/http@v1, \u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438, source_ips",
+      "id": "concepts_http_doc"
     },
     {
       "label": "\u041f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0439: per-vu / shared / dedicated",
@@ -2836,9 +2864,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_http_pools",
-      "community": 4,
-      "norm_label": "\u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438: per-vu / shared / dedicated"
+      "community": 5,
+      "norm_label": "\u043f\u0443\u043b\u044b \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0438: per-vu / shared / dedicated",
+      "id": "concepts_http_pools"
     },
     {
       "label": "\u0418\u043c\u043f\u043e\u0440\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432 (import:, deep-merge, fail-closed \u0441\u0435\u0442\u044c)",
@@ -2849,9 +2877,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_imports_doc",
-      "community": 9,
-      "norm_label": "\u0438\u043c\u043f\u043e\u0440\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432 (import:, deep-merge, fail-closed \u0441\u0435\u0442\u044c)"
+      "community": 10,
+      "norm_label": "\u0438\u043c\u043f\u043e\u0440\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432 (import:, deep-merge, fail-closed \u0441\u0435\u0442\u044c)",
+      "id": "concepts_imports_doc"
     },
     {
       "label": "--allow-remote-import \u0438 \u0438\u0437\u043e\u043b\u044f\u0446\u0438\u044f \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (URL/git)",
@@ -2862,9 +2890,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_imports_remote",
-      "community": 9,
-      "norm_label": "--allow-remote-import \u0438 \u0438\u0437\u043e\u043b\u044f\u0446\u0438\u044f \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (url/git)"
+      "community": 10,
+      "norm_label": "--allow-remote-import \u0438 \u0438\u0437\u043e\u043b\u044f\u0446\u0438\u044f \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (url/git)",
+      "id": "concepts_imports_remote"
     },
     {
       "label": "\u0422\u0438\u043f\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 inputs (\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d\u0438\u0435, -i, env-\u0444\u0430\u0439\u043b\u044b, \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0434\u043e \u0441\u0442\u0430\u0440\u0442\u0430)",
@@ -2875,9 +2903,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_inputs_doc",
-      "community": 3,
-      "norm_label": "\u0442\u0438\u043f\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 inputs (\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d\u0438\u0435, -i, env-\u0444\u0430\u0438\u043b\u044b, \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0434\u043e \u0441\u0442\u0430\u0440\u0442\u0430)"
+      "community": 4,
+      "norm_label": "\u0442\u0438\u043f\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 inputs (\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d\u0438\u0435, -i, env-\u0444\u0430\u0438\u043b\u044b, \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0434\u043e \u0441\u0442\u0430\u0440\u0442\u0430)",
+      "id": "concepts_inputs_doc"
     },
     {
       "label": "\u0411\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0438 \u2014 WASM-\u0433\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 ${alias.fn(...)}",
@@ -2888,9 +2916,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_doc",
-      "community": 1,
-      "norm_label": "\u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0438 \u2014 wasm-\u0433\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 ${alias.fn(...)}"
+      "community": 2,
+      "norm_label": "\u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0438 \u2014 wasm-\u0433\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440\u044b \u0442\u043e\u043a\u0435\u043d\u043e\u0432 ${alias.fn(...)}",
+      "id": "concepts_libraries_doc"
     },
     {
       "label": "Capabilities-\u0441\u0430\u043d\u0434\u0431\u043e\u043a\u0441 wasmtime (fs, clock; fail-closed)",
@@ -2901,9 +2929,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_sandbox",
-      "community": 1,
-      "norm_label": "capabilities-\u0441\u0430\u043d\u0434\u0431\u043e\u043a\u0441 wasmtime (fs, clock; fail-closed)"
+      "community": 2,
+      "norm_label": "capabilities-\u0441\u0430\u043d\u0434\u0431\u043e\u043a\u0441 wasmtime (fs, clock; fail-closed)",
+      "id": "concepts_libraries_sandbox"
     },
     {
       "label": "SDK: Rust perfscale-library-sdk, TS @perfscale/library-sdk, TinyGo",
@@ -2914,9 +2942,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_sdks",
-      "community": 1,
-      "norm_label": "sdk: rust perfscale-library-sdk, ts @perfscale/library-sdk, tinygo"
+      "community": 2,
+      "norm_label": "sdk: rust perfscale-library-sdk, ts @perfscale/library-sdk, tinygo",
+      "id": "concepts_libraries_sdks"
     },
     {
       "label": "perfscale install / perfscale.lock / burn \u0432 .cwasm",
@@ -2927,9 +2955,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_install",
-      "community": 1,
-      "norm_label": "perfscale install / perfscale.lock / burn \u0432 .cwasm"
+      "community": 2,
+      "norm_label": "perfscale install / perfscale.lock / burn \u0432 .cwasm",
+      "id": "concepts_libraries_install"
     },
     {
       "label": "RFC 005 \u2014 \u043e\u0431\u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0434\u0438\u0437\u0430\u0439\u043d\u0430 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a",
@@ -2940,9 +2968,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_libraries_rfc005",
-      "community": 1,
-      "norm_label": "rfc 005 \u2014 \u043e\u0431\u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0434\u0438\u0437\u0430\u0438\u043d\u0430 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a"
+      "community": 2,
+      "norm_label": "rfc 005 \u2014 \u043e\u0431\u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0434\u0438\u0437\u0430\u0438\u043d\u0430 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a",
+      "id": "concepts_libraries_rfc005"
     },
     {
       "label": "\u0421\u0442\u0440\u0438\u043c\u0438\u043d\u0433 \u0436\u0438\u0432\u044b\u0445 \u043c\u0435\u0442\u0440\u0438\u043a (during_run, shipper, CPU-\u0433\u0435\u0439\u0442)",
@@ -2953,9 +2981,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_live_metrics_doc",
-      "community": 3,
-      "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433 \u0436\u0438\u0432\u044b\u0445 \u043c\u0435\u0442\u0440\u0438\u043a (during_run, shipper, cpu-\u0433\u0435\u0438\u0442)"
+      "community": 4,
+      "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433 \u0436\u0438\u0432\u044b\u0445 \u043c\u0435\u0442\u0440\u0438\u043a (during_run, shipper, cpu-\u0433\u0435\u0438\u0442)",
+      "id": "concepts_live_metrics_doc"
     },
     {
       "label": "Shipper during-run \u0441\u043d\u0430\u043f\u0448\u043e\u0442\u043e\u0432 (batch, dedup \u043f\u043e (task_id, seq), drop-oldest)",
@@ -2966,9 +2994,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_live_metrics_shipper",
-      "community": 3,
-      "norm_label": "shipper during-run \u0441\u043d\u0430\u043f\u0448\u043e\u0442\u043e\u0432 (batch, dedup \u043f\u043e (task_id, seq), drop-oldest)"
+      "community": 4,
+      "norm_label": "shipper during-run \u0441\u043d\u0430\u043f\u0448\u043e\u0442\u043e\u0432 (batch, dedup \u043f\u043e (task_id, seq), drop-oldest)",
+      "id": "concepts_live_metrics_shipper"
     },
     {
       "label": "\u0421\u0442\u0440\u0438\u043c\u0438\u043d\u0433-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b prometheus-rw / otel / serve",
@@ -2979,9 +3007,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_live_metrics_exporters",
-      "community": 3,
-      "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b prometheus-rw / otel / serve"
+      "community": 4,
+      "norm_label": "\u0441\u0442\u0440\u0438\u043c\u0438\u043d\u0433-\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b prometheus-rw / otel / serve",
+      "id": "concepts_live_metrics_exporters"
     },
     {
       "label": "\u041f\u0440\u043e\u0444\u0438\u043b\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438 (fixed, stages, arrival-rate)",
@@ -2992,9 +3020,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_load_profiles_doc",
-      "community": 9,
-      "norm_label": "\u043f\u0440\u043e\u0444\u0438\u043b\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438 (fixed, stages, arrival-rate)"
+      "community": 10,
+      "norm_label": "\u043f\u0440\u043e\u0444\u0438\u043b\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438 (fixed, stages, arrival-rate)",
+      "id": "concepts_load_profiles_doc"
     },
     {
       "label": "Arrival-rate \u2014 \u043e\u0442\u043a\u0440\u044b\u0442\u0430\u044f \u043c\u043e\u0434\u0435\u043b\u044c, dropped_iterations, queue wait \u043c\u0435\u0442\u0440\u0438\u043a\u0438",
@@ -3005,9 +3033,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_load_profiles_arrival",
-      "community": 9,
-      "norm_label": "arrival-rate \u2014 \u043e\u0442\u043a\u0440\u044b\u0442\u0430\u044f \u043c\u043e\u0434\u0435\u043b\u044c, dropped_iterations, queue wait \u043c\u0435\u0442\u0440\u0438\u043a\u0438"
+      "community": 10,
+      "norm_label": "arrival-rate \u2014 \u043e\u0442\u043a\u0440\u044b\u0442\u0430\u044f \u043c\u043e\u0434\u0435\u043b\u044c, dropped_iterations, queue wait \u043c\u0435\u0442\u0440\u0438\u043a\u0438",
+      "id": "concepts_load_profiles_arrival"
     },
     {
       "label": "\u041c\u0430\u0448\u0438\u043d\u044b \u2014 \u0443\u0437\u043b\u044b \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438",
@@ -3018,9 +3046,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_machines_doc",
-      "community": 4,
-      "norm_label": "\u043c\u0430\u0448\u0438\u043d\u044b \u2014 \u0443\u0437\u043b\u044b \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438"
+      "community": 5,
+      "norm_label": "\u043c\u0430\u0448\u0438\u043d\u044b \u2014 \u0443\u0437\u043b\u044b \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0438",
+      "id": "concepts_machines_doc"
     },
     {
       "label": "\u0421\u0435\u0442\u0435\u0432\u0430\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 Linux (ip_local_port_range, tcp_tw_reuse, perfscaled v0.7.0)",
@@ -3031,9 +3059,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_machines_tuning",
-      "community": 4,
-      "norm_label": "\u0441\u0435\u0442\u0435\u0432\u0430\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0438\u043a\u0430 linux (ip_local_port_range, tcp_tw_reuse, perfscaled v0.7.0)"
+      "community": 5,
+      "norm_label": "\u0441\u0435\u0442\u0435\u0432\u0430\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0438\u043a\u0430 linux (ip_local_port_range, tcp_tw_reuse, perfscaled v0.7.0)",
+      "id": "concepts_machines_tuning"
     },
     {
       "label": "\u041f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u044c\u043d\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0430\u0432\u0442\u043e\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u043e\u043c Metrics",
@@ -3044,9 +3072,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_protocol_metrics_doc",
-      "community": 4,
-      "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u044c\u043d\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0430\u0432\u0442\u043e\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u043e\u043c metrics"
+      "community": 5,
+      "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u044c\u043d\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0430\u0432\u0442\u043e\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u043e\u043c metrics",
+      "id": "concepts_protocol_metrics_doc"
     },
     {
       "label": "Pub/Sub \u2014 std/pubsub@v1 (NATS, memory; pro: Kafka/Redis/MQTT)",
@@ -3057,9 +3085,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_pubsub_doc",
       "community": 16,
-      "norm_label": "pub/sub \u2014 std/pubsub@v1 (nats, memory; pro: kafka/redis/mqtt)"
+      "norm_label": "pub/sub \u2014 std/pubsub@v1 (nats, memory; pro: kafka/redis/mqtt)",
+      "id": "concepts_pubsub_doc"
     },
     {
       "label": "std/pubsub@v1 (publish/subscribe, scope, flush, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 pubsub_*)",
@@ -3070,9 +3098,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_pubsub_action",
       "community": 16,
-      "norm_label": "std/pubsub@v1 (publish/subscribe, scope, flush, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 pubsub_*)"
+      "norm_label": "std/pubsub@v1 (publish/subscribe, scope, flush, \u043c\u0435\u0442\u0440\u0438\u043a\u0438 pubsub_*)",
+      "id": "concepts_pubsub_action"
     },
     {
       "label": "\u0420\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0441\u0445\u0435\u043c\u0430 report@v1",
@@ -3083,9 +3111,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_reports_doc",
-      "community": 3,
-      "norm_label": "\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0441\u0445\u0435\u043c\u0430 report@v1"
+      "community": 4,
+      "norm_label": "\u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0441\u0445\u0435\u043c\u0430 report@v1",
+      "id": "concepts_reports_doc"
     },
     {
       "label": "\u0412\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0435 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b json / junit / html / prometheus-rw / otel / serve",
@@ -3096,9 +3124,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_reports_builtin",
-      "community": 3,
-      "norm_label": "\u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0435 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b json / junit / html / prometheus-rw / otel / serve"
+      "community": 4,
+      "norm_label": "\u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0435 \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b json / junit / html / prometheus-rw / otel / serve",
+      "id": "concepts_reports_builtin"
     },
     {
       "label": "\u041f\u0440\u043e\u0433\u043e\u043d\u044b \u0438 \u0436\u0438\u0432\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0439 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438",
@@ -3109,9 +3137,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_doc",
-      "community": 4,
-      "norm_label": "\u043f\u0440\u043e\u0433\u043e\u043d\u044b \u0438 \u0436\u0438\u0432\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438"
+      "community": 5,
+      "norm_label": "\u043f\u0440\u043e\u0433\u043e\u043d\u044b \u0438 \u0436\u0438\u0432\u044b\u0435 \u043c\u0435\u0442\u0440\u0438\u043a\u0438 \u2014 \u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438",
+      "id": "concepts_runs_doc"
     },
     {
       "label": "\u0416\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0439 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438 pending \u2192 running \u2192 passed/failed/cancelled/timeout",
@@ -3122,9 +3150,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_lifecycle",
-      "community": 4,
-      "norm_label": "\u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438 pending \u2192 running \u2192 passed/failed/cancelled/timeout"
+      "community": 5,
+      "norm_label": "\u0436\u0438\u0437\u043d\u0435\u043d\u043d\u044b\u0438 \u0446\u0438\u043a\u043b \u0437\u0430\u0434\u0430\u0447\u0438 pending \u2192 running \u2192 passed/failed/cancelled/timeout",
+      "id": "concepts_runs_lifecycle"
     },
     {
       "label": "POST/DELETE/GET /api/v1/tasks",
@@ -3135,9 +3163,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_runs_api",
-      "community": 4,
-      "norm_label": "post/delete/get /api/v1/tasks"
+      "community": 5,
+      "norm_label": "post/delete/get /api/v1/tasks",
+      "id": "concepts_runs_api"
     },
     {
       "label": "Setup \u0438 teardown (before:/after:, child_process, kill_process)",
@@ -3148,9 +3176,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_setup_teardown_doc",
-      "community": 9,
-      "norm_label": "setup \u0438 teardown (before:/after:, child_process, kill_process)"
+      "community": 10,
+      "norm_label": "setup \u0438 teardown (before:/after:, child_process, kill_process)",
+      "id": "concepts_setup_teardown_doc"
     },
     {
       "label": "std/child_process@v1 \u0438 std/kill_process@v1 (fail-closed allow_process_actions)",
@@ -3161,9 +3189,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_setup_teardown_process_actions",
-      "community": 9,
-      "norm_label": "std/child_process@v1 \u0438 std/kill_process@v1 (fail-closed allow_process_actions)"
+      "community": 10,
+      "norm_label": "std/child_process@v1 \u0438 std/kill_process@v1 (fail-closed allow_process_actions)",
+      "id": "concepts_setup_teardown_process_actions"
     },
     {
       "label": "\u0422\u0435\u0441\u0442\u044b \u0438 \u0437\u0430\u0434\u0430\u0447\u0438",
@@ -3174,9 +3202,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_doc",
-      "community": 10,
-      "norm_label": "\u0442\u0435\u0441\u0442\u044b \u0438 \u0437\u0430\u0434\u0430\u0447\u0438"
+      "community": 1,
+      "norm_label": "\u0442\u0435\u0441\u0442\u044b \u0438 \u0437\u0430\u0434\u0430\u0447\u0438",
+      "id": "concepts_tests_doc"
     },
     {
       "label": "Supported load tools (k6, JMeter, Locust, Artillery, Gatling, custom)",
@@ -3187,9 +3215,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_tests_tools",
-      "community": 10,
-      "norm_label": "supported load tools (k6, jmeter, locust, artillery, gatling, custom)"
+      "community": 1,
+      "norm_label": "supported load tools (k6, jmeter, locust, artillery, gatling, custom)",
+      "id": "concepts_tests_tools"
     },
     {
       "label": "\u0422\u0440\u0438\u0433\u0433\u0435\u0440\u044b",
@@ -3200,9 +3228,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_triggers_doc",
-      "community": 7,
-      "norm_label": "\u0442\u0440\u0438\u0433\u0433\u0435\u0440\u044b"
+      "community": 1,
+      "norm_label": "\u0442\u0440\u0438\u0433\u0433\u0435\u0440\u044b",
+      "id": "concepts_triggers_doc"
     },
     {
       "label": "\u0412\u0435\u0431\u0445\u0443\u043a\u0438",
@@ -3213,9 +3241,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_webhooks_doc",
-      "community": 7,
-      "norm_label": "\u0432\u0435\u0431\u0445\u0443\u043a\u0438"
+      "community": 1,
+      "norm_label": "\u0432\u0435\u0431\u0445\u0443\u043a\u0438",
+      "id": "concepts_webhooks_doc"
     },
     {
       "label": "WebSocket",
@@ -3226,9 +3254,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "concepts_websocket_doc",
-      "community": 7,
-      "norm_label": "websocket"
+      "community": 9,
+      "norm_label": "websocket",
+      "id": "concepts_websocket_doc"
     },
     {
       "label": "std/ws* action family",
@@ -3240,9 +3268,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Waiting on server-push streams is deliberately NOT counted as latency because it would corrupt shared percentiles; handshakes and one-shot sessions go into http_req_duration so WS percentiles stay comparable with HTTP/TCP/UDP; connection ids are per-VU and per-iteration.",
-      "id": "concepts_websocket_actions",
-      "community": 7,
-      "norm_label": "std/ws* action family"
+      "community": 9,
+      "norm_label": "std/ws* action family",
+      "id": "concepts_websocket_actions"
     },
     {
       "label": "\u0418\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 CI/CD",
@@ -3253,9 +3281,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_ci_cd_doc",
-      "community": 7,
-      "norm_label": "\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 ci/cd"
+      "community": 1,
+      "norm_label": "\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u0441 ci/cd",
+      "id": "getting_started_ci_cd_doc"
     },
     {
       "label": "Perfscale/gitlab-ci templates (.perfscale:run / .perfscale:gate)",
@@ -3266,9 +3294,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_ci_cd_gitlab_templates",
-      "community": 7,
-      "norm_label": "perfscale/gitlab-ci templates (.perfscale:run / .perfscale:gate)"
+      "community": 1,
+      "norm_label": "perfscale/gitlab-ci templates (.perfscale:run / .perfscale:gate)",
+      "id": "getting_started_ci_cd_gitlab_templates"
     },
     {
       "label": "\u0411\u0430\u0437\u044b \u0434\u0430\u043d\u043d\u044b\u0445 \u0438\u0437 CLI",
@@ -3279,9 +3307,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_database_cli_doc",
-      "community": 7,
-      "norm_label": "\u0431\u0430\u0437\u044b \u0434\u0430\u043d\u043d\u044b\u0445 \u0438\u0437 cli"
+      "community": 9,
+      "norm_label": "\u0431\u0430\u0437\u044b \u0434\u0430\u043d\u043d\u044b\u0445 \u0438\u0437 cli",
+      "id": "getting_started_database_cli_doc"
     },
     {
       "label": "std/db-* action family",
@@ -3293,9 +3321,9 @@
       "author": null,
       "contributor": null,
       "rationale": "SQL text is never interpolated \u2014 values only via params \u2014 to prevent SQL injection; prepared-statement caching is opt-in because it is incompatible with transaction-mode poolers (PgBouncer, Supabase Supavisor); identical db-connect config returns a parked id (~0ms) enabling one warm connection per VU like k6/Locust.",
-      "id": "getting_started_database_cli_db_steps",
-      "community": 7,
-      "norm_label": "std/db-* action family"
+      "community": 9,
+      "norm_label": "std/db-* action family",
+      "id": "getting_started_database_cli_db_steps"
     },
     {
       "label": "GraphQL \u0438\u0437 CLI",
@@ -3306,9 +3334,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_graphql_cli_doc",
-      "community": 7,
-      "norm_label": "graphql \u0438\u0437 cli"
+      "community": 9,
+      "norm_label": "graphql \u0438\u0437 cli",
+      "id": "getting_started_graphql_cli_doc"
     },
     {
       "label": "std/graphql@v1",
@@ -3320,9 +3348,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Each document is validated against the endpoint's introspected schema before sending so a typo fails the step before any request leaves; introspection round paid once per run (process-wide cache).",
-      "id": "getting_started_graphql_cli_action",
-      "community": 7,
-      "norm_label": "std/graphql@v1"
+      "community": 9,
+      "norm_label": "std/graphql@v1",
+      "id": "getting_started_graphql_cli_action"
     },
     {
       "label": "gRPC \u0438\u0437 CLI",
@@ -3333,9 +3361,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_grpc_cli_doc",
-      "community": 7,
-      "norm_label": "grpc \u0438\u0437 cli"
+      "community": 9,
+      "norm_label": "grpc \u0438\u0437 cli",
+      "id": "getting_started_grpc_cli_doc"
     },
     {
       "label": "std/grpc-* action family",
@@ -3347,9 +3375,9 @@
       "author": null,
       "contributor": null,
       "rationale": "No protobuf codegen: schema comes from a base64 descriptor set or server reflection (cached per URL for the run); payloads are plain JSON per protobuf-JSON mapping.",
-      "id": "getting_started_grpc_cli_actions",
-      "community": 7,
-      "norm_label": "std/grpc-* action family"
+      "community": 9,
+      "norm_label": "std/grpc-* action family",
+      "id": "getting_started_grpc_cli_actions"
     },
     {
       "label": "\u0412\u0432\u0435\u0434\u0435\u043d\u0438\u0435",
@@ -3360,9 +3388,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_index_doc",
-      "community": 10,
-      "norm_label": "\u0432\u0432\u0435\u0434\u0435\u043d\u0438\u0435"
+      "community": 1,
+      "norm_label": "\u0432\u0432\u0435\u0434\u0435\u043d\u0438\u0435",
+      "id": "getting_started_index_doc"
     },
     {
       "label": "\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430",
@@ -3373,9 +3401,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_installation_doc",
       "community": 18,
-      "norm_label": "\u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430"
+      "norm_label": "\u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430",
+      "id": "getting_started_installation_doc"
     },
     {
       "label": "Dev stack (Next.js, Rust BFF, PostgreSQL, Keycloak)",
@@ -3386,9 +3414,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_installation_stack",
       "community": 18,
-      "norm_label": "dev stack (next.js, rust bff, postgresql, keycloak)"
+      "norm_label": "dev stack (next.js, rust bff, postgresql, keycloak)",
+      "id": "getting_started_installation_stack"
     },
     {
       "label": "\u0420\u0430\u0431\u043e\u0442\u0430 \u0441 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u043e\u0439",
@@ -3399,9 +3427,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_platform_doc",
-      "community": 10,
-      "norm_label": "\u0440\u0430\u0431\u043e\u0442\u0430 \u0441 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u043e\u0438"
+      "community": 1,
+      "norm_label": "\u0440\u0430\u0431\u043e\u0442\u0430 \u0441 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u043e\u0438",
+      "id": "getting_started_platform_doc"
     },
     {
       "label": "Admin console (Machines, Configurations, Tests, Runs & logs)",
@@ -3412,9 +3440,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_platform_console",
-      "community": 10,
-      "norm_label": "admin console (machines, configurations, tests, runs & logs)"
+      "community": 1,
+      "norm_label": "admin console (machines, configurations, tests, runs & logs)",
+      "id": "getting_started_platform_console"
     },
     {
       "label": "\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u0441\u0442\u0430\u0440\u0442",
@@ -3425,9 +3453,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_quick_start_doc",
-      "community": 10,
-      "norm_label": "\u0431\u044b\u0441\u0442\u0440\u044b\u0438 \u0441\u0442\u0430\u0440\u0442"
+      "community": 1,
+      "norm_label": "\u0431\u044b\u0441\u0442\u0440\u044b\u0438 \u0441\u0442\u0430\u0440\u0442",
+      "id": "getting_started_quick_start_doc"
     },
     {
       "label": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
@@ -3438,9 +3466,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_thresholds_doc",
-      "community": 7,
-      "norm_label": "thresholds \u2014 slo-\u043f\u043e\u0440\u043e\u0433\u0438"
+      "community": 9,
+      "norm_label": "thresholds \u2014 slo-\u043f\u043e\u0440\u043e\u0433\u0438",
+      "id": "getting_started_thresholds_doc"
     },
     {
       "label": "std/thresholds@v1",
@@ -3452,9 +3480,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Thresholds read the same HDR histogram aggregates as the text summary so numbers match; a threshold on a nonexistent metric fails the run with a config error so a typo cannot silently skip the SLO; severity fail exits CLI with code 1 for CI gating.",
-      "id": "getting_started_thresholds_step",
-      "community": 7,
-      "norm_label": "std/thresholds@v1"
+      "community": 9,
+      "norm_label": "std/thresholds@v1",
+      "id": "getting_started_thresholds_step"
     },
     {
       "label": "WebRTC \u0438\u0437 CLI",
@@ -3465,9 +3493,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_webrtc_cli_doc",
       "community": 8,
-      "norm_label": "webrtc \u0438\u0437 cli"
+      "norm_label": "webrtc \u0438\u0437 cli",
+      "id": "getting_started_webrtc_cli_doc"
     },
     {
       "label": "WebSocket \u0438\u0437 CLI",
@@ -3478,9 +3506,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "getting_started_websocket_cli_doc",
-      "community": 7,
-      "norm_label": "websocket \u0438\u0437 cli"
+      "community": 9,
+      "norm_label": "websocket \u0438\u0437 cli",
+      "id": "getting_started_websocket_cli_doc"
     },
     {
       "label": "\u041f\u043e\u043b\u0438\u0442\u0438\u043a\u0430 \u043a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u0438 (RU)",
@@ -3491,9 +3519,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "ru_privacy_doc",
       "community": 11,
-      "norm_label": "\u043f\u043e\u043b\u0438\u0442\u0438\u043a\u0430 \u043a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u0438 (ru)"
+      "norm_label": "\u043f\u043e\u043b\u0438\u0442\u0438\u043a\u0430 \u043a\u043e\u043d\u0444\u0438\u0434\u0435\u043d\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u0438 (ru)",
+      "id": "ru_privacy_doc"
     },
     {
       "label": "Stripe (payment processor)",
@@ -3504,9 +3532,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "ru_privacy_stripe",
       "community": 11,
-      "norm_label": "stripe (payment processor)"
+      "norm_label": "stripe (payment processor)",
+      "id": "ru_privacy_stripe"
     },
     {
       "label": "Infrastructure providers (AWS, Hetzner)",
@@ -3517,9 +3545,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "ru_privacy_infra_providers",
       "community": 11,
-      "norm_label": "infrastructure providers (aws, hetzner)"
+      "norm_label": "infrastructure providers (aws, hetzner)",
+      "id": "ru_privacy_infra_providers"
     },
     {
       "label": "\u041f\u0440\u043e\u0442\u043e\u043a\u043e\u043b FIX",
@@ -3530,9 +3558,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_fix_doc",
       "community": 8,
-      "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b fix"
+      "norm_label": "\u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b fix",
+      "id": "pro_features_fix_doc"
     },
     {
       "label": "pro/fix* actions",
@@ -3544,9 +3572,9 @@
       "author": null,
       "contributor": null,
       "rationale": "FIX data dictionary is loaded from the venue's spec (QuickFIX FIX44.xml) rather than hardcoded \u2014 only the session layer is built in, so a bare logon works schema-free; URL-form schema downloads once per process, not per session.",
-      "id": "pro_features_fix_actions",
       "community": 8,
-      "norm_label": "pro/fix* actions"
+      "norm_label": "pro/fix* actions",
+      "id": "pro_features_fix_actions"
     },
     {
       "label": "LLM \u0438 GPU \u043c\u0435\u0442\u0440\u0438\u043a\u0438",
@@ -3557,9 +3585,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_llm_metrics_doc",
       "community": 14,
-      "norm_label": "llm \u0438 gpu \u043c\u0435\u0442\u0440\u0438\u043a\u0438"
+      "norm_label": "llm \u0438 gpu \u043c\u0435\u0442\u0440\u0438\u043a\u0438",
+      "id": "pro_features_llm_metrics_doc"
     },
     {
       "label": "pro_llm_* metrics (ITL/TPOT percentiles, cost)",
@@ -3571,9 +3599,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The agent ships no built-in price tables \u2014 users supply their own price list via PERFSCALE_LLM_PRICES(_FILE); a model without a matching price simply gets no cost metric, and a bad config warns once and disables cost metrics without failing the run.",
-      "id": "pro_features_llm_metrics_pro_llm",
       "community": 14,
-      "norm_label": "pro_llm_* metrics (itl/tpot percentiles, cost)"
+      "norm_label": "pro_llm_* metrics (itl/tpot percentiles, cost)",
+      "id": "pro_features_llm_metrics_pro_llm"
     },
     {
       "label": "nvidia-smi-pro GPU collector",
@@ -3585,9 +3613,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Compute-process query runs best-effort (old drivers, WSL) \u2014 GPU rows still arrive without pro_gpu_process_* fields; per-process utilization is unavailable via nvidia-smi (needs NVML).",
-      "id": "pro_features_llm_metrics_gpu_pro",
       "community": 14,
-      "norm_label": "nvidia-smi-pro gpu collector"
+      "norm_label": "nvidia-smi-pro gpu collector",
+      "id": "pro_features_llm_metrics_gpu_pro"
     },
     {
       "label": "Pub/Sub \u2014 Redis, MQTT, Kafka",
@@ -3598,9 +3626,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_pubsub_doc",
       "community": 8,
-      "norm_label": "pub/sub \u2014 redis, mqtt, kafka"
+      "norm_label": "pub/sub \u2014 redis, mqtt, kafka",
+      "id": "pro_features_pubsub_doc"
     },
     {
       "label": "std/pubsub@v1 pro drivers (redis, mqtt, kafka)",
@@ -3612,9 +3640,9 @@
       "author": null,
       "contributor": null,
       "rationale": "subscribe-first ordering makes same-subject roundtrips always see their own messages; Kafka uses manual partition assignment with watermarks fixed at exchange start instead of consumer-group join because group join cannot be deterministically awaited and lazy latest-reset could miss the roundtrip's own messages; enable.auto.commit always off so a load run never moves real consumer-group offsets; unknown option keys are rejected with the supported list so a typo fails loudly.",
-      "id": "pro_features_pubsub_drivers",
       "community": 8,
-      "norm_label": "std/pubsub@v1 pro drivers (redis, mqtt, kafka)"
+      "norm_label": "std/pubsub@v1 pro drivers (redis, mqtt, kafka)",
+      "id": "pro_features_pubsub_drivers"
     },
     {
       "label": "\u041e\u0431\u0449\u0438\u0435 \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u2014 Redis",
@@ -3625,9 +3653,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_shared_redis_doc",
       "community": 8,
-      "norm_label": "\u043e\u0431\u0449\u0438\u0435 \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u2014 redis"
+      "norm_label": "\u043e\u0431\u0449\u0438\u0435 \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u2014 redis",
+      "id": "pro_features_shared_redis_doc"
     },
     {
       "label": "Shared variables redis driver",
@@ -3639,9 +3667,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Each operation maps to a single atomic server-side Redis command (INCRBY/RPUSH/LPOP/...) \u2014 same contract the memory driver gives with one lock acquisition \u2014 so there is no read-modify-write race and no lock primitive to hang on; each agent re-seeds keys at its own start, so state never carries between runs and pre-warmed storage cannot be relied upon until all agents connected.",
-      "id": "pro_features_shared_redis_driver",
       "community": 8,
-      "norm_label": "shared variables redis driver"
+      "norm_label": "shared variables redis driver",
+      "id": "pro_features_shared_redis_driver"
     },
     {
       "label": "SOAP",
@@ -3652,9 +3680,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_soap_doc",
       "community": 8,
-      "norm_label": "soap"
+      "norm_label": "soap",
+      "id": "pro_features_soap_doc"
     },
     {
       "label": "pro/soap* actions",
@@ -3666,9 +3694,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Raw HTTP treats 200 OK as success, a trap for SOAP since servers send Fault with both 200 and 500 \u2014 pro/soap@v1 always parses the body and fails the step on any Fault regardless of status; WSDL parser is namespace-tolerant (prefixes resolved via xmlns declarations) so nonstandard-prefix WSDLs parse correctly.",
-      "id": "pro_features_soap_actions",
       "community": 8,
-      "norm_label": "pro/soap* actions"
+      "norm_label": "pro/soap* actions",
+      "id": "pro_features_soap_actions"
     },
     {
       "label": "WebRTC (pro)",
@@ -3679,9 +3707,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pro_features_webrtc_doc",
       "community": 8,
-      "norm_label": "webrtc (pro)"
+      "norm_label": "webrtc (pro)",
+      "id": "pro_features_webrtc_doc"
     },
     {
       "label": "pro/webrtc-* actions",
@@ -3693,9 +3721,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Engine owns the media plane (real ICE/DTLS-SRTP handshakes and RTP) while vendor-specific signaling is delegated to versioned wasm libraries so the engine does not accrete per-vendor code; only AV1 has a pure-Rust encoder (rav1e) so synthetic VP8/H.264 play a fixed 320x240 asset and true AV1 SVC is rejected with an error pointing at simulcast layers instead of silent substitution; WebRTC requires Scale/Enterprise because media-plane load is the expensive part other tools never exercise.",
-      "id": "pro_features_webrtc_actions",
       "community": 8,
-      "norm_label": "pro/webrtc-* actions"
+      "norm_label": "pro/webrtc-* actions",
+      "id": "pro_features_webrtc_actions"
     },
     {
       "label": "\u0423\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f (RU)",
@@ -3706,9 +3734,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "ru_terms_doc",
       "community": 11,
-      "norm_label": "\u0443\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f (ru)"
+      "norm_label": "\u0443\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f (ru)",
+      "id": "ru_terms_doc"
     },
     {
       "label": "Terms of Service (EN)",
@@ -3719,9 +3747,309 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "docs_terms_doc",
       "community": 11,
-      "norm_label": "terms of service (en)"
+      "norm_label": "terms of service (en)",
+      "id": "docs_terms_doc"
+    },
+    {
+      "label": "Thresholds as SLO gates (std/thresholds@v1 in the after: block)",
+      "file_type": "document",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_slo_gate",
+      "community": 7,
+      "norm_label": "thresholds as slo gates (std/thresholds@v1 in the after: block)"
+    },
+    {
+      "label": "abort_on_fail: true on a severity: fail gate stops load early",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_abort_on_fail",
+      "community": 7,
+      "norm_label": "abort_on_fail: true on a severity: fail gate stops load early"
+    },
+    {
+      "label": "Gate evaluated every 250 ms during the VU phase; stops between steps",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_monitor_250ms",
+      "community": 7,
+      "norm_label": "gate evaluated every 250 ms during the vu phase; stops between steps"
+    },
+    {
+      "label": "after: teardown, reporters, and the final summary still run after an abort",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_after_summary_guaranteed",
+      "community": 7,
+      "norm_label": "after: teardown, reporters, and the final summary still run after an abort"
+    },
+    {
+      "label": "A gate whose metric has no samples yet waits for data instead of aborting",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_unknown_metric_warmup",
+      "community": 7,
+      "norm_label": "a gate whose metric has no samples yet waits for data instead of aborting"
+    },
+    {
+      "label": "http_debug: error \u2014 one secret-masked JSON line per failed action/check with request/response payloads; success emits nothing",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_http_debug_error",
+      "community": 7,
+      "norm_label": "http_debug: error \u2014 one secret-masked json line per failed action/check with request/response payloads; success emits nothing"
+    },
+    {
+      "label": "run.threshold_failed webhook event on the platform",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_run_threshold_failed_webhook",
+      "community": 7,
+      "norm_label": "run.threshold_failed webhook event on the platform"
+    },
+    {
+      "label": "std/thresholds@v1 action",
+      "file_type": "concept",
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO gates",
+        "description": "Fail a run when latency or error rate breaks your SLO \u2014 std/thresholds@v1 in the after block, k6-style expressions, CI exit codes",
+        "section": "Getting started",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "en_getting_started_thresholds_std_thresholds_v1",
+      "community": 7,
+      "norm_label": "std/thresholds@v1 action"
+    },
+    {
+      "label": "Thresholds \u043a\u0430\u043a SLO-\u043f\u043e\u0440\u043e\u0433\u0438 (std/thresholds@v1 \u0432 after:-\u0431\u043b\u043e\u043a\u0435)",
+      "file_type": "document",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_slo_gate",
+      "community": 7,
+      "norm_label": "thresholds \u043a\u0430\u043a slo-\u043f\u043e\u0440\u043e\u0433\u0438 (std/thresholds@v1 \u0432 after:-\u0431\u043b\u043e\u043a\u0435)"
+    },
+    {
+      "label": "abort_on_fail: true \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435 \u0441 severity: fail \u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0443 \u0434\u043e\u0441\u0440\u043e\u0447\u043d\u043e",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_abort_on_fail",
+      "community": 7,
+      "norm_label": "abort_on_fail: true \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435 \u0441 severity: fail \u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0443 \u0434\u043e\u0441\u0440\u043e\u0447\u043d\u043e"
+    },
+    {
+      "label": "\u041f\u043e\u0440\u043e\u0433 \u0432\u044b\u0447\u0438\u0441\u043b\u044f\u0435\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 250 \u043c\u0441 \u0432\u043e \u0432\u0440\u0435\u043c\u044f VU-\u0444\u0430\u0437\u044b; \u043e\u0441\u0442\u0430\u043d\u043e\u0432 \u043c\u0435\u0436\u0434\u0443 \u0448\u0430\u0433\u0430\u043c\u0438",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_monitor_250ms",
+      "community": 7,
+      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u0432\u044b\u0447\u0438\u0441\u043b\u044f\u0435\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 250 \u043c\u0441 \u0432\u043e \u0432\u0440\u0435\u043c\u044f vu-\u0444\u0430\u0437\u044b; \u043e\u0441\u0442\u0430\u043d\u043e\u0432 \u043c\u0435\u0436\u0434\u0443 \u0448\u0430\u0433\u0430\u043c\u0438"
+    },
+    {
+      "label": "after:-teardown, \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u0430\u044f \u0441\u0432\u043e\u0434\u043a\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e \u043f\u043e\u0441\u043b\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0430",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_after_summary_guaranteed",
+      "community": 7,
+      "norm_label": "after:-teardown, \u0440\u0435\u043f\u043e\u0440\u0442\u0435\u0440\u044b \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u0430\u044f \u0441\u0432\u043e\u0434\u043a\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e \u043f\u043e\u0441\u043b\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0430"
+    },
+    {
+      "label": "\u041f\u043e\u0440\u043e\u0433 \u043f\u043e \u043c\u0435\u0442\u0440\u0438\u043a\u0435 \u0431\u0435\u0437 \u0441\u044d\u043c\u043f\u043b\u043e\u0432 \u0436\u0434\u0451\u0442 \u0434\u0430\u043d\u043d\u044b\u0435, \u0430 \u043d\u0435 \u043f\u0440\u0435\u0440\u044b\u0432\u0430\u0435\u0442 \u043f\u0440\u043e\u0433\u043e\u043d",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_unknown_metric_warmup",
+      "community": 7,
+      "norm_label": "\u043f\u043e\u0440\u043e\u0433 \u043f\u043e \u043c\u0435\u0442\u0440\u0438\u043a\u0435 \u0431\u0435\u0437 \u0441\u044d\u043c\u043f\u043b\u043e\u0432 \u0436\u0434\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0435, \u0430 \u043d\u0435 \u043f\u0440\u0435\u0440\u044b\u0432\u0430\u0435\u0442 \u043f\u0440\u043e\u0433\u043e\u043d"
+    },
+    {
+      "label": "http_debug: error \u2014 \u043e\u0434\u043d\u0430 \u043c\u0430\u0441\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f JSON-\u0441\u0442\u0440\u043e\u043a\u0430 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0435 \u0443\u043f\u0430\u0432\u0448\u0435\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435/check \u0441 payload \u0437\u0430\u043f\u0440\u043e\u0441\u0430/\u043e\u0442\u0432\u0435\u0442\u0430; \u0443\u0441\u043f\u0435\u0445 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0438\u0442",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_http_debug_error",
+      "community": 7,
+      "norm_label": "http_debug: error \u2014 \u043e\u0434\u043d\u0430 \u043c\u0430\u0441\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f json-\u0441\u0442\u0440\u043e\u043a\u0430 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0435 \u0443\u043f\u0430\u0432\u0448\u0435\u0435 \u0434\u0435\u0438\u0441\u0442\u0432\u0438\u0435/check \u0441 payload \u0437\u0430\u043f\u0440\u043e\u0441\u0430/\u043e\u0442\u0432\u0435\u0442\u0430; \u0443\u0441\u043f\u0435\u0445 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0438\u0442"
+    },
+    {
+      "label": "Webhook-\u0441\u043e\u0431\u044b\u0442\u0438\u0435 run.threshold_failed \u043d\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435",
+      "file_type": "concept",
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "metadata": {
+        "title": "Thresholds \u2014 SLO-\u043f\u043e\u0440\u043e\u0433\u0438",
+        "description": "\u041f\u0440\u043e\u0433\u043e\u043d \u043f\u0430\u0434\u0430\u0435\u0442, \u0435\u0441\u043b\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0438\u043b\u0438 \u0434\u043e\u043b\u044f \u043e\u0448\u0438\u0431\u043e\u043a \u043d\u0430\u0440\u0443\u0448\u0438\u043b\u0430 SLO \u2014 \u0448\u0430\u0433 std/thresholds@v1 \u0432 after-\u0431\u043b\u043e\u043a\u0435, k6-\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u044f, exit-\u043a\u043e\u0434\u044b \u0434\u043b\u044f CI",
+        "section": "\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442\u044b",
+        "sectionOrder": 1,
+        "order": 9
+      },
+      "id": "ru_getting_started_thresholds_run_threshold_failed_webhook",
+      "community": 7,
+      "norm_label": "webhook-\u0441\u043e\u0431\u044b\u0442\u0438\u0435 run.threshold_failed \u043d\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435"
     }
   ],
   "links": [
@@ -4566,16 +4894,6 @@
       "target": "concepts_libraries_std_random"
     },
     {
-      "relation": "semantically_similar_to",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "source_file": "ru/concepts/libraries.mdx",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "concepts_libraries_std_json",
-      "target": "concepts_files_read_json"
-    },
-    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -4584,6 +4902,16 @@
       "weight": 1.0,
       "source": "concepts_libraries_doc",
       "target": "concepts_libraries_std_json"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "ru/concepts/libraries.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_libraries_std_json",
+      "target": "concepts_files_read_json"
     },
     {
       "relation": "references",
@@ -6306,16 +6634,6 @@
       "target": "concepts_libraries_install"
     },
     {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "ru/concepts/libraries.mdx",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "concepts_libraries_rfc005",
-      "target": "concepts_libraries_doc"
-    },
-    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -6334,6 +6652,16 @@
       "weight": 1.0,
       "source": "concepts_libraries_doc",
       "target": "concepts_libraries_sdks"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/concepts/libraries.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "concepts_libraries_rfc005",
+      "target": "concepts_libraries_doc"
     },
     {
       "relation": "references",
@@ -7014,6 +7342,176 @@
       "weight": 1.0,
       "source": "ru_terms_doc",
       "target": "docs_terms_doc"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_slo_gate",
+      "target": "en_getting_started_thresholds_abort_on_fail"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_slo_gate",
+      "target": "en_getting_started_thresholds_http_debug_error"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_slo_gate",
+      "target": "en_getting_started_thresholds_run_threshold_failed_webhook"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_slo_gate",
+      "target": "en_getting_started_thresholds_std_thresholds_v1"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_slo_gate",
+      "target": "en_getting_started_thresholds_slo_gate"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_abort_on_fail",
+      "target": "en_getting_started_thresholds_after_summary_guaranteed"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_abort_on_fail",
+      "target": "en_getting_started_thresholds_monitor_250ms"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_abort_on_fail",
+      "target": "en_getting_started_thresholds_unknown_metric_warmup"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "en/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "en_getting_started_thresholds_http_debug_error",
+      "target": "en_getting_started_thresholds_abort_on_fail"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_abort_on_fail",
+      "target": "en_getting_started_thresholds_abort_on_fail"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_http_debug_error",
+      "target": "en_getting_started_thresholds_http_debug_error"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_slo_gate",
+      "target": "ru_getting_started_thresholds_abort_on_fail"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_slo_gate",
+      "target": "ru_getting_started_thresholds_http_debug_error"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_slo_gate",
+      "target": "ru_getting_started_thresholds_run_threshold_failed_webhook"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_abort_on_fail",
+      "target": "ru_getting_started_thresholds_after_summary_guaranteed"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_abort_on_fail",
+      "target": "ru_getting_started_thresholds_monitor_250ms"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ru/getting-started/thresholds.mdx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "ru_getting_started_thresholds_abort_on_fail",
+      "target": "ru_getting_started_thresholds_unknown_metric_warmup"
     }
   ],
   "hyperedges": [
@@ -7181,7 +7679,35 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "ru/getting-started/ci-cd.mdx"
+    },
+    {
+      "id": "docs_threshold_abort_he_abort_on_fail",
+      "label": "abort_on_fail early-stop threshold gate",
+      "nodes": [
+        "en_getting_started_thresholds_abort_on_fail",
+        "en_getting_started_thresholds_monitor_250ms",
+        "en_getting_started_thresholds_after_summary_guaranteed",
+        "en_getting_started_thresholds_unknown_metric_warmup",
+        "ru_getting_started_thresholds_abort_on_fail"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "en/getting-started/thresholds.mdx"
+    },
+    {
+      "id": "docs_threshold_abort_he_http_debug",
+      "label": "http_debug masked failure-only diagnostics",
+      "nodes": [
+        "en_getting_started_thresholds_http_debug_error",
+        "en_getting_started_thresholds_abort_on_fail",
+        "ru_getting_started_thresholds_http_debug_error"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "en/getting-started/thresholds.mdx"
     }
   ],
-  "built_at_commit": "3ceb26d89187c5fa9ac6575c626728754e80f2ca"
+  "built_at_commit": "c7978fa23a5cfb8884009d738b67ed9a9bf14f2b"
 }
