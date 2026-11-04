@@ -18,7 +18,7 @@ scripting required**:
 |---|---|
 | `if:` / `when:` | Run a step only when a condition holds |
 | `std/random@v1` | Generate one number (integer or float) into a step output |
-| `std/pick@v1` | Pick one element of a JSON array — from a file or a response |
+| `std/pick@v1` | Pick array elements, map keys to values, and rename object fields |
 | `${{ __vu__ }}` / `${{ __iter__ }}` | The current VU's 1-based id and its 0-based iteration |
 
 Because these are ordinary steps, their outputs flow through the same
@@ -160,8 +160,8 @@ array entries, exactly `(VU-1) % length`) and for once-per-VU logic via
 
 ## `std/pick@v1`
 
-Pick one element of a JSON array — a random post from a feed response, or a
-per-VU test user from a fixture file:
+Pick an array element, select an object value by key, or rename object fields.
+For example, select a per-VU test user from a fixture file:
 
 ```yaml
 steps:
@@ -172,24 +172,88 @@ steps:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `from` | array or string | one of `from`/`file` | The array, or a string holding a JSON array (`"${{ feed.body.posts }}"`) |
-| `file` | string (path) | one of `from`/`file` | A JSON array file, parsed once per process and cached by `(mtime, size)` like `std/file-read@v1`. Requires `allow_file_actions: true`, honours `fs_root` |
-| `index` | integer or string | random | Element index, wrapping modulo the array length. Omitted → uniformly random |
-| `index_offset` | integer or string | `0` | Signed offset applied to `index` **before** wrapping; negative values wrap too |
+| `from` | array, object, or string | one of `from`/`file` | The value, or a string holding a JSON array/object (`"${{ feed.body.posts }}"`) |
+| `file` | string (path) | one of `from`/`file` | A JSON array/object file, parsed once per process and cached by `(mtime, size)` like `std/file-read@v1`. Requires `allow_file_actions: true`, honours `fs_root` |
+| `index` | integer or string | random for arrays | Array element index, wrapping modulo the array length. Omitted → uniformly random. Not valid for objects |
+| `index_offset` | integer or string | `0` | Signed offset applied to `index` **before** wrapping; negative values wrap too. Arrays only |
+| `key` | string or number | required to select from an object | Object key whose value becomes the output. Not valid for arrays or together with `index` |
+| `remap` | object | — | Top-level field renames as `source: destination`. Applied to the selected object, or directly to the input object when `key`/`index` is omitted |
 
-**Output**: the picked element itself, so `${{ user.token }}` walks into it
-directly.
+Without `remap`, the output is the picked value itself, so `${{ user.token }}`
+walks into a selected user directly.
+
+### Map a variable to a value with `key`
+
+Use an object as a lookup table instead of encoding conditional mappings in a
+script. Here `inputs.environment: stage` produces
+`base_url: https://stage.example.com`:
+
+```yaml
+steps:
+  - use: std/pick@v1
+    with:
+      from:
+        dev: https://dev.example.com
+        stage: https://stage.example.com
+        prod: https://example.com
+      key: "${{ inputs.environment }}"
+    outputs: base_url
+```
+
+The source can also be a JSON object string from a response or a JSON object
+file. A missing key fails the step. Numeric keys are converted to their string
+form; an object without `key` requires `remap` for direct field renaming.
+
+### Rename fields with `remap`
+
+`remap` can transform a whole object without selecting an array element or a
+map value. Keys are source field names; values are their new names:
+
+```yaml
+steps:
+  - use: std/http@v1
+    with: { url: "https://api.example.com/account" }
+    outputs: account
+
+  - use: std/pick@v1
+    with:
+      from: "${{ account.body.user }}"
+      remap:
+        id: user_id
+        name: display_name
+    outputs: user
+```
+
+If the input is `{"id": 42, "name": "Ada", "token": "…"}`, the output is
+`{"user_id": 42, "display_name": "Ada", "token": "…"}`. Unmapped fields are
+preserved, while renamed source fields are removed. Only top-level fields are
+supported; nested paths are not.
+
+The same `remap` can follow an array or key selection:
+
+```yaml
+  - use: std/pick@v1
+    with:
+      from: "${{ feed.body.posts }}"
+      index: "${{ post_index }}"
+      remap: { id: post_id }
+    outputs: post
+```
+
+A missing source field, a duplicate destination, a destination that would
+overwrite an unmapped field, or applying `remap` to a non-object fails the
+step rather than silently losing data.
 
 Notes:
 
 - `file` reads share the **process-wide JSON cache** with
   `std/read-json@v1` — the first iteration pays the read and parse, later
   iterations across all VUs hit RAM.
-- Leave `index` out for a uniform random pick (reproducible under a run
+- Leave `index` out for a uniform random array pick (reproducible under a run
   `seed:`), or generate the index through an explicit `std/random@v1` step
   when you want the index itself as an output.
-- A document that is not a JSON array, an empty array, or a non-integer
-  `index` fails the step.
+- Empty arrays, non-integer `index` values, scalar documents, and objects with
+  neither `key` nor `remap` fail the step.
 
 ## `std/pick` vs `@std/json` vs literal paths
 
@@ -199,9 +263,9 @@ Three mechanisms touch JSON data — they are complementary, not overlapping:
   `check:` — parse a string leaf as JSON on demand and walk a *fixed*
   jq-style path. The index in `[0]` is a **literal**: it cannot come from a
   variable. Use these when the position is known at authoring time.
-- **`std/pick@v1`** — the answer when the index is **dynamic**: a per-VU id,
-  a random roll, a value computed by an earlier step. It selects the
-  element and exposes it as a step output for later steps to walk into.
+- **`std/pick@v1`** — the answer when the index or key is **dynamic**, or
+  when an object needs declarative field renaming. It exposes the result as a
+  step output for later steps to walk into.
 - **`@std/json@v1`** — a *library* of generator tokens
   (`${json.read(...)}`, `${json.pick(...)}`) that expand inside payload
   strings, for file-backed values injected directly into a message without
@@ -209,7 +273,7 @@ Three mechanisms touch JSON data — they are complementary, not overlapping:
 
 Rule of thumb: fixed path into a file → `std/read-json@v1` or
 `${json.read(...)}`; fixed path into a response → literal body path; dynamic
-selection from an array → `std/pick@v1`.
+selection or variable/field remapping → `std/pick@v1`.
 
 ## Next steps
 
