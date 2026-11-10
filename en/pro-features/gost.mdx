@@ -1,0 +1,114 @@
+---
+title: GOST Random Data
+description: Generate Kuznechik/Magma CTR payloads and Streebog-256/512 digests with OS randomness or reproducible test vectors
+section: Pro Features
+sectionOrder: 3
+order: 7
+---
+
+## Overview
+
+The GOST module generates cryptographic test data for services that expect
+GOST algorithms: government gateways, banking integrations, and systems that
+verify Kuznechik, Magma, or Streebog inputs. It is useful for payload variety,
+standard-vector checks, and deterministic load scenarios.
+
+This is a **paid** capability (Scale and Enterprise plans). The agent build
+includes it in `pro-full`; a minimal build can enable only `pro-gost`.
+
+The module generates data — it does **not** implement GOST TLS, general-purpose
+encryption/decryption, signing, authentication, or production key management.
+
+## Actions
+
+| Action | What it produces | Default input |
+|---|---|---|
+| `pro/gost-kuznechik@v1` | Kuznechik CTR bytes | Fresh 32-byte key and 16-byte IV from the OS |
+| `pro/gost-magma@v1` | Magma CTR bytes | Fresh 32-byte key and 8-byte IV from the OS |
+| `pro/gost-streebog@v1` | Streebog-256 or Streebog-512 digest | Fresh 32-byte input from the OS |
+
+Every action returns `algorithm`, `data`, `format`, `length` (bytes before text
+encoding), `duration_ms`, and `metrics`. Logs contain only the algorithm, byte
+count, and duration — never keys, IVs, source bytes, or generated data.
+
+## Kuznechik and Magma
+
+```yaml
+steps:
+  - use: pro/gost-kuznechik@v1
+    with:
+      length: 64
+      format: base64
+    outputs: random_payload
+
+  - use: pro/gost-magma@v1
+    with:
+      length: 32
+      format: hex
+      key: ${{ env.GOST_TEST_KEY }}   # 64 hex chars, optional
+      iv: ${{ env.GOST_TEST_IV }}     # 16 hex chars, optional
+    outputs: test_payload
+```
+
+| Param | Default | Description |
+|---|---|---|
+| `length` | `32` | Bytes to generate, `1..1048576`; number or numeric string |
+| `format` | `hex` | `hex`, `base64`, or `base64url` |
+| `key` | OS random | 32-byte key as 64 hex characters |
+| `iv` | OS random | Kuznechik: 32 hex characters; Magma: 16 |
+
+Set both `key` and `iv` for reproducible output. If only one is set, the other
+is random, so output remains nondeterministic. Fixed values are for standard
+vectors and deterministic load tests, not production key storage. Pass secrets
+through `${{ env.* }}` rather than committing them to YAML.
+
+The implementation uses `kuznechik-rs` CTR (NIST SP 800-38A low-32-bit counter)
+and RustCrypto `ctr::Ctr64BE<Magma>`. GOST R 34.13 MVK, MAC/OMAC, and
+authenticated encryption are out of scope.
+
+## Streebog-256 and Streebog-512
+
+```yaml
+steps:
+  - use: pro/gost-streebog@v1
+    with:
+      size: 512                 # 256 (default) or 512
+      format: hex
+    outputs: random_digest
+
+  - use: pro/gost-streebog@v1
+    with:
+      size: 256
+      data: "3132333435363738"  # input bytes as hex ("12345678")
+    outputs: known_digest
+```
+
+| Param | Default | Description |
+|---|---|---|
+| `size` | `256` | `256` for a 32-byte digest or `512` for a 64-byte digest |
+| `format` | `hex` | `hex`, `base64`, or `base64url` |
+| `data` | 32 random bytes | Optional input as hex; an empty string hashes the empty byte string |
+
+Streebog is unkeyed, so `key` and `iv` do not apply. The same `data` always
+produces the same digest.
+
+## Metrics
+
+- `gost_operations` — every generation/hash call, including rejected calls.
+- `gost_bytes` — bytes produced before text encoding.
+- `gost_errors` — validation and OS-randomness failures.
+
+Call latency also reaches the common duration aggregates.
+
+## Security scope
+
+This is a load-test data generator, **not a certified cryptographic module**.
+Standard test vectors verify algorithm compatibility, but Perfscale does not
+claim FSB/FSTEK certification. Assess the target government information system
+separately: implementation audits, constant-time requirements, key storage,
+approved modes, and operational procedures. The Kuznechik implementation
+documents cache-timing considerations and does not wipe its internal round-key
+schedule.
+
+See the [GOST blog post](/blog/gost-random-data) for practical scenarios and a
+complete YAML example.
