@@ -123,6 +123,27 @@ handle (`rtc-1`, …) via `outputs:` — the live-connection model shared with
 | `on_disconnect` | string | `fail_fast` | `fail_fast` fails later steps on ICE disconnect; `restart` performs a real ICE restart (see below) |
 | `timeout` | ms | `10000` | Signaling + connect timeout (covers the library call too) |
 | `tracks` | list | 1 audio + 1 video | Send-side m-line layout (WHIP/`library` only): `[{kind, layers?}]` — one entry per track the publish step will attach, with simulcast rids pre-declared per layered track. See "Multi-track and simulcast" below |
+| `retry` | object | off | WHEP only: retry the signaling POST while the stream is unavailable. `attempts` is the total number of POSTs (1–100, default 5), `backoff_ms` defaults to 200, and `on` is the list of retryable HTTP statuses (default `[404]`) |
+
+#### `retry`: playback readiness
+
+A WHIP session can return 201 before the SFU has any media available for WHEP
+playback. A WHEP request that lands in this window may receive a transient
+404. Use an opt-in retry for that race:
+
+```yaml
+  - name: watch camera
+    use: pro/webrtc-connect@v1
+    with:
+      signal: whep
+      url: https://stream.example.com/whep/cam-${vu}
+      retry: { attempts: 5, backoff_ms: 200, on: [404] }
+```
+
+`attempts` includes the first request, so the example makes at most five POSTs.
+Retries and backoff time are bounded by the same `timeout` as the whole connect
+step. The default remains a single POST with no retry; unrelated statuses are
+not retried.
 
 #### `signal: library`
 
